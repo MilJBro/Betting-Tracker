@@ -1,0 +1,19 @@
+{
+  "name": "betting-tracker-server",
+  "version": "1.0.0",
+  "description": "API server for the customizable betting tracker",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.8.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "nanoid": "^5.0.9"
+  }
+}

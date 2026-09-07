@@ -1,0 +1,222 @@
+import { useEffect, useState } from 'react';
+import { api } from '../api.js';
+import { useSettings } from '../context/SettingsContext.jsx';
+import Toggle from '../components/Toggle.jsx';
+import { STAT_META } from '../components/StatCard.jsx';
+
+const PRESET_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#f59e0b', '#ef4444', '#14b8a6', '#eab308', '#6366f1', '#f97316'];
+const FONTS = [
+  { key: 'system', label: 'System' },
+  { key: 'rounded', label: 'Rounded' },
+  { key: 'mono', label: 'Mono' },
+  { key: 'serif', label: 'Serif' },
+];
+const FIELD_LABELS = {
+  sport: 'Sport / Category', event: 'Event', selection: 'Selection', betType: 'Bet type',
+  bookmaker: 'Bookmaker', stake: 'Stake', odds: 'Odds', status: 'Status',
+  payout: 'Payout / Return', notes: 'Notes', tags: 'Tags',
+};
+
+export default function Customise() {
+  const { settings, update, save } = useSettings();
+  const [share, setShare] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => { api.get('/share/me').then((d) => setShare(d.share)); }, []);
+
+  if (!settings) return <div className="main"><p className="muted">Loading…</p></div>;
+
+  const t = settings.theme;
+  const setTheme = (patch) => update({ theme: { ...t, ...patch } });
+
+  const toggleField = (k, v) => update({ fields: { ...settings.fields, [k]: v } });
+  const toggleWidget = (k, v) => update({ widgets: { ...settings.widgets, [k]: v } });
+  const toggleSharing = (k, v) => update({ sharing: { ...settings.sharing, [k]: v } });
+
+  function setCard(key, enabled) {
+    update({ statCards: settings.statCards.map((c) => (c.key === key ? { ...c, enabled } : c)) });
+  }
+  function moveCard(idx, dir) {
+    const arr = [...settings.statCards];
+    const j = idx + dir;
+    if (j < 0 || j >= arr.length) return;
+    [arr[idx], arr[j]] = [arr[j], arr[idx]];
+    update({ statCards: arr });
+  }
+
+  async function enableShare() {
+    const d = await api.post('/share/enable');
+    setShare(d.share);
+  }
+  async function disableShare() {
+    await api.post('/share/disable');
+    setShare((s) => ({ ...s, enabled: false }));
+  }
+  const shareUrl = share?.publicId ? `${window.location.origin}/share/${share.publicId}` : '';
+  function copyLink() {
+    navigator.clipboard?.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
+  async function resetAll() {
+    if (!confirm('Reset all customisation to defaults?')) return;
+    const d = await api.post('/settings/reset');
+    await save(d.settings);
+  }
+
+  return (
+    <div className="main">
+      <div className="page-head">
+        <div>
+          <h1>Customise</h1>
+          <p>Make the tracker yours — colours, layout, and what you track.</p>
+        </div>
+        <button className="btn-ghost" onClick={resetAll}>Reset to defaults</button>
+      </div>
+
+      {/* Appearance */}
+      <div className="card" style={{ marginBottom: 18 }}>
+        <h3 className="section-title">Appearance</h3>
+
+        <div className="field">
+          <label>Mode</label>
+          <div className="row">
+            <button className={t.mode === 'dark' ? 'btn-accent btn-sm' : 'btn-ghost btn-sm'} onClick={() => setTheme({ mode: 'dark' })}>🌙 Dark</button>
+            <button className={t.mode === 'light' ? 'btn-accent btn-sm' : 'btn-ghost btn-sm'} onClick={() => setTheme({ mode: 'light' })}>☀️ Light</button>
+          </div>
+        </div>
+
+        <div className="field">
+          <label>Dashboard colour</label>
+          <div className="swatches">
+            {PRESET_COLORS.map((c) => (
+              <div key={c} className={`swatch ${t.primary === c ? 'active' : ''}`} style={{ background: c }} onClick={() => setTheme({ primary: c })} />
+            ))}
+            <input type="color" value={t.primary} onChange={(e) => setTheme({ primary: e.target.value })} style={{ width: 44, height: 34, padding: 2 }} title="Custom colour" />
+          </div>
+        </div>
+
+        <div className="grid-2">
+          <div className="field">
+            <label>Accent colour</label>
+            <div className="row">
+              <input type="color" value={t.accent} onChange={(e) => setTheme({ accent: e.target.value })} style={{ width: 50, height: 40, padding: 2 }} />
+              <span className="muted">{t.accent}</span>
+            </div>
+          </div>
+          {t.mode === 'dark' && (
+            <div className="field">
+              <label>Background</label>
+              <div className="row">
+                <input type="color" value={t.background} onChange={(e) => setTheme({ background: e.target.value })} style={{ width: 50, height: 40, padding: 2 }} />
+                <span className="muted">{t.background}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="field">
+          <label>Font</label>
+          <div className="row" style={{ flexWrap: 'wrap' }}>
+            {FONTS.map((f) => (
+              <button key={f.key} className={t.font === f.key ? 'btn-accent btn-sm' : 'btn-ghost btn-sm'} onClick={() => setTheme({ font: f.key })}>{f.label}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Units */}
+      <div className="card" style={{ marginBottom: 18 }}>
+        <h3 className="section-title">Units</h3>
+        <div className="grid-2">
+          <div className="field">
+            <label>Currency</label>
+            <select value={settings.currency} onChange={(e) => update({ currency: e.target.value })}>
+              {['GBP', 'USD', 'EUR', 'AUD', 'CAD'].map((c) => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label>Odds format</label>
+            <select value={settings.oddsFormat} onChange={(e) => update({ oddsFormat: e.target.value })}>
+              <option value="decimal">Decimal (2.50)</option>
+              <option value="fractional">Fractional (6/4)</option>
+              <option value="american">American (+150)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Stat cards */}
+      <div className="card" style={{ marginBottom: 18 }}>
+        <h3 className="section-title">Dashboard stats</h3>
+        <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>Choose which numbers to show and reorder them.</p>
+        {settings.statCards.map((c, i) => (
+          <div key={c.key} className="toggle-row">
+            <div className="row">
+              <div className="stack" style={{ gap: 2 }}>
+                <button className="btn-ghost btn-sm" style={{ padding: '0 6px', lineHeight: 1.1 }} onClick={() => moveCard(i, -1)} disabled={i === 0}>▲</button>
+                <button className="btn-ghost btn-sm" style={{ padding: '0 6px', lineHeight: 1.1 }} onClick={() => moveCard(i, 1)} disabled={i === settings.statCards.length - 1}>▼</button>
+              </div>
+              <span style={{ fontWeight: 600, fontSize: 14 }}>{STAT_META[c.key]?.label || c.key}</span>
+            </div>
+            <label className="switch">
+              <input type="checkbox" checked={c.enabled} onChange={(e) => setCard(c.key, e.target.checked)} />
+              <span className="slider" />
+            </label>
+          </div>
+        ))}
+      </div>
+
+      {/* Widgets */}
+      <div className="card" style={{ marginBottom: 18 }}>
+        <h3 className="section-title">Dashboard sections</h3>
+        <Toggle label="Profit-over-time chart" checked={settings.widgets.profitChart} onChange={(v) => toggleWidget('profitChart', v)} />
+        <Toggle label="By sport / category breakdown" checked={settings.widgets.sportBreakdown} onChange={(v) => toggleWidget('sportBreakdown', v)} />
+        <Toggle label="Recent bets list" checked={settings.widgets.recentBets} onChange={(v) => toggleWidget('recentBets', v)} />
+      </div>
+
+      {/* Fields */}
+      <div className="card" style={{ marginBottom: 18 }}>
+        <h3 className="section-title">What to track</h3>
+        <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>Hidden fields disappear from the bet form and table.</p>
+        {Object.keys(FIELD_LABELS).map((k) => (
+          <Toggle key={k} label={FIELD_LABELS[k]} checked={settings.fields[k]} onChange={(v) => toggleField(k, v)} />
+        ))}
+      </div>
+
+      {/* Sharing */}
+      <div className="card">
+        <h3 className="section-title">Sharing</h3>
+        <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>Publish a read-only page of how you're getting on.</p>
+
+        <div className="field">
+          <label>Display name on your public page</label>
+          <input value={settings.sharing.displayName} placeholder="Defaults to your username" onChange={(e) => toggleSharing('displayName', e.target.value)} />
+        </div>
+
+        <Toggle label="Show net profit" checked={settings.sharing.showProfit} onChange={(v) => toggleSharing('showProfit', v)} />
+        <Toggle label="Show ROI" checked={settings.sharing.showRoi} onChange={(v) => toggleSharing('showRoi', v)} />
+        <Toggle label="Show win rate" checked={settings.sharing.showWinRate} onChange={(v) => toggleSharing('showWinRate', v)} />
+        <Toggle label="Show stake amounts" description="Off by default to keep your money private" checked={settings.sharing.showStakes} onChange={(v) => toggleSharing('showStakes', v)} />
+        <Toggle label="Show recent bets" checked={settings.sharing.showRecentBets} onChange={(v) => toggleSharing('showRecentBets', v)} />
+
+        <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+          {share?.enabled ? (
+            <>
+              <label>Your public link</label>
+              <div className="row" style={{ flexWrap: 'wrap' }}>
+                <input readOnly value={shareUrl} style={{ flex: 1, minWidth: 220 }} onFocus={(e) => e.target.select()} />
+                <button className="btn-primary btn-sm" onClick={copyLink}>{copied ? 'Copied!' : 'Copy'}</button>
+                <a className="btn-ghost btn-sm" href={shareUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-block' }}>Open</a>
+                <button className="btn-danger btn-sm" onClick={disableShare}>Stop sharing</button>
+              </div>
+            </>
+          ) : (
+            <button className="btn-primary" onClick={enableShare}>Create a share link</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
