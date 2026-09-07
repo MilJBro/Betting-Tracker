@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api, setToken, getToken } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { formatDate } from '../format.js';
 
 export default function Account() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const signOut = () => { logout(); navigate('/'); };
   const [info, setInfo] = useState(null);
 
   // Change password
@@ -47,7 +50,7 @@ export default function Account() {
     try {
       await api.post('/auth/logout-all');
     } catch {}
-    logout();
+    signOut();
   }
 
   async function exportData() {
@@ -72,7 +75,7 @@ export default function Account() {
     setBusy(true);
     try {
       await api.del('/auth/account', { password: delPw });
-      logout();
+      signOut();
     } catch (err) {
       setDelErr(err.message);
       setBusy(false);
@@ -86,7 +89,7 @@ export default function Account() {
           <h1>Account</h1>
           <p>Manage your login and your data.</p>
         </div>
-        <button className="btn-ghost" onClick={logout}>↪ Log out</button>
+        <button className="btn-ghost" onClick={signOut}>↪ Log out</button>
       </div>
 
       <div className="card" style={{ marginBottom: 18 }}>
