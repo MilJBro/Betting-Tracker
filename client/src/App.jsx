@@ -1,8 +1,9 @@
 import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
-import { SettingsProvider } from './context/SettingsContext.jsx';
+import { SettingsProvider, useSettings } from './context/SettingsContext.jsx';
 import Icon from './components/Icon.jsx';
 import Login from './pages/Login.jsx';
+import Onboarding from './pages/Onboarding.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Bets from './pages/Bets.jsx';
 import Analytics from './pages/Analytics.jsx';
@@ -54,10 +55,16 @@ function BottomNav() {
   );
 }
 
-function AppShell() {
+function ShellInner() {
   const navigate = useNavigate();
+  const { settings } = useSettings();
+
+  // Wait for settings, then send brand-new accounts through the questionnaire.
+  if (!settings) return <div className="auth-wrap"><div className="spinner" /></div>;
+  if (settings.profile && !settings.profile.onboarded) return <Onboarding />;
+
   return (
-    <SettingsProvider>
+    <>
       <div className="app-shell">
         <Sidebar />
         <Routes>
@@ -72,6 +79,14 @@ function AppShell() {
       {/* Mobile-only: floating add + bottom tab bar */}
       <button className="fab" aria-label="Add bet" onClick={() => navigate('/bets?new=1')}>+</button>
       <BottomNav />
+    </>
+  );
+}
+
+function AppShell() {
+  return (
+    <SettingsProvider>
+      <ShellInner />
     </SettingsProvider>
   );
 }

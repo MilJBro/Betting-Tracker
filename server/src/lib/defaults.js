@@ -42,6 +42,7 @@ export const DEFAULT_SETTINGS = {
     selection: true,
     betType: true,
     bookmaker: true,
+    tipster: false, // switched on for users who follow tipsters
     stake: true,
     odds: true,
     status: true,
@@ -59,6 +60,17 @@ export const DEFAULT_SETTINGS = {
     showRecentBets: true,
     displayName: '',
   },
+
+  // Bettor profile, gathered from the sign-up questionnaire. `onboarded`
+  // gates whether the questionnaire still needs to be shown.
+  profile: {
+    onboarded: false,
+    trackingStyle: '', // 'own' | 'tipster' | 'both'
+    sports: [],
+    frequency: '', // 'daily' | 'weekly' | 'occasional'
+    goal: '', // 'profit' | 'discipline' | 'fun' | 'analyse'
+    experience: '', // 'new' | 'casual' | 'experienced' | 'serious'
+  },
 };
 
 export function mergeSettings(saved) {
@@ -71,6 +83,7 @@ export function mergeSettings(saved) {
     widgets: { ...base.widgets, ...(saved.widgets || {}) },
     fields: { ...base.fields, ...(saved.fields || {}) },
     sharing: { ...base.sharing, ...(saved.sharing || {}) },
+    profile: { ...base.profile, ...(saved.profile || {}) },
     statCards: Array.isArray(saved.statCards) && saved.statCards.length
       ? saved.statCards
       : base.statCards,

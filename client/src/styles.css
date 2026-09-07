@@ -236,6 +236,27 @@ tr:last-child td { border-bottom: none; }
   @keyframes sheetup { from { transform: translateY(100%); } to { transform: none; } }
 }
 
+/* ---- Onboarding questionnaire ---- */
+.onboard { width: 100%; max-width: 460px; }
+.onboard-progress { display: flex; gap: 6px; justify-content: center; margin-bottom: 16px; }
+.onboard-progress .dot { width: 26px; height: 4px; border-radius: 3px; background: var(--border); transition: background 0.2s; }
+.onboard-progress .dot.on { background: var(--primary); }
+.opt-btn {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px; width: 100%; text-align: left;
+  padding: 14px 16px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  transition: border-color 0.15s, background 0.15s;
+}
+.opt-btn:hover { border-color: color-mix(in srgb, var(--primary) 50%, var(--border)); }
+.opt-btn.sel { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, var(--surface-2)); }
+.opt-label { font-weight: 700; font-size: 15px; }
+.opt-desc { font-size: 12.5px; color: var(--muted); font-weight: 500; }
+.chip-grid { display: flex; flex-wrap: wrap; gap: 9px; }
+.chip-btn {
+  padding: 9px 14px; border-radius: 20px; background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text); font-weight: 600; font-size: 14px;
+}
+.chip-btn.sel { background: var(--primary); border-color: var(--primary); color: #04120a; }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }

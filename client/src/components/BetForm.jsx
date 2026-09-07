@@ -9,6 +9,7 @@ const blank = () => ({
   selection: '',
   bet_type: '',
   bookmaker: '',
+  tipster: '',
   stake: '',
   odds: '',
   status: 'pending',
@@ -90,6 +91,13 @@ export default function BetForm({ initial, fields, onSave, onClose }) {
               </div>
             )}
           </div>
+
+          {show('tipster') && (
+            <div className="field">
+              <label>Tipster</label>
+              <input value={form.tipster} onChange={(e) => set('tipster', e.target.value)} placeholder="Who tipped this bet?" />
+            </div>
+          )}
 
           <div className="grid-2">
             {show('stake') && (

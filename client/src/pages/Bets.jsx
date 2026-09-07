@@ -86,8 +86,8 @@ export default function Bets() {
       if (from && b.placed_at < from) return false;
       if (to && b.placed_at > to) return false;
       if (q) {
-        const hay = [b.selection, b.event, b.sport, b.bookmaker, b.bet_type, b.notes,
-          ...(b.tags || [])].join(' ').toLowerCase();
+        const hay = [b.selection, b.event, b.sport, b.bookmaker, b.tipster, b.bet_type,
+          b.notes, ...(b.tags || [])].join(' ').toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -283,6 +283,7 @@ export default function Bets() {
                   {col('sport') && <th>Sport</th>}
                   {col('selection') && <th>Selection</th>}
                   {col('bookmaker') && <th>Bookie</th>}
+                  {col('tipster') && <th>Tipster</th>}
                   {col('stake') && <th style={{ cursor: 'pointer' }} onClick={() => toggleSort('stake')}>Stake{sortArrow('stake')}</th>}
                   {col('odds') && <th style={{ cursor: 'pointer' }} onClick={() => toggleSort('odds')}>Odds{sortArrow('odds')}</th>}
                   {col('status') && <th>Status</th>}
@@ -304,6 +305,7 @@ export default function Bets() {
                         </td>
                       )}
                       {col('bookmaker') && <td>{b.bookmaker || '—'}</td>}
+                      {col('tipster') && <td>{b.tipster || '—'}</td>}
                       {col('stake') && <td>{money(b.stake, currency)}</td>}
                       {col('odds') && <td>{formatOdds(b.odds, oddsFormat)}</td>}
                       {col('status') && <td><span className={`badge ${b.status}`}>{b.status}</span></td>}

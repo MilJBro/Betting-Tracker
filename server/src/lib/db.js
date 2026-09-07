@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS bets (
   selection    TEXT,
   bet_type     TEXT,
   bookmaker    TEXT,
+  tipster      TEXT,
   stake        REAL NOT NULL DEFAULT 0,
   odds         REAL NOT NULL DEFAULT 0,
   status       TEXT NOT NULL DEFAULT 'pending',
@@ -68,5 +69,6 @@ function ensureColumn(table, column, definition) {
 ensureColumn('users', 'token_version', 'INTEGER NOT NULL DEFAULT 0');
 ensureColumn('users', 'reset_token', 'TEXT');
 ensureColumn('users', 'reset_expires', 'TEXT');
+ensureColumn('bets', 'tipster', 'TEXT');
 
 export default db;

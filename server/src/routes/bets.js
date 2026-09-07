@@ -32,6 +32,7 @@ function sanitise(body) {
     selection: (body.selection || '').trim(),
     bet_type: (body.bet_type || '').trim(),
     bookmaker: (body.bookmaker || '').trim(),
+    tipster: (body.tipster || '').trim(),
     stake: num(body.stake),
     odds: num(body.odds),
     status,
@@ -73,9 +74,9 @@ router.post('/', (req, res) => {
   const now = new Date().toISOString();
   db.prepare(
     `INSERT INTO bets (id, user_id, placed_at, sport, event, selection, bet_type,
-       bookmaker, stake, odds, status, payout, notes, tags, created_at, updated_at)
+       bookmaker, tipster, stake, odds, status, payout, notes, tags, created_at, updated_at)
      VALUES (@id, @user_id, @placed_at, @sport, @event, @selection, @bet_type,
-       @bookmaker, @stake, @odds, @status, @payout, @notes, @tags, @created_at, @updated_at)`
+       @bookmaker, @tipster, @stake, @odds, @status, @payout, @notes, @tags, @created_at, @updated_at)`
   ).run({ id, user_id: req.userId, ...b, created_at: now, updated_at: now });
   const row = db.prepare('SELECT * FROM bets WHERE id = ?').get(id);
   res.status(201).json({ bet: rowToBet(row) });
@@ -90,8 +91,8 @@ router.put('/:id', (req, res) => {
   db.prepare(
     `UPDATE bets SET placed_at=@placed_at, sport=@sport, event=@event,
        selection=@selection, bet_type=@bet_type, bookmaker=@bookmaker,
-       stake=@stake, odds=@odds, status=@status, payout=@payout, notes=@notes,
-       tags=@tags, updated_at=@updated_at WHERE id=@id AND user_id=@user_id`
+       tipster=@tipster, stake=@stake, odds=@odds, status=@status, payout=@payout,
+       notes=@notes, tags=@tags, updated_at=@updated_at WHERE id=@id AND user_id=@user_id`
   ).run({
     ...b,
     id: req.params.id,

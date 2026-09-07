@@ -2,13 +2,28 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, setToken, getToken } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useSettings } from '../context/SettingsContext.jsx';
 import { formatDate } from '../format.js';
+
+const PROFILE_LABELS = {
+  trackingStyle: { title: 'Betting style', map: { own: 'Tracks own bets', tipster: 'Follows tipsters', both: 'Own bets & tipsters' } },
+  frequency: { title: 'Frequency', map: { daily: 'Most days', weekly: 'A few times a week', occasional: 'Now and then' } },
+  goal: { title: 'Main goal', map: { profit: 'Long-term profit', discipline: 'Staying disciplined', analyse: 'Understanding performance', fun: 'Tracking for fun' } },
+  experience: { title: 'Experience', map: { new: 'New to betting', casual: 'Casual bettor', experienced: 'Experienced', serious: 'Serious / semi-pro' } },
+};
 
 export default function Account() {
   const { user, logout } = useAuth();
+  const { settings, save } = useSettings();
   const navigate = useNavigate();
   const signOut = () => { logout(); navigate('/'); };
   const [info, setInfo] = useState(null);
+
+  const profile = settings?.profile;
+  async function retakeQuestionnaire() {
+    if (!settings) return;
+    await save({ ...settings, profile: { ...settings.profile, onboarded: false } });
+  }
 
   // Change password
   const [pw, setPw] = useState({ current: '', next: '', confirm: '' });
@@ -102,6 +117,29 @@ export default function Account() {
           )}
         </div>
       </div>
+
+      {profile && (
+        <div className="card" style={{ marginBottom: 18 }}>
+          <div className="row spread" style={{ marginBottom: 4 }}>
+            <h3 className="section-title" style={{ margin: 0 }}>Bettor profile</h3>
+            <button className="btn-ghost btn-sm" onClick={retakeQuestionnaire}>Retake questionnaire</button>
+          </div>
+          <div className="stack" style={{ gap: 8, marginTop: 12 }}>
+            {Object.keys(PROFILE_LABELS).map((k) => (
+              <div className="row spread" key={k}>
+                <span className="muted">{PROFILE_LABELS[k].title}</span>
+                <strong>{PROFILE_LABELS[k].map[profile[k]] || '—'}</strong>
+              </div>
+            ))}
+            {profile.sports?.length > 0 && (
+              <div className="row spread" style={{ alignItems: 'flex-start' }}>
+                <span className="muted">Sports</span>
+                <strong style={{ textAlign: 'right', maxWidth: '65%' }}>{profile.sports.join(', ')}</strong>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="card" style={{ marginBottom: 18 }}>
         <h3 className="section-title">Change password</h3>

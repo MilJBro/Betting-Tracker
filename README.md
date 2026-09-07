@@ -13,9 +13,15 @@ share a read-only page of how you're getting on.
   **delete account**. Auth endpoints are rate-limited, security headers are
   set with Helmet, and changing or resetting a password invalidates existing
   sessions.
+- **Onboarding questionnaire** — after sign-up, a short questionnaire learns
+  what kind of bettor someone is (tracking their own bets vs. following
+  tipsters, sports, frequency, goal, experience) and tailors the setup —
+  e.g. it turns on the tipster field for people who follow tipsters and sets
+  their currency and odds format. Retake it any time from Account.
 - **Bet logging** — record date, sport/category, event, selection, bet type,
-  bookmaker, stake, odds, status (pending / won / lost / void / cash-out),
-  payout, notes and tags. Profit, ROI and win rate are calculated for you.
+  bookmaker, tipster, stake, odds, status (pending / won / lost / void /
+  cash-out), payout, notes and tags. Profit, ROI and win rate are calculated
+  for you.
 - **A dashboard you customise**
   - Change the **dashboard colour**, accent colour, background and font.
   - **Dark or light** mode.

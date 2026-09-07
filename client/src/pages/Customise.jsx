@@ -15,7 +15,7 @@ const FONTS = [
 ];
 const FIELD_LABELS = {
   sport: 'Sport / Category', event: 'Event', selection: 'Selection', betType: 'Bet type',
-  bookmaker: 'Bookmaker', stake: 'Stake', odds: 'Odds', status: 'Status',
+  bookmaker: 'Bookmaker', tipster: 'Tipster', stake: 'Stake', odds: 'Odds', status: 'Status',
   payout: 'Payout / Return', notes: 'Notes', tags: 'Tags',
 };
 
