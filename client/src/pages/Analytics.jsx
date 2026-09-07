@@ -110,6 +110,15 @@ export default function Analytics() {
         </div>
       </div>
 
+      {/* By tipster — only when some bets name a tipster */}
+      {a.byTipster && a.byTipster.length > 0 && (
+        <div className="card" style={{ marginTop: 18 }}>
+          <h3 className="section-title">By tipster</h3>
+          <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>How the tipsters you follow are actually performing.</p>
+          <Bars rows={a.byTipster.map((t) => ({ ...t, label: t.tipster }))} currency={currency} staking={staking} />
+        </div>
+      )}
+
       {/* Day of week */}
       <div className="card" style={{ marginTop: 18 }}>
         <h3 className="section-title">By day of week</h3>

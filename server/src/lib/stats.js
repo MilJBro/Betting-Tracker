@@ -150,6 +150,15 @@ export function computeAnalytics(bets) {
     .map(([bookmaker, rows]) => ({ bookmaker, ...summarise(rows) }))
     .sort((a, b) => b.profit - a.profit);
 
+  // By tipster — only bets that actually name one, so followers can see which
+  // tipster is genuinely profitable (most profitable first).
+  const byTipster = [...bucket(
+    settled.filter((b) => (b.tipster || '').trim()),
+    (b) => b.tipster.trim()
+  ).entries()]
+    .map(([tipster, rows]) => ({ tipster, ...summarise(rows) }))
+    .sort((a, b) => b.profit - a.profit);
+
   // By odds band.
   const byOddsBand = ODDS_BANDS.map((band, i) => {
     const lo = i === 0 ? 0 : ODDS_BANDS[i - 1].max;
@@ -190,6 +199,7 @@ export function computeAnalytics(bets) {
     overall: summarise(settled),
     monthly,
     byBookmaker,
+    byTipster,
     byOddsBand,
     byDay,
     streaks: { longestWin, longestLoss, current, currentType },
