@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
+import { scanBetSlip } from '../scan.js';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import BetForm from '../components/BetForm.jsx';
@@ -31,7 +32,10 @@ export default function Bets() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(null);
+  const [prefill, setPrefill] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const fileRef = useRef(null);
 
   // Filtering / search / sort state
   const [status, setStatus] = useState('all');
@@ -152,8 +156,28 @@ export default function Bets() {
     }
   }
 
-  function openNew() { setEditing(null); setShowForm(true); }
-  function openEdit(b) { setEditing(b); setShowForm(true); }
+  function openNew() { setEditing(null); setPrefill(null); setShowForm(true); }
+  function openEdit(b) { setEditing(b); setPrefill(null); setShowForm(true); }
+
+  // Scan a bet-slip screenshot and open the form pre-filled with what we read.
+  async function onScanFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file
+    if (!file) return;
+    setScanning(true);
+    try {
+      const { bet, confidence } = await scanBetSlip(file);
+      setEditing(null);
+      setPrefill(bet);
+      setShowForm(true);
+      const low = confidence != null && confidence < 0.5;
+      toast(low ? 'Scanned — please double-check the details' : 'Scanned your slip — review and save', low ? 'info' : 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setScanning(false);
+    }
+  }
 
   function toggleSort(key) {
     if (sortBy === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -168,8 +192,15 @@ export default function Bets() {
           <h1>My bets</h1>
           <p>{bets.length} bet{bets.length !== 1 ? 's' : ''} logged.</p>
         </div>
-        <button className="btn-primary" onClick={openNew}>+ Add bet</button>
+        <div className="row" style={{ gap: 8 }}>
+          <button className="btn-ghost" onClick={() => fileRef.current?.click()} disabled={scanning}>
+            <Icon name="camera" size={16} /> {scanning ? 'Scanning…' : 'Scan slip'}
+          </button>
+          <button className="btn-primary" onClick={openNew}>+ Add bet</button>
+        </div>
       </div>
+
+      <input ref={fileRef} type="file" accept="image/*" onChange={onScanFile} style={{ display: 'none' }} />
 
       {error && <div className="error-banner">{error} <button className="btn-ghost btn-sm" onClick={() => { setLoading(true); load(); }} style={{ marginLeft: 8 }}>Retry</button></div>}
 
@@ -179,8 +210,13 @@ export default function Bets() {
         <div className="card empty">
           <div className="em"><Icon name="target" size={40} /></div>
           <h3>No bets here yet</h3>
-          <p>Add your first bet to start tracking your performance.</p>
-          <button className="btn-primary" onClick={openNew} style={{ marginTop: 10 }}>+ Add bet</button>
+          <p>Add your first bet, or scan a bet-slip screenshot and we’ll fill it in for you.</p>
+          <div className="row" style={{ marginTop: 10, justifyContent: 'center', gap: 8 }}>
+            <button className="btn-ghost" onClick={() => fileRef.current?.click()} disabled={scanning}>
+              <Icon name="camera" size={16} /> {scanning ? 'Scanning…' : 'Scan slip'}
+            </button>
+            <button className="btn-primary" onClick={openNew}>+ Add bet</button>
+          </div>
         </div>
       ) : (
       <>
@@ -330,14 +366,24 @@ export default function Bets() {
       </>
       )}
 
+      {scanning && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ textAlign: 'center' }}>
+            <Spinner label="Reading your bet slip…" />
+            <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>Extracting the selection, odds and stake.</p>
+          </div>
+        </div>
+      )}
+
       {showForm && (
         <BetForm
-          initial={editing}
+          initial={editing || prefill}
+          isEdit={!!editing}
           fields={fields}
           staking={staking}
           currency={currency}
           onSave={save}
-          onClose={() => setShowForm(false)}
+          onClose={() => { setShowForm(false); setPrefill(null); }}
         />
       )}
     </div>

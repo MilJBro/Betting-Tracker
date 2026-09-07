@@ -10,6 +10,7 @@ import { config } from './lib/config.js';
 import './lib/db.js';
 import authRoutes from './routes/auth.js';
 import betRoutes from './routes/bets.js';
+import scanRoutes from './routes/scan.js';
 import settingsRoutes from './routes/settings.js';
 import shareRoutes from './routes/share.js';
 
@@ -31,6 +32,18 @@ app.use(
       : { origin: config.isProd ? false : true }
   )
 );
+
+// Bet-slip scanning takes an uploaded image, so it needs a larger body limit
+// and its own rate limit (each call hits a paid vision model). Mounted before
+// the global 1mb JSON parser so image payloads aren't rejected there.
+const scanLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many scans — please wait a few minutes and try again.' },
+});
+app.use('/api/bets/scan', scanLimiter, express.json({ limit: '12mb' }), scanRoutes);
 
 app.use(express.json({ limit: '1mb' }));
 

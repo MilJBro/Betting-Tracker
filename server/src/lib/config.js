@@ -52,5 +52,11 @@ export const config = {
     pass: process.env.SMTP_PASS || '',
     from: process.env.MAIL_FROM || 'Betfolio <no-reply@betfolio.app>',
   },
+  // Bet-slip scanning (vision extraction). Optional — the feature is only
+  // enabled when an Anthropic API key is configured.
+  anthropic: {
+    apiKey: process.env.ANTHROPIC_API_KEY || '',
+    model: process.env.ANTHROPIC_MODEL || 'claude-opus-5',
+  },
   dataDir,
 };

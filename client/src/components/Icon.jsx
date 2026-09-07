@@ -48,6 +48,12 @@ const PATHS = {
       <path d="M8 11V8a4 4 0 0 1 8 0v3" />
     </>
   ),
+  camera: (
+    <>
+      <path d="M4 8h3l1.5-2h7L17 8h3v11H4z" />
+      <circle cx="12" cy="13" r="3.4" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 20, className, style }) {

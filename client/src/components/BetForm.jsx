@@ -19,7 +19,7 @@ const blank = () => ({
   tags: [],
 });
 
-export default function BetForm({ initial, fields, staking, currency, onSave, onClose }) {
+export default function BetForm({ initial, isEdit, fields, staking, currency, onSave, onClose }) {
   const unitSize = Number(staking?.unitSize) || 0;
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
   const toUnits = (money) =>
@@ -69,7 +69,7 @@ export default function BetForm({ initial, fields, staking, currency, onSave, on
     <div className="modal-overlay" onMouseDown={onClose}>
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="row spread" style={{ marginBottom: 18 }}>
-          <h2 style={{ margin: 0, fontSize: 20 }}>{initial ? 'Edit bet' : 'Add a bet'}</h2>
+          <h2 style={{ margin: 0, fontSize: 20 }}>{isEdit ? 'Edit bet' : 'Add a bet'}</h2>
           <button className="btn-ghost btn-sm" type="button" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={submit}>
@@ -188,7 +188,7 @@ export default function BetForm({ initial, fields, staking, currency, onSave, on
           <div className="row" style={{ justifyContent: 'flex-end', marginTop: 8 }}>
             <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? 'Saving…' : initial ? 'Save changes' : 'Add bet'}
+              {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add bet'}
             </button>
           </div>
         </form>

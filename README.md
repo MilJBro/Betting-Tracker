@@ -22,6 +22,11 @@ share a read-only page of how you're getting on.
   bookmaker, tipster, stake, odds, status (pending / won / lost / void /
   cash-out), payout, notes and tags. Profit, ROI and win rate are calculated
   for you.
+- **Scan a bet slip** — snap or upload a screenshot of a bet slip and Betfolio
+  reads it with Claude vision, then opens the add-bet form pre-filled with the
+  selection, event, sport, bookmaker, stake, odds (normalised to decimal) and
+  more — you just review and save. Requires an Anthropic API key (see
+  `ANTHROPIC_API_KEY` below); the feature stays hidden/disabled if none is set.
 - **A dashboard you customise**
   - Change the **dashboard colour**, accent colour, background and font.
   - **Dark or light** mode.
@@ -120,6 +125,8 @@ The server reads these environment variables:
 | `SMTP_PORT`     | `587`                            | SMTP port (`465` uses TLS).                                  |
 | `SMTP_USER` / `SMTP_PASS` | _(empty)_              | SMTP credentials.                                            |
 | `MAIL_FROM`     | `Betfolio <no-reply@…>`   | From-address on outgoing email.                              |
+| `ANTHROPIC_API_KEY` | _(empty)_                    | Enables **Scan a bet slip**. Without it the scan endpoint returns a friendly "not enabled" message and the app still works for manual entry. |
+| `ANTHROPIC_MODEL`   | `claude-opus-5`              | Vision model used for slip scanning. Set to a cheaper model (e.g. `claude-haiku-4-5`) to reduce per-scan cost. |
 
 In development, if `JWT_SECRET` isn't set the server generates one and stores
 it at `server/data/.jwt-secret` so your sessions survive restarts. If SMTP
@@ -140,6 +147,7 @@ its response (dev only) so the flow is testable without an email provider.
 | `GET  /api/auth/export`           | ✓    | Download all your data (JSON)   |
 | `DELETE /api/auth/account`        | ✓    | Delete account (password req.)  |
 | `GET/POST/PUT/DELETE /api/bets`   | ✓    | Manage bets                     |
+| `POST /api/bets/scan`             | ✓    | Extract a bet from a slip image  |
 | `GET  /api/bets/stats`            | ✓    | Aggregated performance stats    |
 | `GET  /api/bets/analytics`        | ✓    | Monthly / odds / bookmaker insights |
 | `GET/PUT /api/settings`           | ✓    | Read / save customisation       |
