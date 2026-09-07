@@ -2,7 +2,7 @@ import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext.jsx';
 import { SettingsProvider } from './context/SettingsContext.jsx';
 import Icon from './components/Icon.jsx';
-import Landing from './pages/Landing.jsx';
+import Login from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Bets from './pages/Bets.jsx';
 import Analytics from './pages/Analytics.jsx';
@@ -92,7 +92,7 @@ export default function App() {
           ) : user ? (
             <AppShell />
           ) : (
-            <Landing />
+            <Login />
           )
         }
       />
