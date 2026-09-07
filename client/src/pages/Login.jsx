@@ -7,7 +7,7 @@ export default function Login() {
     <div className="auth-wrap">
       <div className="auth-card">
         <div className="brand" style={{ justifyContent: 'center', fontSize: 22, marginBottom: 6 }}>
-          <span className="brand-dot">₿</span> Betting Tracker
+          <span className="brand-dot">₿</span> Betfolio
         </div>
         <p className="muted" style={{ textAlign: 'center', margin: '0 0 22px' }}>
           Track your bets, your way. Log in or create a free account to get started.

@@ -156,7 +156,7 @@ router.get('/export', requireAuth, (req, res) => {
     .all(req.userId)
     .map((b) => ({ ...b, tags: b.tags ? JSON.parse(b.tags) : [] }));
   const settingsRow = db.prepare('SELECT data FROM settings WHERE user_id = ?').get(req.userId);
-  res.setHeader('Content-Disposition', 'attachment; filename="betting-tracker-export.json"');
+  res.setHeader('Content-Disposition', 'attachment; filename="betfolio-export.json"');
   res.json({
     exportedAt: new Date().toISOString(),
     user,

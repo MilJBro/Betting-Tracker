@@ -62,7 +62,7 @@ export default function Account() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'betting-tracker-export.json';
+    a.download = 'betfolio-export.json';
     document.body.appendChild(a);
     a.click();
     a.remove();

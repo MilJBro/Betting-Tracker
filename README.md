@@ -1,6 +1,6 @@
-# Betting Tracker
+# Betfolio
 
-A fully customizable betting tracker. Create an account, log your bets, and
+Betfolio is a fully customizable betting tracker. Create an account, log your bets, and
 watch your profit, ROI and win rate build up on a dashboard you control — then
 share a read-only page of how you're getting on.
 
@@ -51,7 +51,7 @@ share a read-only page of how you're getting on.
 ## Project structure
 
 ```
-betting-tracker/
+betfolio/
 ├── server/                 # Express API + SQLite
 │   └── src/
 │       ├── index.js        # app entry (also serves the built client)
@@ -109,7 +109,7 @@ The server reads these environment variables:
 | `SMTP_HOST`     | _(empty)_                        | SMTP server for password-reset emails. Without it, reset links are logged to the console (dev). |
 | `SMTP_PORT`     | `587`                            | SMTP port (`465` uses TLS).                                  |
 | `SMTP_USER` / `SMTP_PASS` | _(empty)_              | SMTP credentials.                                            |
-| `MAIL_FROM`     | `Betting Tracker <no-reply@…>`   | From-address on outgoing email.                              |
+| `MAIL_FROM`     | `Betfolio <no-reply@…>`   | From-address on outgoing email.                              |
 
 In development, if `JWT_SECRET` isn't set the server generates one and stores
 it at `server/data/.jwt-secret` so your sessions survive restarts. If SMTP
