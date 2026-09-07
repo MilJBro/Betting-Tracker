@@ -93,8 +93,8 @@ export default function Customise() {
         <div className="field">
           <label>Mode</label>
           <div className="row">
-            <button className={t.mode === 'dark' ? 'btn-accent btn-sm' : 'btn-ghost btn-sm'} onClick={() => setTheme({ mode: 'dark' })}>🌙 Dark</button>
-            <button className={t.mode === 'light' ? 'btn-accent btn-sm' : 'btn-ghost btn-sm'} onClick={() => setTheme({ mode: 'light' })}>☀️ Light</button>
+            <button className={t.mode === 'dark' ? 'btn-accent btn-sm' : 'btn-ghost btn-sm'} onClick={() => setTheme({ mode: 'dark' })}>Dark</button>
+            <button className={t.mode === 'light' ? 'btn-accent btn-sm' : 'btn-ghost btn-sm'} onClick={() => setTheme({ mode: 'light' })}>Light</button>
           </div>
         </div>
 

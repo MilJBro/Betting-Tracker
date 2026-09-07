@@ -1,23 +1,24 @@
 import AuthPanel from '../components/AuthPanel.jsx';
+import Icon from '../components/Icon.jsx';
 
 const FEATURES = [
   {
-    icon: '📝',
+    icon: 'log',
     title: 'Log every bet',
     body: "Record the stake, odds, bookmaker and result. Profit, ROI and win rate are worked out for you — no spreadsheets.",
   },
   {
-    icon: '🎨',
+    icon: 'sliders',
     title: "A dashboard that's yours",
     body: 'Pick your colour, dark or light, currency and odds format, and choose exactly which stats and sections you see.',
   },
   {
-    icon: '📈',
+    icon: 'analytics',
     title: 'Real analytics',
     body: 'Monthly profit and loss, ROI by odds range and by bookmaker, win and loss streaks, and day-of-week performance.',
   },
   {
-    icon: '🔗',
+    icon: 'share',
     title: 'Share your form',
     body: "Publish a clean, read-only page of how you're doing — and control exactly what it reveals. Stakes stay private by default.",
   },
@@ -78,7 +79,7 @@ export default function Landing() {
         <div className="feature-grid">
           {FEATURES.map((f) => (
             <div className="feature" key={f.title}>
-              <div className="feature-ic">{f.icon}</div>
+              <div className="feature-ic"><Icon name={f.icon} size={24} /></div>
               <h3>{f.title}</h3>
               <p>{f.body}</p>
             </div>

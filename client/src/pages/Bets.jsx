@@ -5,6 +5,7 @@ import { useSettings } from '../context/SettingsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import BetForm from '../components/BetForm.jsx';
 import Spinner from '../components/Spinner.jsx';
+import Icon from '../components/Icon.jsx';
 import { money, formatOdds, formatDate } from '../format.js';
 
 function profitOf(b) {
@@ -175,7 +176,7 @@ export default function Bets() {
         <div className="card"><Spinner label="Loading your bets…" /></div>
       ) : bets.length === 0 ? (
         <div className="card empty">
-          <div className="em">🎯</div>
+          <div className="em"><Icon name="target" size={40} /></div>
           <h3>No bets here yet</h3>
           <p>Add your first bet to start tracking your performance.</p>
           <button className="btn-primary" onClick={openNew} style={{ marginTop: 10 }}>+ Add bet</button>
@@ -207,7 +208,7 @@ export default function Bets() {
             onClick={() => setShowFilters((v) => !v)}
             style={{ flex: 'none', whiteSpace: 'nowrap' }}
           >
-            ⚙ Filters{activeFilters ? ' •' : ''}
+            Filters{activeFilters ? ' •' : ''}
           </button>
         </div>
 
@@ -268,7 +269,7 @@ export default function Bets() {
       <div className="card">
         {filtered.length === 0 ? (
           <div className="empty">
-            <div className="em">🔍</div>
+            <div className="em"><Icon name="search" size={40} /></div>
             <h3>No bets match</h3>
             <p>Try a different search or clear your filters.</p>
             {activeFilters && <button className="btn-ghost btn-sm" onClick={clearFilters} style={{ marginTop: 8 }}>Clear filters</button>}

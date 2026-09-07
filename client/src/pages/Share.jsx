@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { applyTheme } from '../context/SettingsContext.jsx';
 import ProfitChart from '../components/ProfitChart.jsx';
+import Icon from '../components/Icon.jsx';
 import { money, formatOdds, formatDate } from '../format.js';
 
 export default function Share() {
@@ -24,7 +25,7 @@ export default function Share() {
     return (
       <div className="auth-wrap">
         <div className="card empty" style={{ maxWidth: 420 }}>
-          <div style={{ fontSize: 40 }}>🔒</div>
+          <div className="em"><Icon name="lock" size={38} /></div>
           <h3>Not available</h3>
           <p>{error}</p>
         </div>

@@ -32,7 +32,7 @@ export default function Dashboard() {
       <div className="main">
         <div className="page-head">
           <div>
-            <h1>Welcome{settings.sharing?.displayName ? `, ${settings.sharing.displayName}` : ''} 👋</h1>
+            <h1>Welcome{settings.sharing?.displayName ? `, ${settings.sharing.displayName}` : ''}</h1>
             <p>Let's get your tracker set up.</p>
           </div>
         </div>

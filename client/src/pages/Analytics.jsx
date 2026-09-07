@@ -6,6 +6,7 @@ import {
 import { api } from '../api.js';
 import { useSettings } from '../context/SettingsContext.jsx';
 import Spinner from '../components/Spinner.jsx';
+import Icon from '../components/Icon.jsx';
 import { money } from '../format.js';
 
 function Bars({ rows, currency }) {
@@ -46,7 +47,7 @@ export default function Analytics() {
       <div className="main">
         <div className="page-head"><div><h1>Analytics</h1><p>Insights from your betting.</p></div></div>
         <div className="card empty">
-          <div className="em">📈</div>
+          <div className="em"><Icon name="analytics" size={40} /></div>
           <h3>No settled bets yet</h3>
           <p>Once you've settled a few bets, your trends and breakdowns show up here.</p>
           <Link to="/bets?new=1" className="btn-primary" style={{ display: 'inline-block', marginTop: 10 }}>+ Add a bet</Link>

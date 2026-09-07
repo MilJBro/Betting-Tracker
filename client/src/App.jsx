@@ -1,6 +1,7 @@
 import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
 import { SettingsProvider } from './context/SettingsContext.jsx';
+import Icon from './components/Icon.jsx';
 import Landing from './pages/Landing.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Bets from './pages/Bets.jsx';
@@ -11,11 +12,11 @@ import Share from './pages/Share.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
 
 const NAV = [
-  { to: '/', end: true, icon: '📊', label: 'Dashboard', short: 'Home' },
-  { to: '/bets', icon: '🎯', label: 'My bets', short: 'Bets' },
-  { to: '/analytics', icon: '📈', label: 'Analytics', short: 'Stats' },
-  { to: '/customise', icon: '🎨', label: 'Customise', short: 'Style' },
-  { to: '/account', icon: '👤', label: 'Account', short: 'You' },
+  { to: '/', end: true, icon: 'dashboard', label: 'Dashboard', short: 'Home' },
+  { to: '/bets', icon: 'bets', label: 'My bets', short: 'Bets' },
+  { to: '/analytics', icon: 'analytics', label: 'Analytics', short: 'Stats' },
+  { to: '/customise', icon: 'sliders', label: 'Customise', short: 'Style' },
+  { to: '/account', icon: 'account', label: 'Account', short: 'You' },
 ];
 
 function Sidebar() {
@@ -29,7 +30,7 @@ function Sidebar() {
       </div>
       {NAV.map((n) => (
         <NavLink key={n.to} to={n.to} end={n.end} className={link}>
-          {n.icon} {n.label}
+          <Icon name={n.icon} size={18} /> {n.label}
         </NavLink>
       ))}
       <div className="nav-spacer" />
@@ -45,7 +46,7 @@ function BottomNav() {
     <nav className="bottom-nav">
       {NAV.map((n) => (
         <NavLink key={n.to} to={n.to} end={n.end} className={bnav}>
-          <span className="ic">{n.icon}</span>
+          <Icon name={n.icon} size={22} />
           {n.short || n.label}
         </NavLink>
       ))}
