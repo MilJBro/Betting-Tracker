@@ -1,4 +1,4 @@
-import { money } from '../format.js';
+import { money, formatStake } from '../format.js';
 
 // Metadata for every possible stat card the user can enable.
 export const STAT_META = {
@@ -12,7 +12,7 @@ export const STAT_META = {
   currentStreak: { label: 'Current Streak', kind: 'streak' },
 };
 
-export default function StatCard({ statKey, stats, currency }) {
+export default function StatCard({ statKey, stats, currency, staking }) {
   const meta = STAT_META[statKey];
   if (!meta) return null;
 
@@ -23,12 +23,12 @@ export default function StatCard({ statKey, stats, currency }) {
   switch (meta.kind) {
     case 'money-signed': {
       const v = stats[statKey] ?? 0;
-      value = money(v, currency, { signed: true });
+      value = formatStake(v, currency, staking, { signed: true });
       cls = v > 0 ? 'pos' : v < 0 ? 'neg' : '';
       break;
     }
     case 'money':
-      value = money(stats[statKey] ?? 0, currency);
+      value = formatStake(stats[statKey] ?? 0, currency, staking);
       break;
     case 'percent': {
       const v = stats[statKey] ?? 0;
@@ -42,7 +42,7 @@ export default function StatCard({ statKey, stats, currency }) {
       break;
     case 'pending':
       value = stats.pending ?? 0;
-      sub = money(stats.pendingStake ?? 0, currency) + ' at stake';
+      sub = formatStake(stats.pendingStake ?? 0, currency, staking) + ' at stake';
       break;
     case 'streak': {
       const n = stats.currentStreak ?? 0;

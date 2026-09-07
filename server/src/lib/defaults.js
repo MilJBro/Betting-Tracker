@@ -14,6 +14,13 @@ export const DEFAULT_SETTINGS = {
   currency: 'GBP', // GBP | USD | EUR | AUD | CAD
   oddsFormat: 'decimal', // 'decimal' | 'fractional' | 'american'
 
+  // Staking display. Money is always the source of truth; `unitSize` is the
+  // currency value of 1 unit, used to convert to/from units.
+  staking: {
+    mode: 'currency', // 'currency' | 'units' | 'both'
+    unitSize: 10, // e.g. 1u = £10
+  },
+
   // Which summary stat cards appear on the dashboard, and in what order.
   // Users can toggle any of these off if they don't care about them.
   statCards: [
@@ -83,6 +90,7 @@ export function mergeSettings(saved) {
     widgets: { ...base.widgets, ...(saved.widgets || {}) },
     fields: { ...base.fields, ...(saved.fields || {}) },
     sharing: { ...base.sharing, ...(saved.sharing || {}) },
+    staking: { ...base.staking, ...(saved.staking || {}) },
     profile: { ...base.profile, ...(saved.profile || {}) },
     statCards: Array.isArray(saved.statCards) && saved.statCards.length
       ? saved.statCards

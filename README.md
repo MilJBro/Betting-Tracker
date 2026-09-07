@@ -27,6 +27,10 @@ share a read-only page of how you're getting on.
   - **Dark or light** mode.
   - Pick your **currency** (GBP/USD/EUR/AUD/CAD) and **odds format**
     (decimal / fractional / American).
+  - **Stake in units** — set your own unit size (e.g. 1u = £10) and choose to
+    see and enter stakes/profit as **currency**, **units**, or **both**
+    (e.g. "£20 · 2u"). Money stays the source of truth; units are derived, so
+    profit, ROI (still a %) and totals stay correct in whichever view.
   - Choose **which stat cards** appear (net profit, ROI, win rate, total
     staked, pending, biggest win, current streak…) and **reorder** them.
   - Toggle dashboard **sections** on/off (profit chart, sport breakdown,

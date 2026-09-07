@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { applyTheme } from '../context/SettingsContext.jsx';
 import ProfitChart from '../components/ProfitChart.jsx';
 import Icon from '../components/Icon.jsx';
-import { money, formatOdds, formatDate } from '../format.js';
+import { formatStake, formatOdds, formatDate } from '../format.js';
 
 export default function Share() {
   const { publicId } = useParams();
@@ -35,6 +35,7 @@ export default function Share() {
   if (!profile) return <div className="main"><p className="muted">Loading…</p></div>;
 
   const { stats, currency, reveal } = profile;
+  const staking = profile.staking;
 
   return (
     <div className="main" style={{ maxWidth: 900 }}>
@@ -67,14 +68,14 @@ export default function Share() {
           <div className="stat">
             <div className="label">Net Profit</div>
             <div className={`value ${stats.netProfit > 0 ? 'pos' : stats.netProfit < 0 ? 'neg' : ''}`}>
-              {money(stats.netProfit, currency, { signed: true })}
+              {formatStake(stats.netProfit, currency, staking, { signed: true })}
             </div>
           </div>
         )}
         {reveal.stakes && stats.totalStaked != null && (
           <div className="stat">
             <div className="label">Total Staked</div>
-            <div className="value">{money(stats.totalStaked, currency)}</div>
+            <div className="value">{formatStake(stats.totalStaked, currency, staking)}</div>
           </div>
         )}
       </div>
@@ -102,7 +103,7 @@ export default function Share() {
                     {reveal.roi && <td className={s.roi > 0 ? 'pos' : s.roi < 0 ? 'neg' : ''}>{s.roi}%</td>}
                     {reveal.profit && (
                       <td className={s.profit > 0 ? 'pos' : s.profit < 0 ? 'neg' : ''}>
-                        {money(s.profit, currency, { signed: true })}
+                        {formatStake(s.profit, currency, staking, { signed: true })}
                       </td>
                     )}
                   </tr>
@@ -128,7 +129,7 @@ export default function Share() {
                     <td>{b.sport || '—'}</td>
                     <td>{b.selection || '—'}</td>
                     <td>{formatOdds(b.odds)}</td>
-                    {reveal.stakes && <td>{b.stake != null ? money(b.stake, currency) : '—'}</td>}
+                    {reveal.stakes && <td>{b.stake != null ? formatStake(b.stake, currency, staking) : '—'}</td>}
                     <td><span className={`badge ${b.status}`}>{b.status}</span></td>
                   </tr>
                 ))}

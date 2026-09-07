@@ -7,9 +7,9 @@ import { api } from '../api.js';
 import { useSettings } from '../context/SettingsContext.jsx';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
-import { money } from '../format.js';
+import { formatStake } from '../format.js';
 
-function Bars({ rows, currency }) {
+function Bars({ rows, currency, staking }) {
   // Horizontal profit bars for a labelled breakdown (bookmaker, odds band…).
   const max = Math.max(1, ...rows.map((r) => Math.abs(r.profit)));
   return (
@@ -19,7 +19,7 @@ function Bars({ rows, currency }) {
           <div className="row spread" style={{ fontSize: 13.5 }}>
             <span style={{ fontWeight: 600 }}>{r.label} <span className="muted" style={{ fontWeight: 500 }}>· {r.bets} · {r.winRate}% WR</span></span>
             <span className={r.profit > 0 ? 'pos' : r.profit < 0 ? 'neg' : 'muted'} style={{ fontWeight: 700 }}>
-              {money(r.profit, currency, { signed: true })} <span className="muted" style={{ fontWeight: 500 }}>({r.roi}%)</span>
+              {formatStake(r.profit, currency, staking, { signed: true })} <span className="muted" style={{ fontWeight: 500 }}>({r.roi}%)</span>
             </span>
           </div>
           <div className="bar"><i style={{ width: `${Math.max(4, (Math.abs(r.profit) / max) * 100)}%`, background: r.profit >= 0 ? 'var(--win)' : 'var(--loss)' }} /></div>
@@ -34,6 +34,7 @@ export default function Analytics() {
   const [a, setA] = useState(null);
   const [loading, setLoading] = useState(true);
   const currency = settings?.currency || 'GBP';
+  const staking = settings?.staking;
 
   useEffect(() => {
     api.get('/bets/analytics').then((d) => setA(d.analytics)).finally(() => setLoading(false));
@@ -65,12 +66,12 @@ export default function Analytics() {
 
       {/* Headline numbers */}
       <div className="stat-grid">
-        <div className="stat"><div className="label">Net Profit</div><div className={`value ${a.overall.profit > 0 ? 'pos' : a.overall.profit < 0 ? 'neg' : ''}`}>{money(a.overall.profit, currency, { signed: true })}</div></div>
+        <div className="stat"><div className="label">Net Profit</div><div className={`value ${a.overall.profit > 0 ? 'pos' : a.overall.profit < 0 ? 'neg' : ''}`}>{formatStake(a.overall.profit, currency, staking, { signed: true })}</div></div>
         <div className="stat"><div className="label">ROI</div><div className={`value ${a.overall.roi > 0 ? 'pos' : a.overall.roi < 0 ? 'neg' : ''}`}>{a.overall.roi}%</div></div>
         <div className="stat"><div className="label">Win Rate</div><div className="value">{a.overall.winRate}%</div></div>
         <div className="stat"><div className="label">Best Streak</div><div className="value pos">{st.longestWin}W</div><div className="sub">worst {st.longestLoss}L</div></div>
-        <div className="stat"><div className="label">Biggest Win</div><div className="value pos">{money(a.biggestWin, currency, { signed: true })}</div></div>
-        <div className="stat"><div className="label">Biggest Loss</div><div className="value neg">{money(a.biggestLoss, currency, { signed: true })}</div></div>
+        <div className="stat"><div className="label">Biggest Win</div><div className="value pos">{formatStake(a.biggestWin, currency, staking, { signed: true })}</div></div>
+        <div className="stat"><div className="label">Biggest Loss</div><div className="value neg">{formatStake(a.biggestLoss, currency, staking, { signed: true })}</div></div>
       </div>
 
       {/* Monthly P/L */}
@@ -83,7 +84,7 @@ export default function Analytics() {
             <YAxis stroke="var(--muted)" fontSize={11} tickLine={false} width={48} />
             <Tooltip
               contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)' }}
-              formatter={(v) => [money(v, currency, { signed: true }), 'Profit']}
+              formatter={(v) => [formatStake(v, currency, staking, { signed: true }), 'Profit']}
               cursor={{ fill: 'var(--surface-2)' }}
             />
             <ReferenceLine y={0} stroke="var(--muted)" />
@@ -100,12 +101,12 @@ export default function Analytics() {
         {/* By odds band */}
         <div className="card">
           <h3 className="section-title">By odds range</h3>
-          <Bars rows={a.byOddsBand.map((o) => ({ ...o, label: o.band }))} currency={currency} />
+          <Bars rows={a.byOddsBand.map((o) => ({ ...o, label: o.band }))} currency={currency} staking={staking} />
         </div>
         {/* By bookmaker */}
         <div className="card">
           <h3 className="section-title">By bookmaker</h3>
-          <Bars rows={a.byBookmaker.map((b) => ({ ...b, label: b.bookmaker }))} currency={currency} />
+          <Bars rows={a.byBookmaker.map((b) => ({ ...b, label: b.bookmaker }))} currency={currency} staking={staking} />
         </div>
       </div>
 
@@ -122,7 +123,7 @@ export default function Analytics() {
                   <td>{d.bets}</td>
                   <td>{d.winRate}%</td>
                   <td className={d.roi > 0 ? 'pos' : d.roi < 0 ? 'neg' : ''}>{d.roi}%</td>
-                  <td className={d.profit > 0 ? 'pos' : d.profit < 0 ? 'neg' : 'muted'}>{money(d.profit, currency, { signed: true })}</td>
+                  <td className={d.profit > 0 ? 'pos' : d.profit < 0 ? 'neg' : 'muted'}>{formatStake(d.profit, currency, staking, { signed: true })}</td>
                 </tr>
               ))}
             </tbody>

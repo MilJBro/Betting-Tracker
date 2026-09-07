@@ -6,7 +6,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import BetForm from '../components/BetForm.jsx';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
-import { money, formatOdds, formatDate } from '../format.js';
+import { formatStake, formatOdds, formatDate } from '../format.js';
 
 function profitOf(b) {
   if (b.status === 'won') return (b.payout ?? b.stake * b.odds) - b.stake;
@@ -65,6 +65,7 @@ export default function Bets() {
   const fields = settings?.fields || {};
   const oddsFormat = settings?.oddsFormat || 'decimal';
   const currency = settings?.currency || 'GBP';
+  const staking = settings?.staking;
   const col = (k) => fields[k] !== false;
 
   // Distinct sport / bookmaker options for the dropdowns.
@@ -261,8 +262,8 @@ export default function Bets() {
       {/* Live summary of the current slice */}
       <div className="stat-grid" style={{ marginBottom: 16 }}>
         <div className="stat"><div className="label">Showing</div><div className="value">{summary.count}</div><div className="sub">of {bets.length} bets</div></div>
-        <div className="stat"><div className="label">Staked</div><div className="value">{money(summary.staked, currency)}</div></div>
-        <div className="stat"><div className="label">Net Profit</div><div className={`value ${summary.profit > 0 ? 'pos' : summary.profit < 0 ? 'neg' : ''}`}>{money(summary.profit, currency, { signed: true })}</div></div>
+        <div className="stat"><div className="label">Staked</div><div className="value">{formatStake(summary.staked, currency, staking)}</div></div>
+        <div className="stat"><div className="label">Net Profit</div><div className={`value ${summary.profit > 0 ? 'pos' : summary.profit < 0 ? 'neg' : ''}`}>{formatStake(summary.profit, currency, staking, { signed: true })}</div></div>
         <div className="stat"><div className="label">ROI</div><div className={`value ${summary.roi > 0 ? 'pos' : summary.roi < 0 ? 'neg' : ''}`}>{summary.roi}%</div></div>
       </div>
 
@@ -306,11 +307,11 @@ export default function Bets() {
                       )}
                       {col('bookmaker') && <td>{b.bookmaker || '—'}</td>}
                       {col('tipster') && <td>{b.tipster || '—'}</td>}
-                      {col('stake') && <td>{money(b.stake, currency)}</td>}
+                      {col('stake') && <td>{formatStake(b.stake, currency, staking)}</td>}
                       {col('odds') && <td>{formatOdds(b.odds, oddsFormat)}</td>}
                       {col('status') && <td><span className={`badge ${b.status}`}>{b.status}</span></td>}
                       <td className={p > 0 ? 'pos' : p < 0 ? 'neg' : 'muted'}>
-                        {p == null ? '—' : money(p, currency, { signed: true })}
+                        {p == null ? "—" : formatStake(p, currency, staking, { signed: true })}
                       </td>
                       <td>
                         <div className="row">
@@ -333,6 +334,8 @@ export default function Bets() {
         <BetForm
           initial={editing}
           fields={fields}
+          staking={staking}
+          currency={currency}
           onSave={save}
           onClose={() => setShowForm(false)}
         />

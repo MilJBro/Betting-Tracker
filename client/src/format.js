@@ -15,6 +15,26 @@ export function money(amount, currency = 'GBP', { signed = false } = {}) {
   return `${sign}${sym}${val}`;
 }
 
+// Format a units value like "2u", "+1.5u", "-3u" (up to 2 dp, trailing zeros trimmed).
+export function units(u, { signed = false } = {}) {
+  if (u == null || !Number.isFinite(u)) return '—';
+  const sign = signed && u > 0 ? '+' : u < 0 ? '-' : '';
+  const val = Math.round(Math.abs(u) * 100) / 100;
+  return `${sign}${val}u`;
+}
+
+// Format a monetary amount according to the user's staking preference:
+// currency (£), units (Nu), or both. `unitSize` is the £ value of 1 unit.
+export function formatStake(amount, currency = 'GBP', staking, opts = {}) {
+  if (amount == null) return '—';
+  const mode = staking?.mode || 'currency';
+  const size = Number(staking?.unitSize) || 0;
+  if (mode === 'currency' || size <= 0) return money(amount, currency, opts);
+  const u = units(amount / size, opts);
+  if (mode === 'units') return u;
+  return `${money(amount, currency, opts)} · ${u}`;
+}
+
 // Convert a stored decimal odds value into the user's preferred format.
 export function formatOdds(decimal, format = 'decimal') {
   const d = Number(decimal);

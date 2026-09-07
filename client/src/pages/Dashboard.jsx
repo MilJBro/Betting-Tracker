@@ -5,7 +5,7 @@ import { useSettings } from '../context/SettingsContext.jsx';
 import StatCard from '../components/StatCard.jsx';
 import ProfitChart from '../components/ProfitChart.jsx';
 import Spinner from '../components/Spinner.jsx';
-import { money, formatDate } from '../format.js';
+import { formatStake, formatDate } from '../format.js';
 
 export default function Dashboard() {
   const { settings } = useSettings();
@@ -23,6 +23,7 @@ export default function Dashboard() {
   if (!settings || loading || !stats) return <div className="main"><Spinner /></div>;
 
   const currency = settings.currency;
+  const staking = settings.staking;
   const enabledCards = settings.statCards.filter((c) => c.enabled);
   const w = settings.widgets;
 
@@ -73,7 +74,7 @@ export default function Dashboard() {
       ) : (
         <div className="stat-grid">
           {enabledCards.map((c) => (
-            <StatCard key={c.key} statKey={c.key} stats={stats} currency={currency} />
+            <StatCard key={c.key} statKey={c.key} stats={stats} currency={currency} staking={staking} />
           ))}
         </div>
       )}
@@ -104,7 +105,7 @@ export default function Dashboard() {
                         <td>{s.bets}</td>
                         <td className={s.roi > 0 ? 'pos' : s.roi < 0 ? 'neg' : ''}>{s.roi}%</td>
                         <td className={s.profit > 0 ? 'pos' : s.profit < 0 ? 'neg' : ''}>
-                          {money(s.profit, currency, { signed: true })}
+                          {formatStake(s.profit, currency, staking, { signed: true })}
                         </td>
                       </tr>
                     ))}

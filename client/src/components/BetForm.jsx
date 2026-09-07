@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { currencySymbol } from '../format.js';
 
 const STATUS_OPTIONS = ['pending', 'won', 'lost', 'void', 'cashout'];
 
@@ -18,19 +19,40 @@ const blank = () => ({
   tags: [],
 });
 
-export default function BetForm({ initial, fields, onSave, onClose }) {
-  const [form, setForm] = useState(() => ({ ...blank(), ...(initial || {}) }));
+export default function BetForm({ initial, fields, staking, currency, onSave, onClose }) {
+  const unitSize = Number(staking?.unitSize) || 0;
+  const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
+  const toUnits = (money) =>
+    money === '' || money == null ? money : String(Math.round((money / unitSize) * 100) / 100);
+
+  const [form, setForm] = useState(() => {
+    const f = { ...blank(), ...(initial || {}) };
+    // Money is stored; show the stake/payout in units when the user bets in units.
+    if (usesUnits && initial) {
+      f.stake = initial.stake ? toUnits(initial.stake) : '';
+      f.payout = initial.payout != null && initial.payout !== '' ? toUnits(initial.payout) : f.payout;
+    }
+    return f;
+  });
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const show = (k) => fields[k] !== false;
+  const unitLabel = usesUnits ? ' (units)' : '';
 
   async function submit(e) {
     e.preventDefault();
     setSaving(true);
     try {
-      await onSave(form);
+      // Convert unit inputs back to money before saving.
+      const payload = { ...form };
+      if (usesUnits) {
+        payload.stake = form.stake === '' ? '' : Number(form.stake) * unitSize;
+        payload.payout =
+          form.payout === '' || form.payout == null ? form.payout : Number(form.payout) * unitSize;
+      }
+      await onSave(payload);
       onClose();
     } finally {
       setSaving(false);
@@ -102,8 +124,9 @@ export default function BetForm({ initial, fields, onSave, onClose }) {
           <div className="grid-2">
             {show('stake') && (
               <div className="field">
-                <label>Stake</label>
-                <input type="number" step="0.01" min="0" value={form.stake} onChange={(e) => set('stake', e.target.value)} placeholder="10.00" />
+                <label>Stake{unitLabel}</label>
+                <input type="number" step="0.01" min="0" value={form.stake} onChange={(e) => set('stake', e.target.value)} placeholder={usesUnits ? '2' : '10.00'} />
+                {usesUnits && <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>1u = {currencySymbol(currency)}{unitSize}</div>}
               </div>
             )}
             {show('odds') && (
@@ -127,7 +150,7 @@ export default function BetForm({ initial, fields, onSave, onClose }) {
             )}
             {show('payout') && (
               <div className="field">
-                <label>Payout / Return {form.status === 'won' ? '' : '(optional)'}</label>
+                <label>Payout / Return{unitLabel} {form.status === 'won' ? '' : '(optional)'}</label>
                 <input type="number" step="0.01" min="0" value={form.payout ?? ''} onChange={(e) => set('payout', e.target.value)} placeholder="Auto for wins" />
               </div>
             )}

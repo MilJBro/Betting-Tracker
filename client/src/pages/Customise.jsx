@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import Toggle from '../components/Toggle.jsx';
 import Spinner from '../components/Spinner.jsx';
 import { STAT_META } from '../components/StatCard.jsx';
+import { currencySymbol } from '../format.js';
 
 const PRESET_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#f59e0b', '#ef4444', '#14b8a6', '#eab308', '#6366f1', '#f97316'];
 const FONTS = [
@@ -155,6 +156,36 @@ export default function Customise() {
               <option value="american">American (+150)</option>
             </select>
           </div>
+        </div>
+      </div>
+
+      {/* Staking */}
+      <div className="card" style={{ marginBottom: 18 }}>
+        <h3 className="section-title">Staking</h3>
+        <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
+          Some bettors stake in units (e.g. 1 unit = a fixed amount). Choose how stakes and profit are shown and entered.
+        </p>
+        <div className="grid-2">
+          <div className="field">
+            <label>Show stakes &amp; profit as</label>
+            <select value={settings.staking.mode} onChange={(e) => update({ staking: { ...settings.staking, mode: e.target.value } })}>
+              <option value="currency">Currency ({currencySymbol(settings.currency)})</option>
+              <option value="units">Units (2u)</option>
+              <option value="both">Both ({currencySymbol(settings.currency)}20 · 2u)</option>
+            </select>
+          </div>
+          {settings.staking.mode !== 'currency' && (
+            <div className="field">
+              <label>1 unit equals</label>
+              <div className="row" style={{ gap: 8 }}>
+                <span className="muted" style={{ fontWeight: 700 }}>{currencySymbol(settings.currency)}</span>
+                <input
+                  type="number" min="0.01" step="0.01" value={settings.staking.unitSize}
+                  onChange={(e) => update({ staking: { ...settings.staking, unitSize: Number(e.target.value) || 0 } })}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

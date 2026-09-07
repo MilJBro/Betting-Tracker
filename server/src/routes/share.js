@@ -96,6 +96,7 @@ router.get('/public/:publicId', (req, res) => {
       displayName: sharing.displayName || user?.username || 'Anonymous',
       theme: settings.theme,
       currency: settings.currency,
+      staking: settings.staking,
       stats: publicStats,
       recent,
       reveal: {
