@@ -116,8 +116,8 @@ export default function Customise() {
               <label>Show stakes &amp; profit as</label>
               <select value={settings.staking.mode} onChange={(e) => update({ staking: { ...settings.staking, mode: e.target.value } })}>
                 <option value="currency">Currency ({currencySymbol(settings.currency)})</option>
-                <option value="units">Units (2u)</option>
-                <option value="both">Both ({currencySymbol(settings.currency)}20 · 2u)</option>
+                <option value="units">Units</option>
+                <option value="both">Both (money &amp; units)</option>
               </select>
             </div>
             {settings.staking.mode !== 'currency' && (

@@ -15,12 +15,13 @@ export function money(amount, currency = 'GBP', { signed = false } = {}) {
   return `${sign}${sym}${val}`;
 }
 
-// Format a units value like "2u", "+1.5u", "-3u" (up to 2 dp, trailing zeros trimmed).
+// Format a units value like "2 units", "+1.5 units", "1 unit" (up to 2 dp,
+// trailing zeros trimmed). The user defines what a unit is worth.
 export function units(u, { signed = false } = {}) {
   if (u == null || !Number.isFinite(u)) return '—';
   const sign = signed && u > 0 ? '+' : u < 0 ? '-' : '';
   const val = Math.round(Math.abs(u) * 100) / 100;
-  return `${sign}${val}u`;
+  return `${sign}${val} ${val === 1 ? 'unit' : 'units'}`;
 }
 
 // Format a monetary amount according to the user's staking preference:

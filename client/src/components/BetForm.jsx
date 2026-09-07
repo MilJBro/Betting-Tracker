@@ -126,7 +126,7 @@ export default function BetForm({ initial, fields, staking, currency, onSave, on
               <div className="field">
                 <label>Stake{unitLabel}</label>
                 <input type="number" step="0.01" min="0" value={form.stake} onChange={(e) => set('stake', e.target.value)} placeholder={usesUnits ? '2' : '10.00'} />
-                {usesUnits && <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>1u = {currencySymbol(currency)}{unitSize}</div>}
+                {usesUnits && <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>1 unit = {currencySymbol(currency)}{unitSize}</div>}
               </div>
             )}
             {show('odds') && (
