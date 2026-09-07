@@ -1,13 +1,8 @@
 import Database from 'better-sqlite3';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { config } from './config.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const dataDir = join(__dirname, '..', '..', 'data');
-mkdirSync(dataDir, { recursive: true });
-
-const dbPath = process.env.DB_PATH || join(dataDir, 'betting-tracker.db');
+const dbPath = process.env.DB_PATH || join(config.dataDir, 'betting-tracker.db');
 export const db = new Database(dbPath);
 
 db.pragma('journal_mode = WAL');
@@ -16,11 +11,14 @@ db.pragma('foreign_keys = ON');
 // --- Schema -----------------------------------------------------------------
 db.exec(`
 CREATE TABLE IF NOT EXISTS users (
-  id           TEXT PRIMARY KEY,
-  email        TEXT UNIQUE NOT NULL,
-  username     TEXT NOT NULL,
-  password     TEXT NOT NULL,
-  created_at   TEXT NOT NULL
+  id            TEXT PRIMARY KEY,
+  email         TEXT UNIQUE NOT NULL,
+  username      TEXT NOT NULL,
+  password      TEXT NOT NULL,
+  token_version INTEGER NOT NULL DEFAULT 0,
+  reset_token   TEXT,
+  reset_expires TEXT,
+  created_at    TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS settings (
@@ -58,5 +56,17 @@ CREATE TABLE IF NOT EXISTS shares (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_shares_user ON shares(user_id);
 `);
+
+// --- Lightweight migrations -------------------------------------------------
+// Add columns that may be missing on databases created by earlier versions.
+function ensureColumn(table, column, definition) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+ensureColumn('users', 'token_version', 'INTEGER NOT NULL DEFAULT 0');
+ensureColumn('users', 'reset_token', 'TEXT');
+ensureColumn('users', 'reset_expires', 'TEXT');
 
 export default db;

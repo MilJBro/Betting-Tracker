@@ -32,5 +32,5 @@ export const api = {
   get: (p) => request(p),
   post: (p, body) => request(p, { method: 'POST', body }),
   put: (p, body) => request(p, { method: 'PUT', body }),
-  del: (p) => request(p, { method: 'DELETE' }),
+  del: (p, body) => request(p, { method: 'DELETE', body }),
 };

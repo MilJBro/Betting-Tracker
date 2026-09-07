@@ -7,7 +7,12 @@ share a read-only page of how you're getting on.
 ## Features
 
 - **Accounts** — register and log in; your bets are private by default.
-  Passwords are hashed (bcrypt) and sessions use JWTs.
+  Passwords are hashed (bcrypt) and sessions use JWTs. Full account
+  self-service: **change password**, **forgot / reset password** (emailed
+  link), **log out everywhere**, **export my data** (JSON), and
+  **delete account**. Auth endpoints are rate-limited, security headers are
+  set with Helmet, and changing or resetting a password invalidates existing
+  sessions.
 - **Bet logging** — record date, sport/category, event, selection, bet type,
   bookmaker, stake, odds, status (pending / won / lost / void / cash-out),
   payout, notes and tags. Profit, ROI and win rate are calculated for you.
@@ -83,13 +88,26 @@ Then open http://localhost:5173.
 
 ## Configuration
 
-The server reads a few optional environment variables:
+The server reads these environment variables:
 
-| Variable     | Default                        | Purpose                          |
-|--------------|--------------------------------|----------------------------------|
-| `PORT`       | `4000`                         | API / app port                   |
-| `JWT_SECRET` | `dev-secret-change-me…`        | **Set this in production**       |
-| `DB_PATH`    | `server/data/betting-tracker.db` | SQLite database file location  |
+| Variable        | Default (dev)                    | Purpose                                                        |
+|-----------------|----------------------------------|---------------------------------------------------------------|
+| `NODE_ENV`      | `development`                    | Set to `production` for a live deployment.                    |
+| `PORT`          | `4000`                           | API / app port.                                              |
+| `JWT_SECRET`    | auto-generated at `data/.jwt-secret` | Signing key for sessions. **Required in production** — the server refuses to start without it. |
+| `JWT_TTL`       | `30d`                            | How long a session token stays valid.                        |
+| `DB_PATH`       | `server/data/betting-tracker.db` | SQLite database file location.                               |
+| `APP_URL`       | `http://localhost:PORT`          | Public base URL, used to build password-reset links.         |
+| `CORS_ORIGINS`  | _(empty)_                        | Comma-separated allowlist of origins. Empty = same-origin only. |
+| `SMTP_HOST`     | _(empty)_                        | SMTP server for password-reset emails. Without it, reset links are logged to the console (dev). |
+| `SMTP_PORT`     | `587`                            | SMTP port (`465` uses TLS).                                  |
+| `SMTP_USER` / `SMTP_PASS` | _(empty)_              | SMTP credentials.                                            |
+| `MAIL_FROM`     | `Betting Tracker <no-reply@…>`   | From-address on outgoing email.                              |
+
+In development, if `JWT_SECRET` isn't set the server generates one and stores
+it at `server/data/.jwt-secret` so your sessions survive restarts. If SMTP
+isn't configured, `POST /api/auth/forgot-password` returns the reset link in
+its response (dev only) so the flow is testable without an email provider.
 
 ## API overview
 
@@ -98,6 +116,12 @@ The server reads a few optional environment variables:
 | `POST /api/auth/register`         | —    | Create an account               |
 | `POST /api/auth/login`            | —    | Log in                          |
 | `GET  /api/auth/me`               | ✓    | Current user                    |
+| `POST /api/auth/change-password`  | ✓    | Change password (rotates token) |
+| `POST /api/auth/forgot-password`  | —    | Request a reset link            |
+| `POST /api/auth/reset-password`   | —    | Set a new password via token    |
+| `POST /api/auth/logout-all`       | ✓    | Invalidate all sessions         |
+| `GET  /api/auth/export`           | ✓    | Download all your data (JSON)   |
+| `DELETE /api/auth/account`        | ✓    | Delete account (password req.)  |
 | `GET/POST/PUT/DELETE /api/bets`   | ✓    | Manage bets                     |
 | `GET  /api/bets/stats`            | ✓    | Aggregated performance stats    |
 | `GET/PUT /api/settings`           | ✓    | Read / save customisation       |

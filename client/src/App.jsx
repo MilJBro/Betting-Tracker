@@ -5,7 +5,9 @@ import Auth from './pages/Auth.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Bets from './pages/Bets.jsx';
 import Customise from './pages/Customise.jsx';
+import Account from './pages/Account.jsx';
 import Share from './pages/Share.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
 
 function Sidebar() {
   const { user, logout } = useAuth();
@@ -19,8 +21,9 @@ function Sidebar() {
       <NavLink to="/" end className={link}>📊 Dashboard</NavLink>
       <NavLink to="/bets" className={link}>🎯 My bets</NavLink>
       <NavLink to="/customise" className={link}>🎨 Customise</NavLink>
+      <NavLink to="/account" className={link}>👤 Account</NavLink>
       <div className="nav-spacer" />
-      <div className="nav-link" style={{ cursor: 'default' }}>👤 {user?.username}</div>
+      <div className="nav-link" style={{ cursor: 'default', fontSize: 13 }}>{user?.username}</div>
       <div className="nav-link" onClick={() => { logout(); navigate('/'); }}>↪ Log out</div>
     </aside>
   );
@@ -35,6 +38,7 @@ function AppShell() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/bets" element={<Bets />} />
           <Route path="/customise" element={<Customise />} />
+          <Route path="/account" element={<Account />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
@@ -47,8 +51,9 @@ export default function App() {
 
   return (
     <Routes>
-      {/* Public share page is always accessible. */}
+      {/* Public routes — accessible without a session. */}
       <Route path="/share/:publicId" element={<Share />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route
         path="*"
         element={

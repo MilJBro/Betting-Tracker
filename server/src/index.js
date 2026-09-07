@@ -1,9 +1,12 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
 
+import { config } from './lib/config.js';
 import './lib/db.js';
 import authRoutes from './routes/auth.js';
 import betRoutes from './routes/bets.js';
@@ -13,11 +16,35 @@ import shareRoutes from './routes/share.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 
-app.use(cors());
+app.set('trust proxy', 1); // correct client IPs behind a reverse proxy
+
+// Security headers. CSP is disabled here because the SPA is served as a
+// static bundle; tighten it at your reverse proxy/CDN if desired.
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+
+// CORS: locked to an allowlist when provided, otherwise permissive in dev
+// (the API and app are same-origin in production anyway).
+app.use(
+  cors(
+    config.corsOrigins.length
+      ? { origin: config.corsOrigins, credentials: true }
+      : { origin: config.isProd ? false : true }
+  )
+);
+
 app.use(express.json({ limit: '1mb' }));
 
+// Rate limit authentication endpoints to blunt brute-force and abuse.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many attempts — please wait a few minutes and try again.' },
+});
+
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/bets', betRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/share', shareRoutes);
@@ -37,7 +64,6 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'Something went wrong' });
 });
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Betting Tracker API running on http://localhost:${PORT}`);
+app.listen(config.port, () => {
+  console.log(`Betting Tracker API running on http://localhost:${config.port}`);
 });
