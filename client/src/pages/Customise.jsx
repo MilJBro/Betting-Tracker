@@ -232,6 +232,7 @@ export default function Customise() {
       {/* Widgets */}
       <div className="card" style={{ marginBottom: 18 }}>
         <h3 className="section-title">Dashboard sections</h3>
+        <Toggle label="Open bets list" checked={settings.widgets.pendingBets !== false} onChange={(v) => toggleWidget('pendingBets', v)} />
         <Toggle label="Profit-over-time chart" checked={settings.widgets.profitChart} onChange={(v) => toggleWidget('profitChart', v)} />
         <Toggle label="By sport / category breakdown" checked={settings.widgets.sportBreakdown} onChange={(v) => toggleWidget('sportBreakdown', v)} />
         <Toggle label="Recent bets list" checked={settings.widgets.recentBets} onChange={(v) => toggleWidget('recentBets', v)} />

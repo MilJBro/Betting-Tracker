@@ -2,23 +2,33 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useSettings } from '../context/SettingsContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import StatCard from '../components/StatCard.jsx';
 import ProfitChart from '../components/ProfitChart.jsx';
 import Spinner from '../components/Spinner.jsx';
-import { formatStake, formatDate } from '../format.js';
+import { formatStake, formatOdds, formatDate } from '../format.js';
 
 export default function Dashboard() {
   const { settings } = useSettings();
+  const toast = useToast();
   const [stats, setStats] = useState(null);
-  const [recent, setRecent] = useState([]);
+  const [bets, setBets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const load = () =>
     Promise.all([
       api.get('/bets/stats').then((d) => setStats(d.stats)),
-      api.get('/bets').then((d) => setRecent(d.bets.slice(0, 8))),
-    ]).finally(() => setLoading(false));
-  }, []);
+      api.get('/bets').then((d) => setBets(d.bets)),
+    ]);
+  useEffect(() => { load().finally(() => setLoading(false)); }, []);
+
+  async function settle(bet, status) {
+    try {
+      await api.put(`/bets/${bet.id}`, { ...bet, status, payout: '' });
+      await load();
+      toast(status === 'won' ? 'Marked won' : 'Marked lost');
+    } catch (e) { toast(e.message, 'error'); }
+  }
 
   if (!settings || loading || !stats) return <div className="main"><Spinner /></div>;
 
@@ -26,6 +36,10 @@ export default function Dashboard() {
   const staking = settings.staking;
   const enabledCards = settings.statCards.filter((c) => c.enabled);
   const w = settings.widgets;
+  const recent = bets.slice(0, 8);
+  const pending = bets.filter((b) => b.status === 'pending');
+  const pendingStaked = pending.reduce((s, b) => s + b.stake, 0);
+  const pendingReturn = pending.reduce((s, b) => s + b.stake * b.odds, 0);
 
   // First-run onboarding: guide brand-new accounts before there's any data.
   if (stats.totalBets === 0) {
@@ -76,6 +90,34 @@ export default function Dashboard() {
           {enabledCards.map((c) => (
             <StatCard key={c.key} statKey={c.key} stats={stats} currency={currency} staking={staking} />
           ))}
+        </div>
+      )}
+
+      {w.pendingBets !== false && pending.length > 0 && (
+        <div className="card" style={{ marginBottom: 24 }}>
+          <div className="row spread" style={{ marginBottom: 14 }}>
+            <h3 className="section-title" style={{ margin: 0 }}>Open bets ({pending.length})</h3>
+            <span className="muted" style={{ fontSize: 13 }}>
+              {formatStake(pendingStaked, currency, staking)} staked · {formatStake(pendingReturn, currency, staking)} to return
+            </span>
+          </div>
+          <div className="stack">
+            {pending.slice(0, 8).map((b) => (
+              <div key={b.id} className="row spread" style={{ flexWrap: 'wrap', gap: 8, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600 }}>{b.selection || b.event || b.sport || 'Bet'}</div>
+                  <div className="muted" style={{ fontSize: 12 }}>
+                    {formatDate(b.placed_at)} · {formatStake(b.stake, currency, staking)} @ {formatOdds(b.odds, settings.oddsFormat)} → {formatStake(b.stake * b.odds, currency, staking)}
+                  </div>
+                </div>
+                <div className="row" style={{ flexWrap: 'nowrap' }}>
+                  <button className="btn-ghost btn-sm settle-win" onClick={() => settle(b, 'won')}>Won</button>
+                  <button className="btn-ghost btn-sm settle-loss" onClick={() => settle(b, 'lost')}>Lost</button>
+                </div>
+              </div>
+            ))}
+          </div>
+          {pending.length > 8 && <Link to="/bets" className="muted" style={{ fontSize: 13, display: 'inline-block', marginTop: 10 }}>View all {pending.length} open bets →</Link>}
         </div>
       )}
 

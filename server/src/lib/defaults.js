@@ -44,6 +44,7 @@ export const DEFAULT_SETTINGS = {
 
   // Which dashboard sections/widgets are visible.
   widgets: {
+    pendingBets: true,
     profitChart: true,
     sportBreakdown: true,
     recentBets: true,
