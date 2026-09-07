@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { nanoid } from 'nanoid';
 import { db } from '../lib/db.js';
 import { requireAuth } from '../lib/auth.js';
-import { computeStats } from '../lib/stats.js';
+import { computeStats, computeAnalytics } from '../lib/stats.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -56,6 +56,15 @@ router.get('/stats', (req, res) => {
     .all(req.userId)
     .map(rowToBet);
   res.json({ stats: computeStats(rows) });
+});
+
+// Deeper analytics for the Insights page.
+router.get('/analytics', (req, res) => {
+  const rows = db
+    .prepare('SELECT * FROM bets WHERE user_id = ?')
+    .all(req.userId)
+    .map(rowToBet);
+  res.json({ analytics: computeAnalytics(rows) });
 });
 
 router.post('/', (req, res) => {

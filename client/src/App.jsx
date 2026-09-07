@@ -4,16 +4,18 @@ import { SettingsProvider } from './context/SettingsContext.jsx';
 import Auth from './pages/Auth.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Bets from './pages/Bets.jsx';
+import Analytics from './pages/Analytics.jsx';
 import Customise from './pages/Customise.jsx';
 import Account from './pages/Account.jsx';
 import Share from './pages/Share.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
 
 const NAV = [
-  { to: '/', end: true, icon: '📊', label: 'Dashboard' },
-  { to: '/bets', icon: '🎯', label: 'My bets' },
-  { to: '/customise', icon: '🎨', label: 'Customise' },
-  { to: '/account', icon: '👤', label: 'Account' },
+  { to: '/', end: true, icon: '📊', label: 'Dashboard', short: 'Home' },
+  { to: '/bets', icon: '🎯', label: 'My bets', short: 'Bets' },
+  { to: '/analytics', icon: '📈', label: 'Analytics', short: 'Stats' },
+  { to: '/customise', icon: '🎨', label: 'Customise', short: 'Style' },
+  { to: '/account', icon: '👤', label: 'Account', short: 'You' },
 ];
 
 function Sidebar() {
@@ -44,7 +46,7 @@ function BottomNav() {
       {NAV.map((n) => (
         <NavLink key={n.to} to={n.to} end={n.end} className={bnav}>
           <span className="ic">{n.icon}</span>
-          {n.label}
+          {n.short || n.label}
         </NavLink>
       ))}
     </nav>
@@ -60,6 +62,7 @@ function AppShell() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/bets" element={<Bets />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/customise" element={<Customise />} />
           <Route path="/account" element={<Account />} />
           <Route path="*" element={<Navigate to="/" replace />} />

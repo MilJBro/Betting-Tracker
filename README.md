@@ -25,6 +25,13 @@ share a read-only page of how you're getting on.
     staked, pending, biggest win, current streak…) and **reorder** them.
   - Toggle dashboard **sections** on/off (profit chart, sport breakdown,
     recent bets).
+- **Search, filter & sort** — on the My Bets page, search across selection,
+  event, sport, bookmaker and notes; filter by sport, bookmaker, status and a
+  date range; sort by date, stake, odds or profit; and see live totals
+  (staked, net profit, ROI) for whatever slice you've filtered to.
+- **Analytics** — an Insights page with monthly profit/loss, ROI by odds
+  range and by bookmaker, win/loss streaks, day-of-week performance and your
+  biggest win and loss.
 - **Track only what you want** — hide any bet fields you don't care about and
   they disappear from both the form and the table.
 - **Sharing** — publish a read-only page of your performance with a single
@@ -124,6 +131,7 @@ its response (dev only) so the flow is testable without an email provider.
 | `DELETE /api/auth/account`        | ✓    | Delete account (password req.)  |
 | `GET/POST/PUT/DELETE /api/bets`   | ✓    | Manage bets                     |
 | `GET  /api/bets/stats`            | ✓    | Aggregated performance stats    |
+| `GET  /api/bets/analytics`        | ✓    | Monthly / odds / bookmaker insights |
 | `GET/PUT /api/settings`           | ✓    | Read / save customisation       |
 | `POST /api/share/enable`          | ✓    | Turn on a public share link     |
 | `GET  /api/share/public/:id`      | —    | Public performance page data    |
