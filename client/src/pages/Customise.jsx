@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useSettings } from '../context/SettingsContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import Toggle from '../components/Toggle.jsx';
+import Spinner from '../components/Spinner.jsx';
 import { STAT_META } from '../components/StatCard.jsx';
 
 const PRESET_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#f59e0b', '#ef4444', '#14b8a6', '#eab308', '#6366f1', '#f97316'];
@@ -19,12 +21,13 @@ const FIELD_LABELS = {
 
 export default function Customise() {
   const { settings, update, save } = useSettings();
+  const toast = useToast();
   const [share, setShare] = useState(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => { api.get('/share/me').then((d) => setShare(d.share)); }, []);
 
-  if (!settings) return <div className="main"><p className="muted">Loading…</p></div>;
+  if (!settings) return <div className="main"><Spinner /></div>;
 
   const t = settings.theme;
   const setTheme = (patch) => update({ theme: { ...t, ...patch } });
@@ -45,17 +48,24 @@ export default function Customise() {
   }
 
   async function enableShare() {
-    const d = await api.post('/share/enable');
-    setShare(d.share);
+    try {
+      const d = await api.post('/share/enable');
+      setShare(d.share);
+      toast('Share link created', 'success');
+    } catch (e) { toast(e.message, 'error'); }
   }
   async function disableShare() {
-    await api.post('/share/disable');
-    setShare((s) => ({ ...s, enabled: false }));
+    try {
+      await api.post('/share/disable');
+      setShare((s) => ({ ...s, enabled: false }));
+      toast('Sharing turned off');
+    } catch (e) { toast(e.message, 'error'); }
   }
   const shareUrl = share?.publicId ? `${window.location.origin}/share/${share.publicId}` : '';
   function copyLink() {
     navigator.clipboard?.writeText(shareUrl);
     setCopied(true);
+    toast('Link copied', 'success');
     setTimeout(() => setCopied(false), 1500);
   }
 
@@ -63,6 +73,7 @@ export default function Customise() {
     if (!confirm('Reset all customisation to defaults?')) return;
     const d = await api.post('/settings/reset');
     await save(d.settings);
+    toast('Reset to defaults');
   }
 
   return (

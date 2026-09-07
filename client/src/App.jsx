@@ -9,6 +9,13 @@ import Account from './pages/Account.jsx';
 import Share from './pages/Share.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
 
+const NAV = [
+  { to: '/', end: true, icon: '📊', label: 'Dashboard' },
+  { to: '/bets', icon: '🎯', label: 'My bets' },
+  { to: '/customise', icon: '🎨', label: 'Customise' },
+  { to: '/account', icon: '👤', label: 'Account' },
+];
+
 function Sidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -18,10 +25,11 @@ function Sidebar() {
       <div className="brand">
         <span className="brand-dot">₿</span> Tracker
       </div>
-      <NavLink to="/" end className={link}>📊 Dashboard</NavLink>
-      <NavLink to="/bets" className={link}>🎯 My bets</NavLink>
-      <NavLink to="/customise" className={link}>🎨 Customise</NavLink>
-      <NavLink to="/account" className={link}>👤 Account</NavLink>
+      {NAV.map((n) => (
+        <NavLink key={n.to} to={n.to} end={n.end} className={link}>
+          {n.icon} {n.label}
+        </NavLink>
+      ))}
       <div className="nav-spacer" />
       <div className="nav-link" style={{ cursor: 'default', fontSize: 13 }}>{user?.username}</div>
       <div className="nav-link" onClick={() => { logout(); navigate('/'); }}>↪ Log out</div>
@@ -29,7 +37,22 @@ function Sidebar() {
   );
 }
 
+function BottomNav() {
+  const bnav = ({ isActive }) => 'bnav' + (isActive ? ' active' : '');
+  return (
+    <nav className="bottom-nav">
+      {NAV.map((n) => (
+        <NavLink key={n.to} to={n.to} end={n.end} className={bnav}>
+          <span className="ic">{n.icon}</span>
+          {n.label}
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
+
 function AppShell() {
+  const navigate = useNavigate();
   return (
     <SettingsProvider>
       <div className="app-shell">
@@ -42,6 +65,9 @@ function AppShell() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
+      {/* Mobile-only: floating add + bottom tab bar */}
+      <button className="fab" aria-label="Add bet" onClick={() => navigate('/bets?new=1')}>+</button>
+      <BottomNav />
     </SettingsProvider>
   );
 }
@@ -58,7 +84,7 @@ export default function App() {
         path="*"
         element={
           loading ? (
-            <div className="auth-wrap"><p className="muted">Loading…</p></div>
+            <div className="auth-wrap"><div className="spinner" /></div>
           ) : user ? (
             <AppShell />
           ) : (

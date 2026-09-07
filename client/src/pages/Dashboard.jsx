@@ -4,23 +4,59 @@ import { api } from '../api.js';
 import { useSettings } from '../context/SettingsContext.jsx';
 import StatCard from '../components/StatCard.jsx';
 import ProfitChart from '../components/ProfitChart.jsx';
+import Spinner from '../components/Spinner.jsx';
 import { money, formatDate } from '../format.js';
 
 export default function Dashboard() {
   const { settings } = useSettings();
   const [stats, setStats] = useState(null);
   const [recent, setRecent] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/bets/stats').then((d) => setStats(d.stats));
-    api.get('/bets').then((d) => setRecent(d.bets.slice(0, 8)));
+    Promise.all([
+      api.get('/bets/stats').then((d) => setStats(d.stats)),
+      api.get('/bets').then((d) => setRecent(d.bets.slice(0, 8))),
+    ]).finally(() => setLoading(false));
   }, []);
 
-  if (!settings || !stats) return <div className="main"><p className="muted">Loading…</p></div>;
+  if (!settings || loading || !stats) return <div className="main"><Spinner /></div>;
 
   const currency = settings.currency;
   const enabledCards = settings.statCards.filter((c) => c.enabled);
   const w = settings.widgets;
+
+  // First-run onboarding: guide brand-new accounts before there's any data.
+  if (stats.totalBets === 0) {
+    return (
+      <div className="main">
+        <div className="page-head">
+          <div>
+            <h1>Welcome{settings.sharing?.displayName ? `, ${settings.sharing.displayName}` : ''} 👋</h1>
+            <p>Let's get your tracker set up.</p>
+          </div>
+        </div>
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h3 className="section-title">Getting started</h3>
+          <div className="stack" style={{ gap: 14 }}>
+            <div className="row spread" style={{ flexWrap: 'wrap', gap: 10 }}>
+              <div><strong>1. Log your first bet</strong><div className="muted" style={{ fontSize: 13 }}>Record the stake, odds and result — profit and ROI are worked out for you.</div></div>
+              <Link to="/bets?new=1" className="btn-primary" style={{ display: 'inline-block' }}>+ Add a bet</Link>
+            </div>
+            <div className="row spread" style={{ flexWrap: 'wrap', gap: 10, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+              <div><strong>2. Make it yours</strong><div className="muted" style={{ fontSize: 13 }}>Pick your colour, currency, odds format, and what to track.</div></div>
+              <Link to="/customise" className="btn-ghost" style={{ display: 'inline-block' }}>Customise</Link>
+            </div>
+            <div className="row spread" style={{ flexWrap: 'wrap', gap: 10, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+              <div><strong>3. Share your form</strong><div className="muted" style={{ fontSize: 13 }}>When you're ready, publish a read-only page of how you're doing.</div></div>
+              <Link to="/customise" className="btn-ghost" style={{ display: 'inline-block' }}>Set up sharing</Link>
+            </div>
+          </div>
+        </div>
+        <p className="muted" style={{ textAlign: 'center', fontSize: 12 }}>Please gamble responsibly. You must be 18+ to bet.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="main">
@@ -29,7 +65,7 @@ export default function Dashboard() {
           <h1>Dashboard</h1>
           <p>Here's how you're getting on.</p>
         </div>
-        <Link to="/bets" className="btn-primary" style={{ display: 'inline-block' }}>+ Add bet</Link>
+        <Link to="/bets?new=1" className="btn-primary" style={{ display: 'inline-block' }}>+ Add bet</Link>
       </div>
 
       {enabledCards.length === 0 ? (

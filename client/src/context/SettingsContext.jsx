@@ -20,12 +20,19 @@ export function applyTheme(theme) {
   root.style.setProperty('--border', dark ? '#20304d' : '#dde3ec');
   root.setAttribute('data-mode', dark ? 'dark' : 'light');
   const fonts = {
-    system: 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif',
+    system: '"Manrope", system-ui, -apple-system, Segoe UI, Roboto, sans-serif',
     rounded: '"Nunito", "Segoe UI", system-ui, sans-serif',
     mono: '"JetBrains Mono", ui-monospace, "Courier New", monospace',
     serif: 'Georgia, "Times New Roman", serif',
   };
   root.style.setProperty('--font', fonts[theme.font] || fonts.system);
+  // Headings/brand keep a consistent display face regardless of body choice.
+  root.style.setProperty(
+    '--font-head',
+    theme.font === 'serif' || theme.font === 'mono'
+      ? fonts[theme.font]
+      : '"Sora", "Manrope", system-ui, sans-serif'
+  );
 }
 
 export function SettingsProvider({ children }) {

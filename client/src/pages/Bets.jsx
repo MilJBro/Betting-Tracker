@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { useSettings } from '../context/SettingsContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import BetForm from '../components/BetForm.jsx';
+import Spinner from '../components/Spinner.jsx';
 import { money, formatOdds, formatDate } from '../format.js';
 
 function profitOf(b) {
@@ -13,13 +16,32 @@ function profitOf(b) {
 
 export default function Bets() {
   const { settings } = useSettings();
+  const toast = useToast();
+  const [params, setParams] = useSearchParams();
   const [bets, setBets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState('all');
 
-  const load = () => api.get('/bets').then((d) => setBets(d.bets));
+  const load = () =>
+    api
+      .get('/bets')
+      .then((d) => { setBets(d.bets); setError(''); })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
+
+  // The mobile "+" button links here with ?new=1 to open the form directly.
+  useEffect(() => {
+    if (params.get('new')) {
+      setEditing(null);
+      setShowForm(true);
+      params.delete('new');
+      setParams(params, { replace: true });
+    }
+  }, [params, setParams]);
 
   const fields = settings?.fields || {};
   const oddsFormat = settings?.oddsFormat || 'decimal';
@@ -31,15 +53,27 @@ export default function Bets() {
   );
 
   async function save(form) {
-    if (editing) await api.put(`/bets/${editing.id}`, form);
-    else await api.post('/bets', form);
+    const editingNow = editing;
+    try {
+      if (editingNow) await api.put(`/bets/${editingNow.id}`, form);
+      else await api.post('/bets', form);
+    } catch (e) {
+      toast(e.message, 'error');
+      throw e; // keep the form open so the user can retry
+    }
     await load();
+    toast(editingNow ? 'Bet updated' : 'Bet added', 'success');
   }
 
   async function remove(id) {
     if (!confirm('Delete this bet?')) return;
-    await api.del(`/bets/${id}`);
-    await load();
+    try {
+      await api.del(`/bets/${id}`);
+      await load();
+      toast('Bet deleted');
+    } catch (e) {
+      toast(e.message, 'error');
+    }
   }
 
   function openNew() { setEditing(null); setShowForm(true); }
@@ -57,6 +91,12 @@ export default function Bets() {
         <button className="btn-primary" onClick={openNew}>+ Add bet</button>
       </div>
 
+      {error && <div className="error-banner">{error} <button className="btn-ghost btn-sm" onClick={() => { setLoading(true); load(); }} style={{ marginLeft: 8 }}>Retry</button></div>}
+
+      {loading ? (
+        <div className="card"><Spinner label="Loading your bets…" /></div>
+      ) : (
+      <>
       <div className="row" style={{ marginBottom: 16, flexWrap: 'wrap' }}>
         {['all', 'pending', 'won', 'lost', 'void', 'cashout'].map((f) => (
           <button
@@ -127,6 +167,8 @@ export default function Bets() {
           </div>
         )}
       </div>
+      </>
+      )}
 
       {showForm && (
         <BetForm

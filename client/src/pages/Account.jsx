@@ -86,6 +86,7 @@ export default function Account() {
           <h1>Account</h1>
           <p>Manage your login and your data.</p>
         </div>
+        <button className="btn-ghost" onClick={logout}>↪ Log out</button>
       </div>
 
       <div className="card" style={{ marginBottom: 18 }}>
