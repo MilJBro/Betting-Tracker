@@ -10,6 +10,7 @@ import {
 } from '../lib/auth.js';
 import { DEFAULT_SETTINGS } from '../lib/defaults.js';
 import { config } from '../lib/config.js';
+import { entitlements } from '../lib/plan.js';
 import { sendMail, passwordResetEmail } from '../lib/mailer.js';
 import {
   validateEmail,
@@ -19,7 +20,7 @@ import {
 
 const router = Router();
 
-const publicUser = (row) => ({ id: row.id, email: row.email, username: row.username });
+const publicUser = (row) => ({ id: row.id, email: row.email, username: row.username, plan: row.plan || 'free' });
 const hashToken = (t) => createHash('sha256').update(t).digest('hex');
 
 router.post('/register', (req, res) => {
@@ -63,10 +64,10 @@ router.post('/login', (req, res) => {
 
 router.get('/me', requireAuth, (req, res) => {
   const row = db
-    .prepare('SELECT id, email, username, created_at FROM users WHERE id = ?')
+    .prepare('SELECT id, email, username, created_at, plan FROM users WHERE id = ?')
     .get(req.userId);
   if (!row) return res.status(404).json({ error: 'User not found' });
-  res.json({ user: row });
+  res.json({ user: row, entitlements: entitlements(req.userId) });
 });
 
 // Change password (authenticated). Requires the current password and

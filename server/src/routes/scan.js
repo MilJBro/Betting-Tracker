@@ -2,6 +2,7 @@ import { Router } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import { requireAuth } from '../lib/auth.js';
 import { config } from '../lib/config.js';
+import { canScan, recordScan, entitlements } from '../lib/plan.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -83,6 +84,17 @@ router.post('/', async (req, res) => {
     });
   }
 
+  // Free plans get a limited number of scans per month; Pro is unlimited.
+  // Check before spending a paid vision call.
+  if (!canScan(req.userId)) {
+    const e = entitlements(req.userId);
+    return res.status(402).json({
+      error: `You've used all ${e.scans.limit} free scans this month. Upgrade to Pro for unlimited scanning.`,
+      upgrade: true,
+      scans: e.scans,
+    });
+  }
+
   const { image, mediaType } = req.body || {};
   const media = ALLOWED_MEDIA.includes(mediaType) ? mediaType : 'image/jpeg';
   if (!image || typeof image !== 'string') {
@@ -129,7 +141,10 @@ router.post('/', async (req, res) => {
     const confidence =
       typeof parsed.confidence === 'number' ? Math.max(0, Math.min(1, parsed.confidence)) : null;
 
-    res.json({ bet, confidence, currency: parsed.currency || null });
+    // Count this scan against the monthly quota (only on success).
+    recordScan(req.userId);
+
+    res.json({ bet, confidence, currency: parsed.currency || null, scans: entitlements(req.userId).scans });
   } catch (err) {
     console.error('[scan] extraction failed:', err?.message || err);
     const status = err?.status === 401 ? 502 : 502;

@@ -70,5 +70,9 @@ ensureColumn('users', 'token_version', 'INTEGER NOT NULL DEFAULT 0');
 ensureColumn('users', 'reset_token', 'TEXT');
 ensureColumn('users', 'reset_expires', 'TEXT');
 ensureColumn('bets', 'tipster', 'TEXT');
+// Monetisation: subscription plan + monthly bet-slip scan usage.
+ensureColumn('users', 'plan', "TEXT NOT NULL DEFAULT 'free'");
+ensureColumn('users', 'scan_month', 'TEXT'); // 'YYYY-MM' of the current window
+ensureColumn('users', 'scan_count', 'INTEGER NOT NULL DEFAULT 0');
 
 export default db;

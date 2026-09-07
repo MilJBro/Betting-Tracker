@@ -3,7 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { api, setToken, getToken } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
+import { usePlan } from '../usePlan.js';
 import { formatDate } from '../format.js';
+
+const PRO_FEATURE_LABELS = [
+  'Unlimited bet-slip scanning',
+  'Advanced analytics (date ranges, filters, bankroll growth)',
+  'CSV import & export',
+  'Custom share page (no badge)',
+];
 
 const PROFILE_LABELS = {
   trackingStyle: { title: 'Betting style', map: { own: 'Tracks own bets', tipster: 'Follows tipsters', both: 'Own bets & tipsters' } },
@@ -15,9 +23,24 @@ const PROFILE_LABELS = {
 export default function Account() {
   const { user, logout } = useAuth();
   const { settings, save } = useSettings();
+  const { ent, refresh: refreshPlan } = usePlan();
   const navigate = useNavigate();
   const signOut = () => { logout(); navigate('/'); };
   const [info, setInfo] = useState(null);
+  const [planMsg, setPlanMsg] = useState('');
+  const [planBusy, setPlanBusy] = useState(false);
+
+  async function setPlanDev(plan) {
+    setPlanBusy(true); setPlanMsg('');
+    try {
+      await api.post('/plan/dev-set', { plan });
+      await refreshPlan();
+    } catch (err) {
+      setPlanMsg(err.status === 403 ? 'Paid plans are coming soon — checkout isn’t wired up yet.' : err.message);
+    } finally {
+      setPlanBusy(false);
+    }
+  }
 
   const profile = settings?.profile;
   async function retakeQuestionnaire() {
@@ -116,6 +139,39 @@ export default function Account() {
             <div className="row spread"><span className="muted">Member since</span><strong>{formatDate(info.created_at)}</strong></div>
           )}
         </div>
+      </div>
+
+      {/* Plan & billing */}
+      <div className="card" style={{ marginBottom: 18 }}>
+        <div className="row spread" style={{ marginBottom: 4 }}>
+          <h3 className="section-title" style={{ margin: 0 }}>Plan</h3>
+          <span className={`badge ${ent?.pro ? 'won' : ''}`} style={{ textTransform: 'none' }}>{ent?.pro ? 'Pro' : 'Free'}</span>
+        </div>
+        {planMsg && <div className="muted" style={{ fontSize: 13, marginBottom: 8 }}>{planMsg}</div>}
+        {ent && !ent.pro && (
+          <>
+            <div className="row spread" style={{ marginTop: 10 }}>
+              <span className="muted">Bet-slip scans this month</span>
+              <strong>{ent.scans.used} / {ent.scans.limit}</strong>
+            </div>
+            <div className="bar" style={{ marginTop: 8 }}>
+              <i style={{ width: `${Math.min(100, (ent.scans.used / Math.max(1, ent.scans.limit)) * 100)}%`, background: ent.scans.remaining === 0 ? 'var(--loss)' : 'var(--primary)' }} />
+            </div>
+            <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+              <div style={{ fontWeight: 700, marginBottom: 8 }}>Upgrade to Pro</div>
+              <ul className="muted" style={{ margin: '0 0 12px', paddingLeft: 18, fontSize: 13, lineHeight: 1.7 }}>
+                {PRO_FEATURE_LABELS.map((f) => <li key={f}>{f}</li>)}
+              </ul>
+              <button className="btn-primary" onClick={() => setPlanDev('pro')} disabled={planBusy}>{planBusy ? 'Working…' : 'Upgrade to Pro'}</button>
+            </div>
+          </>
+        )}
+        {ent && ent.pro && (
+          <>
+            <p className="muted" style={{ marginTop: 10, fontSize: 13 }}>You have unlimited scanning and all Pro features. Thanks for supporting Betfolio.</p>
+            <button className="btn-ghost btn-sm" onClick={() => setPlanDev('free')} disabled={planBusy}>Switch back to Free</button>
+          </>
+        )}
       </div>
 
       {profile && (

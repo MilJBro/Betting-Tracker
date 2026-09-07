@@ -127,6 +127,7 @@ The server reads these environment variables:
 | `MAIL_FROM`     | `Betfolio <no-reply@…>`   | From-address on outgoing email.                              |
 | `ANTHROPIC_API_KEY` | _(empty)_                    | Enables **Scan a bet slip**. Without it the scan endpoint returns a friendly "not enabled" message and the app still works for manual entry. |
 | `ANTHROPIC_MODEL`   | `claude-opus-5`              | Vision model used for slip scanning. Set to a cheaper model (e.g. `claude-haiku-4-5`) to reduce per-scan cost. |
+| `FREE_SCAN_LIMIT`   | `5`                          | How many bet-slip scans a **Free** account may run per month. Pro accounts are unlimited. |
 
 In development, if `JWT_SECRET` isn't set the server generates one and stores
 it at `server/data/.jwt-secret` so your sessions survive restarts. If SMTP
@@ -153,6 +154,27 @@ its response (dev only) so the flow is testable without an email provider.
 | `GET/PUT /api/settings`           | ✓    | Read / save customisation       |
 | `POST /api/share/enable`          | ✓    | Turn on a public share link     |
 | `GET  /api/share/public/:id`      | —    | Public performance page data    |
+
+## Plans (Free vs Pro)
+
+Betfolio has a freemium foundation. **Free** covers the full core tracker —
+unlimited manual bet logging, the dashboard, customisation, search/filter, a
+basic share page, and a small monthly allowance of AI bet-slip scans
+(`FREE_SCAN_LIMIT`). **Pro** is reserved for depth and the features that cost
+money to run: unlimited slip scanning, advanced analytics, CSV import/export,
+and a custom (badge-free) share page.
+
+Entitlements are enforced **server-side** (`server/src/lib/plan.js`) — the
+client only reflects them (usage meters, lock badges, the upgrade prompt). A
+user's `plan` (`free`/`pro`) lives on their record. Payment isn't wired up yet;
+until a billing provider (e.g. Stripe) sets the plan via webhook, a dev-only
+endpoint (`POST /api/plan/dev-set`, disabled in production) flips it for
+testing.
+
+| Method & path            | Auth | Description                          |
+|--------------------------|------|--------------------------------------|
+| `GET  /api/plan`         | ✓    | Current plan, usage and entitlements |
+| `POST /api/plan/dev-set` | ✓    | Dev-only plan switch (non-production) |
 
 ## Notes
 

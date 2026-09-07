@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { scanBetSlip } from '../scan.js';
+import { usePlan } from '../usePlan.js';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import BetForm from '../components/BetForm.jsx';
@@ -26,7 +27,9 @@ const SORTS = [
 
 export default function Bets() {
   const { settings } = useSettings();
+  const { ent, setEnt } = usePlan();
   const toast = useToast();
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [bets, setBets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -166,14 +169,21 @@ export default function Bets() {
     if (!file) return;
     setScanning(true);
     try {
-      const { bet, confidence } = await scanBetSlip(file);
+      const { bet, confidence, scans } = await scanBetSlip(file);
+      if (scans && ent) setEnt({ ...ent, scans }); // update the free-scan meter
       setEditing(null);
       setPrefill(bet);
       setShowForm(true);
       const low = confidence != null && confidence < 0.5;
       toast(low ? 'Scanned — please double-check the details' : 'Scanned your slip — review and save', low ? 'info' : 'success');
     } catch (err) {
-      toast(err.message, 'error');
+      if (err.status === 402 || err.data?.upgrade) {
+        if (err.data?.scans && ent) setEnt({ ...ent, scans: err.data.scans });
+        toast(err.message, 'error');
+        navigate('/account'); // send them to the upgrade CTA
+      } else {
+        toast(err.message, 'error');
+      }
     } finally {
       setScanning(false);
     }
@@ -195,6 +205,9 @@ export default function Bets() {
         <div className="row" style={{ gap: 8 }}>
           <button className="btn-ghost" onClick={() => fileRef.current?.click()} disabled={scanning}>
             <Icon name="camera" size={16} /> {scanning ? 'Scanning…' : 'Scan slip'}
+            {ent && !ent.pro && !scanning && (
+              <span className="muted" style={{ marginLeft: 6, fontSize: 12, fontWeight: 500 }}>· {ent.scans.remaining} left</span>
+            )}
           </button>
           <button className="btn-primary" onClick={openNew}>+ Add bet</button>
         </div>
