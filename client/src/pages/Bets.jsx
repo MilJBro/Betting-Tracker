@@ -159,6 +159,18 @@ export default function Bets() {
     }
   }
 
+  // Quick-settle a pending bet without opening the form. Payout is auto-filled
+  // server-side (stake × odds for a win, 0 for a loss).
+  async function settle(bet, status) {
+    try {
+      await api.put(`/bets/${bet.id}`, { ...bet, status, payout: '' });
+      await load();
+      toast(status === 'won' ? 'Marked won' : status === 'lost' ? 'Marked lost' : 'Marked void');
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  }
+
   function openNew() { setEditing(null); setPrefill(null); setShowForm(true); }
   function openEdit(b) { setEditing(b); setPrefill(null); setShowForm(true); }
 
@@ -363,7 +375,13 @@ export default function Bets() {
                         {p == null ? "—" : formatStake(p, currency, staking, { signed: true })}
                       </td>
                       <td>
-                        <div className="row">
+                        <div className="row" style={{ flexWrap: 'nowrap' }}>
+                          {b.status === 'pending' && (
+                            <>
+                              <button className="btn-ghost btn-sm settle-win" onClick={() => settle(b, 'won')} title="Mark won">Won</button>
+                              <button className="btn-ghost btn-sm settle-loss" onClick={() => settle(b, 'lost')} title="Mark lost">Lost</button>
+                            </>
+                          )}
                           <button className="btn-ghost btn-sm" onClick={() => openEdit(b)}>Edit</button>
                           <button className="btn-danger btn-sm" onClick={() => remove(b.id)}>✕</button>
                         </div>

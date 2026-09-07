@@ -53,6 +53,8 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 .btn-accent { background: var(--accent); color: #fff; }
 .btn-ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
 .btn-ghost:hover { filter: brightness(1.1); }
+.settle-win { color: var(--win); border-color: color-mix(in srgb, var(--win) 40%, var(--border)); font-weight: 700; }
+.settle-loss { color: var(--loss); border-color: color-mix(in srgb, var(--loss) 40%, var(--border)); font-weight: 700; }
 .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
 .btn-danger { background: transparent; color: var(--loss); border: 1px solid color-mix(in srgb, var(--loss) 55%, var(--border)); }
 .btn-sm { padding: 7px 11px; font-size: 13px; border-radius: 9px; }
