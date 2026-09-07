@@ -87,6 +87,55 @@ export default function Customise() {
         <button className="btn-ghost" onClick={resetAll}>Reset to defaults</button>
       </div>
 
+      {/* Units & staking */}
+      <div className="card" style={{ marginBottom: 18 }}>
+        <h3 className="section-title">Units &amp; staking</h3>
+        <div className="grid-2">
+          <div className="field">
+            <label>Currency</label>
+            <select value={settings.currency} onChange={(e) => update({ currency: e.target.value })}>
+              {['GBP', 'USD', 'EUR', 'AUD', 'CAD'].map((c) => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label>Odds format</label>
+            <select value={settings.oddsFormat} onChange={(e) => update({ oddsFormat: e.target.value })}>
+              <option value="decimal">Decimal (2.50)</option>
+              <option value="fractional">Fractional (6/4)</option>
+              <option value="american">American (+150)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 6, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+          <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
+            Some bettors stake in units (e.g. 1 unit = a fixed amount). Choose how stakes and profit are shown and entered.
+          </p>
+          <div className="grid-2">
+            <div className="field">
+              <label>Show stakes &amp; profit as</label>
+              <select value={settings.staking.mode} onChange={(e) => update({ staking: { ...settings.staking, mode: e.target.value } })}>
+                <option value="currency">Currency ({currencySymbol(settings.currency)})</option>
+                <option value="units">Units (2u)</option>
+                <option value="both">Both ({currencySymbol(settings.currency)}20 · 2u)</option>
+              </select>
+            </div>
+            {settings.staking.mode !== 'currency' && (
+              <div className="field">
+                <label>1 unit equals</label>
+                <div className="row" style={{ gap: 8 }}>
+                  <span className="muted" style={{ fontWeight: 700 }}>{currencySymbol(settings.currency)}</span>
+                  <input
+                    type="number" min="0.01" step="0.01" value={settings.staking.unitSize}
+                    onChange={(e) => update({ staking: { ...settings.staking, unitSize: Number(e.target.value) || 0 } })}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Appearance */}
       <div className="card" style={{ marginBottom: 18 }}>
         <h3 className="section-title">Appearance</h3>
@@ -135,57 +184,6 @@ export default function Customise() {
               <button key={f.key} className={t.font === f.key ? 'btn-accent btn-sm' : 'btn-ghost btn-sm'} onClick={() => setTheme({ font: f.key })}>{f.label}</button>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* Units */}
-      <div className="card" style={{ marginBottom: 18 }}>
-        <h3 className="section-title">Units</h3>
-        <div className="grid-2">
-          <div className="field">
-            <label>Currency</label>
-            <select value={settings.currency} onChange={(e) => update({ currency: e.target.value })}>
-              {['GBP', 'USD', 'EUR', 'AUD', 'CAD'].map((c) => <option key={c}>{c}</option>)}
-            </select>
-          </div>
-          <div className="field">
-            <label>Odds format</label>
-            <select value={settings.oddsFormat} onChange={(e) => update({ oddsFormat: e.target.value })}>
-              <option value="decimal">Decimal (2.50)</option>
-              <option value="fractional">Fractional (6/4)</option>
-              <option value="american">American (+150)</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Staking */}
-      <div className="card" style={{ marginBottom: 18 }}>
-        <h3 className="section-title">Staking</h3>
-        <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
-          Some bettors stake in units (e.g. 1 unit = a fixed amount). Choose how stakes and profit are shown and entered.
-        </p>
-        <div className="grid-2">
-          <div className="field">
-            <label>Show stakes &amp; profit as</label>
-            <select value={settings.staking.mode} onChange={(e) => update({ staking: { ...settings.staking, mode: e.target.value } })}>
-              <option value="currency">Currency ({currencySymbol(settings.currency)})</option>
-              <option value="units">Units (2u)</option>
-              <option value="both">Both ({currencySymbol(settings.currency)}20 · 2u)</option>
-            </select>
-          </div>
-          {settings.staking.mode !== 'currency' && (
-            <div className="field">
-              <label>1 unit equals</label>
-              <div className="row" style={{ gap: 8 }}>
-                <span className="muted" style={{ fontWeight: 700 }}>{currencySymbol(settings.currency)}</span>
-                <input
-                  type="number" min="0.01" step="0.01" value={settings.staking.unitSize}
-                  onChange={(e) => update({ staking: { ...settings.staking, unitSize: Number(e.target.value) || 0 } })}
-                />
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
