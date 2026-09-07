@@ -21,6 +21,14 @@ export const DEFAULT_SETTINGS = {
     unitSize: 10, // e.g. 1u = £10
   },
 
+  // Pre-fill values for a new bet, to save typing the same thing each time.
+  // Empty = no default. `stake` is in the account currency (or units when the
+  // user stakes in units — the form converts as usual).
+  defaults: {
+    stake: '',
+    bookmaker: '',
+  },
+
   // Which summary stat cards appear on the dashboard, and in what order.
   // Users can toggle any of these off if they don't care about them.
   statCards: [
@@ -91,6 +99,7 @@ export function mergeSettings(saved) {
     fields: { ...base.fields, ...(saved.fields || {}) },
     sharing: { ...base.sharing, ...(saved.sharing || {}) },
     staking: { ...base.staking, ...(saved.staking || {}) },
+    defaults: { ...base.defaults, ...(saved.defaults || {}) },
     profile: { ...base.profile, ...(saved.profile || {}) },
     statCards: Array.isArray(saved.statCards) && saved.statCards.length
       ? saved.statCards

@@ -33,6 +33,7 @@ export default function Customise() {
   const t = settings.theme;
   const setTheme = (patch) => update({ theme: { ...t, ...patch } });
 
+  const setDefault = (k, v) => update({ defaults: { ...settings.defaults, [k]: v } });
   const toggleField = (k, v) => update({ fields: { ...settings.fields, [k]: v } });
   const toggleWidget = (k, v) => update({ widgets: { ...settings.widgets, [k]: v } });
   const toggleSharing = (k, v) => update({ sharing: { ...settings.sharing, [k]: v } });
@@ -132,6 +133,26 @@ export default function Customise() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* New-bet defaults */}
+      <div className="card" style={{ marginBottom: 18 }}>
+        <h3 className="section-title">New bet defaults</h3>
+        <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>Pre-fill the add-bet form with your usual values. Leave blank for none.</p>
+        <div className="grid-2">
+          <div className="field">
+            <label>Default stake{settings.staking.mode !== 'currency' ? ' (units)' : ''}</label>
+            <input
+              type="number" min="0" step="0.01" value={settings.defaults.stake}
+              placeholder={settings.staking.mode !== 'currency' ? '2' : '10.00'}
+              onChange={(e) => setDefault('stake', e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label>Default bookmaker</label>
+            <input value={settings.defaults.bookmaker} placeholder="e.g. Bet365" onChange={(e) => setDefault('bookmaker', e.target.value)} />
           </div>
         </div>
       </div>

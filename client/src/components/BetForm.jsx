@@ -19,14 +19,20 @@ const blank = () => ({
   tags: [],
 });
 
-export default function BetForm({ initial, isEdit, fields, staking, currency, onSave, onClose }) {
+export default function BetForm({ initial, isEdit, fields, staking, currency, defaults, onSave, onClose }) {
   const unitSize = Number(staking?.unitSize) || 0;
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
   const toUnits = (money) =>
     money === '' || money == null ? money : String(Math.round((money / unitSize) * 100) / 100);
 
   const [form, setForm] = useState(() => {
-    const f = { ...blank(), ...(initial || {}) };
+    const base = blank();
+    // Pre-fill a brand-new bet (not an edit or a scan) with the user's defaults.
+    if (!initial) {
+      if (defaults?.stake !== '' && defaults?.stake != null) base.stake = String(defaults.stake);
+      if (defaults?.bookmaker) base.bookmaker = defaults.bookmaker;
+    }
+    const f = { ...base, ...(initial || {}) };
     // Money is stored; show the stake/payout in units when the user bets in units.
     if (usesUnits && initial) {
       f.stake = initial.stake ? toUnits(initial.stake) : '';

@@ -413,6 +413,7 @@ export default function Bets() {
           fields={fields}
           staking={staking}
           currency={currency}
+          defaults={settings?.defaults}
           onSave={save}
           onClose={() => { setShowForm(false); setPrefill(null); }}
         />
