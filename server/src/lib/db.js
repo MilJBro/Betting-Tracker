@@ -86,6 +86,8 @@ ensureColumn('bets', 'tipster', 'TEXT');
 ensureColumn('users', 'plan', "TEXT NOT NULL DEFAULT 'free'");
 ensureColumn('users', 'scan_month', 'TEXT'); // 'YYYY-MM' of the current window
 ensureColumn('users', 'scan_count', 'INTEGER NOT NULL DEFAULT 0');
+// Stripe billing: the customer this user maps to (for the Pro subscription).
+ensureColumn('users', 'stripe_customer_id', 'TEXT');
 // Multiple trackers: each bet belongs to a tracker; a share targets one.
 ensureColumn('bets', 'tracker_id', 'TEXT');
 ensureColumn('shares', 'tracker_id', 'TEXT');

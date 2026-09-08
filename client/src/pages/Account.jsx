@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, setToken, getToken } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
@@ -25,10 +25,22 @@ export default function Account() {
   const { settings, save } = useSettings();
   const { ent, refresh: refreshPlan } = usePlan();
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const signOut = () => { logout(); navigate('/'); };
   const [info, setInfo] = useState(null);
   const [planMsg, setPlanMsg] = useState('');
   const [planBusy, setPlanBusy] = useState(false);
+  const billing = ent?.billing;
+
+  // Returning from Stripe Checkout (?upgrade=success|cancelled).
+  useEffect(() => {
+    const u = params.get('upgrade');
+    if (!u) return;
+    if (u === 'success') { setPlanMsg('Welcome to Pro — thanks for subscribing! It can take a few seconds to activate.'); refreshPlan(); }
+    else if (u === 'cancelled') setPlanMsg('Checkout cancelled — no charge was made.');
+    params.delete('upgrade');
+    setParams(params, { replace: true });
+  }, [params, setParams, refreshPlan]);
 
   async function setPlanDev(plan) {
     setPlanBusy(true); setPlanMsg('');
@@ -41,6 +53,30 @@ export default function Account() {
       setPlanBusy(false);
     }
   }
+
+  // Real Stripe checkout (production) — redirect the browser to Stripe.
+  async function startCheckout() {
+    setPlanBusy(true); setPlanMsg('');
+    try {
+      const d = await api.post('/billing/checkout');
+      window.location.href = d.url;
+    } catch (err) {
+      setPlanMsg(err.message || 'Could not start checkout.');
+      setPlanBusy(false);
+    }
+  }
+  async function openPortal() {
+    setPlanBusy(true); setPlanMsg('');
+    try {
+      const d = await api.post('/billing/portal');
+      window.location.href = d.url;
+    } catch (err) {
+      setPlanMsg(err.message || 'Could not open the billing portal.');
+      setPlanBusy(false);
+    }
+  }
+  // Upgrade uses Stripe when configured, otherwise the dev toggle (local only).
+  const doUpgrade = () => (billing?.enabled ? startCheckout() : setPlanDev('pro'));
 
   const profile = settings?.profile;
   async function retakeQuestionnaire() {
@@ -150,17 +186,23 @@ export default function Account() {
         {planMsg && <div className="muted" style={{ fontSize: 13, marginBottom: 8 }}>{planMsg}</div>}
         {ent && !ent.pro && (
           <div style={{ marginTop: 12 }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Upgrade to Pro</div>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>
+              Upgrade to Pro{billing?.priceLabel ? <span className="muted" style={{ fontWeight: 500 }}> · {billing.priceLabel}</span> : ''}
+            </div>
             <ul className="muted" style={{ margin: '0 0 12px', paddingLeft: 18, fontSize: 13, lineHeight: 1.7 }}>
               {PRO_FEATURE_LABELS.map((f) => <li key={f}>{f}</li>)}
             </ul>
-            <button className="btn-primary" onClick={() => setPlanDev('pro')} disabled={planBusy}>{planBusy ? 'Working…' : 'Upgrade to Pro'}</button>
+            <button className="btn-primary" onClick={doUpgrade} disabled={planBusy}>{planBusy ? 'Working…' : 'Upgrade to Pro'}</button>
           </div>
         )}
         {ent && ent.pro && (
           <>
             <p className="muted" style={{ marginTop: 10, fontSize: 13 }}>You have all Pro features. Thanks for supporting Betbooks.</p>
-            <button className="btn-ghost btn-sm" onClick={() => setPlanDev('free')} disabled={planBusy}>Switch back to Free</button>
+            {billing?.enabled ? (
+              <button className="btn-ghost btn-sm" onClick={openPortal} disabled={planBusy}>{planBusy ? 'Working…' : 'Manage billing'}</button>
+            ) : (
+              <button className="btn-ghost btn-sm" onClick={() => setPlanDev('free')} disabled={planBusy}>Switch back to Free</button>
+            )}
           </>
         )}
       </div>

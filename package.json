@@ -13,5 +13,8 @@
   "workspaces": [
     "server",
     "client"
-  ]
+  ],
+  "engines": {
+    "node": "20.x"
+  }
 }

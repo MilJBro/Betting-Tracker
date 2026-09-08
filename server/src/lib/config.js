@@ -58,5 +58,18 @@ export const config = {
     apiKey: process.env.ANTHROPIC_API_KEY || '',
     model: process.env.ANTHROPIC_MODEL || 'claude-opus-5',
   },
+  // Stripe billing for Pro subscriptions. Billing is only enabled when a
+  // secret key and a subscription price are configured; otherwise the app runs
+  // fine with the free tier and the upgrade CTA is hidden.
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY || '',
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+    priceId: process.env.STRIPE_PRICE_ID || '',
+    // Human-readable price for the upgrade button, e.g. "£3.99 / month".
+    priceLabel: process.env.STRIPE_PRICE_LABEL || '',
+  },
   dataDir,
 };
+
+// True only when Stripe is fully configured (key + a price to subscribe to).
+config.billingEnabled = !!(config.stripe.secretKey && config.stripe.priceId);

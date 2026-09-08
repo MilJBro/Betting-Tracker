@@ -1,4 +1,5 @@
 import { db } from './db.js';
+import { config } from './config.js';
 
 // --- Plans & entitlements ---------------------------------------------------
 // The single source of truth for the free/Pro boundary. Feature gating must go
@@ -61,6 +62,10 @@ export function entitlements(userId) {
       limit: pro ? null : FREE_SCAN_LIMIT,
       remaining: pro ? null : Math.max(0, FREE_SCAN_LIMIT - used),
       unlimited: pro,
+    },
+    billing: {
+      enabled: config.billingEnabled,
+      priceLabel: config.stripe.priceLabel || '',
     },
   };
 }

@@ -12,6 +12,8 @@ import authRoutes from './routes/auth.js';
 import betRoutes from './routes/bets.js';
 import scanRoutes from './routes/scan.js';
 import planRoutes from './routes/plan.js';
+import billingRoutes from './routes/billing.js';
+import { stripeWebhook } from './routes/stripeWebhook.js';
 import trackerRoutes from './routes/trackers.js';
 import settingsRoutes from './routes/settings.js';
 import shareRoutes from './routes/share.js';
@@ -51,6 +53,10 @@ app.use('/api/bets/scan', scanLimiter, express.json({ limit: '12mb' }), scanRout
 // global 1mb parser (which then no-ops since the body is already parsed).
 app.use('/api/bets/import', express.json({ limit: '6mb' }));
 
+// Stripe webhook needs the raw request body for signature verification, so it
+// is mounted before the global JSON parser.
+app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
+
 app.use(express.json({ limit: '1mb' }));
 
 // Rate limit authentication endpoints to blunt brute-force and abuse.
@@ -67,6 +73,7 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/bets', betRoutes);
 app.use('/api/trackers', trackerRoutes);
 app.use('/api/plan', planRoutes);
+app.use('/api/billing', billingRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/share', shareRoutes);
 
