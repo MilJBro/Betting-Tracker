@@ -37,24 +37,26 @@ export const DEFAULT_SETTINGS = {
 
   // Which summary stat cards appear on the dashboard, and in what order.
   // Users can toggle any of these off if they don't care about them.
+  // A calm default set — four cards. The rest are available in Customise.
   statCards: [
     { key: 'netProfit', enabled: true },
     { key: 'roi', enabled: true },
     { key: 'winRate', enabled: true },
-    { key: 'totalStaked', enabled: true },
-    { key: 'totalBets', enabled: true },
     { key: 'pending', enabled: true },
+    { key: 'totalStaked', enabled: false },
+    { key: 'totalBets', enabled: false },
     { key: 'biggestWin', enabled: false },
     { key: 'currentStreak', enabled: false },
   ],
 
-  // Which dashboard sections/widgets are visible.
+  // Which dashboard sections/widgets are visible. Sport breakdown and recent
+  // bets are off by default (a tap away on other pages) to keep it uncluttered.
   widgets: {
     bankroll: true,
     pendingBets: true,
     profitChart: true,
-    sportBreakdown: true,
-    recentBets: true,
+    sportBreakdown: false,
+    recentBets: false,
   },
 
   // Which fields the user cares about tracking. Hidden fields are removed from
