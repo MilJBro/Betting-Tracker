@@ -157,6 +157,22 @@ export default function Customise() {
         </div>
       </div>
 
+      {/* Bankroll */}
+      <div className="card" style={{ marginBottom: 18 }}>
+        <h3 className="section-title">Bankroll</h3>
+        <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>Set your starting bankroll and Betfolio tracks your balance and growth. Leave 0 to hide it.</p>
+        <div className="field" style={{ maxWidth: 220 }}>
+          <label>Starting bankroll</label>
+          <div className="row" style={{ gap: 8 }}>
+            <span className="muted" style={{ fontWeight: 700 }}>{currencySymbol(settings.currency)}</span>
+            <input
+              type="number" min="0" step="0.01" value={settings.bankroll?.starting ?? 0}
+              onChange={(e) => update({ bankroll: { ...settings.bankroll, starting: Number(e.target.value) || 0 } })}
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Appearance */}
       <div className="card" style={{ marginBottom: 18 }}>
         <h3 className="section-title">Appearance</h3>
@@ -232,6 +248,7 @@ export default function Customise() {
       {/* Widgets */}
       <div className="card" style={{ marginBottom: 18 }}>
         <h3 className="section-title">Dashboard sections</h3>
+        <Toggle label="Bankroll" description="Balance & growth (needs a starting bankroll)" checked={settings.widgets.bankroll !== false} onChange={(v) => toggleWidget('bankroll', v)} />
         <Toggle label="Open bets list" checked={settings.widgets.pendingBets !== false} onChange={(v) => toggleWidget('pendingBets', v)} />
         <Toggle label="Profit-over-time chart" checked={settings.widgets.profitChart} onChange={(v) => toggleWidget('profitChart', v)} />
         <Toggle label="By sport / category breakdown" checked={settings.widgets.sportBreakdown} onChange={(v) => toggleWidget('sportBreakdown', v)} />

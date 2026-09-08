@@ -68,6 +68,7 @@ export default function Onboarding() {
   const [prefs, setPrefs] = useState({
     currency: settings?.currency || 'GBP',
     oddsFormat: settings?.oddsFormat || 'decimal',
+    bankroll: settings?.bankroll?.starting || '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -93,6 +94,7 @@ export default function Onboarding() {
       ...settings,
       currency: skip ? settings.currency : prefs.currency,
       oddsFormat: skip ? settings.oddsFormat : prefs.oddsFormat,
+      bankroll: { ...settings.bankroll, starting: skip ? (settings.bankroll?.starting || 0) : (Number(prefs.bankroll) || 0) },
       // Turn the tipster field on automatically for people who follow tipsters.
       fields: { ...settings.fields, tipster: followsTipster || settings.fields.tipster },
       profile: {
@@ -179,6 +181,10 @@ export default function Onboarding() {
                   <option value="fractional">Fractional (6/4)</option>
                   <option value="american">American (+150)</option>
                 </select>
+              </div>
+              <div className="field">
+                <label>Starting bankroll <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
+                <input type="number" min="0" step="0.01" value={prefs.bankroll} placeholder="e.g. 500" onChange={(e) => setPrefs({ ...prefs, bankroll: e.target.value })} />
               </div>
             </div>
           )}

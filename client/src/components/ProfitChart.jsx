@@ -10,9 +10,17 @@ import {
 } from 'recharts';
 import { formatDate } from '../format.js';
 
-export default function ProfitChart({ timeline, primary = '#22c55e', height = 260 }) {
+export default function ProfitChart({
+  timeline,
+  primary = '#22c55e',
+  height = 260,
+  dataKey = 'profit',
+  baseline = 0,
+  tooltipLabel = 'Cumulative profit',
+  formatValue,
+}) {
   if (!timeline || timeline.length === 0) {
-    return <div className="empty">No settled bets yet — your profit curve will appear here.</div>;
+    return <div className="empty">No settled bets yet — your curve will appear here.</div>;
   }
   // Index points so repeated dates still render distinctly.
   const data = timeline.map((p, i) => ({ ...p, i }));
@@ -44,12 +52,12 @@ export default function ProfitChart({ timeline, primary = '#22c55e', height = 26
             color: 'var(--text)',
           }}
           labelFormatter={(i) => formatDate(data[i]?.date)}
-          formatter={(v) => [v, 'Cumulative profit']}
+          formatter={(v) => [formatValue ? formatValue(v) : v, tooltipLabel]}
         />
-        <ReferenceLine y={0} stroke="var(--muted)" strokeDasharray="4 4" />
+        <ReferenceLine y={baseline} stroke="var(--muted)" strokeDasharray="4 4" />
         <Area
           type="monotone"
-          dataKey="profit"
+          dataKey={dataKey}
           stroke={primary}
           strokeWidth={2.5}
           fill="url(#pfill)"

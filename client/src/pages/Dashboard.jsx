@@ -41,6 +41,13 @@ export default function Dashboard() {
   const pendingStaked = pending.reduce((s, b) => s + b.stake, 0);
   const pendingReturn = pending.reduce((s, b) => s + b.stake * b.odds, 0);
 
+  // Bankroll: current balance is the starting bankroll plus realised profit.
+  const bankrollStart = Number(settings.bankroll?.starting) || 0;
+  const balance = bankrollStart + stats.netProfit;
+  const bankrollGrowth = bankrollStart > 0 ? Math.round((stats.netProfit / bankrollStart) * 1000) / 10 : null;
+  const balanceTimeline = stats.timeline.map((p) => ({ ...p, balance: bankrollStart + p.profit }));
+  const showBankroll = bankrollStart > 0 && w.bankroll !== false;
+
   // First-run onboarding: guide brand-new accounts before there's any data.
   if (stats.totalBets === 0) {
     return (
@@ -90,6 +97,35 @@ export default function Dashboard() {
           {enabledCards.map((c) => (
             <StatCard key={c.key} statKey={c.key} stats={stats} currency={currency} staking={staking} />
           ))}
+        </div>
+      )}
+
+      {showBankroll && (
+        <div className="card" style={{ marginBottom: 24 }}>
+          <div className="row spread" style={{ marginBottom: 14 }}>
+            <h3 className="section-title" style={{ margin: 0 }}>Bankroll</h3>
+            {bankrollGrowth != null && (
+              <span className={bankrollGrowth > 0 ? 'pos' : bankrollGrowth < 0 ? 'neg' : 'muted'} style={{ fontWeight: 700, fontSize: 14 }}>
+                {bankrollGrowth > 0 ? '+' : ''}{bankrollGrowth}%
+              </span>
+            )}
+          </div>
+          <div className="stat-grid" style={{ marginBottom: balanceTimeline.length ? 16 : 0 }}>
+            <div className="stat"><div className="label">Starting</div><div className="value">{formatStake(bankrollStart, currency, staking)}</div></div>
+            <div className="stat"><div className="label">Balance</div><div className={`value ${balance > bankrollStart ? 'pos' : balance < bankrollStart ? 'neg' : ''}`}>{formatStake(balance, currency, staking)}</div></div>
+            <div className="stat"><div className="label">Profit</div><div className={`value ${stats.netProfit > 0 ? 'pos' : stats.netProfit < 0 ? 'neg' : ''}`}>{formatStake(stats.netProfit, currency, staking, { signed: true })}</div></div>
+          </div>
+          {balanceTimeline.length > 0 && (
+            <ProfitChart
+              timeline={balanceTimeline}
+              primary={settings.theme.primary}
+              height={200}
+              dataKey="balance"
+              baseline={bankrollStart}
+              tooltipLabel="Balance"
+              formatValue={(v) => formatStake(v, currency, staking)}
+            />
+          )}
         </div>
       )}
 

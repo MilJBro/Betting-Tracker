@@ -29,6 +29,12 @@ export const DEFAULT_SETTINGS = {
     bookmaker: '',
   },
 
+  // Bankroll tracking. `starting` is the bankroll you began with (in the
+  // account currency); current balance is derived as starting + net profit.
+  bankroll: {
+    starting: 0,
+  },
+
   // Which summary stat cards appear on the dashboard, and in what order.
   // Users can toggle any of these off if they don't care about them.
   statCards: [
@@ -44,6 +50,7 @@ export const DEFAULT_SETTINGS = {
 
   // Which dashboard sections/widgets are visible.
   widgets: {
+    bankroll: true,
     pendingBets: true,
     profitChart: true,
     sportBreakdown: true,
@@ -101,6 +108,7 @@ export function mergeSettings(saved) {
     sharing: { ...base.sharing, ...(saved.sharing || {}) },
     staking: { ...base.staking, ...(saved.staking || {}) },
     defaults: { ...base.defaults, ...(saved.defaults || {}) },
+    bankroll: { ...base.bankroll, ...(saved.bankroll || {}) },
     profile: { ...base.profile, ...(saved.profile || {}) },
     statCards: Array.isArray(saved.statCards) && saved.statCards.length
       ? saved.statCards
