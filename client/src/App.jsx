@@ -1,6 +1,8 @@
 import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
 import { SettingsProvider, useSettings } from './context/SettingsContext.jsx';
+import { TrackerProvider } from './context/TrackerContext.jsx';
+import TrackerBar from './components/TrackerBar.jsx';
 import Icon from './components/Icon.jsx';
 import Login from './pages/Login.jsx';
 import Onboarding from './pages/Onboarding.jsx';
@@ -64,22 +66,25 @@ function ShellInner() {
   if (settings.profile && !settings.profile.onboarded) return <Onboarding />;
 
   return (
-    <>
+    <TrackerProvider>
       <div className="app-shell">
         <Sidebar />
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/bets" element={<Bets />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/customise" element={<Customise />} />
-          <Route path="/account" element={<Account />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <div className="content-col">
+          <TrackerBar />
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/bets" element={<Bets />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/customise" element={<Customise />} />
+            <Route path="/account" element={<Account />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
       </div>
       {/* Mobile-only: floating add + bottom tab bar */}
       <button className="fab" aria-label="Add bet" onClick={() => navigate('/bets?new=1')}>+</button>
       <BottomNav />
-    </>
+    </TrackerProvider>
   );
 }
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { api } from '../api.js';
 import { useSettings } from '../context/SettingsContext.jsx';
 
 // One-time questionnaire shown right after sign-up to learn what kind of
@@ -109,6 +110,13 @@ export default function Onboarding() {
     };
     try {
       await save(next);
+      // Bankroll is per-tracker — seed the account's first (default) tracker.
+      const bk = skip ? 0 : (Number(prefs.bankroll) || 0);
+      if (bk > 0) {
+        const d = await api.get('/trackers').catch(() => null);
+        const first = d?.trackers?.[0];
+        if (first) await api.put(`/trackers/${first.id}`, { bankroll_start: bk }).catch(() => {});
+      }
     } finally {
       setSaving(false);
     }

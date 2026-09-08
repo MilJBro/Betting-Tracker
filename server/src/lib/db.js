@@ -56,6 +56,18 @@ CREATE TABLE IF NOT EXISTS shares (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_shares_user ON shares(user_id);
+
+-- A user can keep several separate trackers (e.g. one per tipster). Each owns
+-- its own bets and its own bankroll.
+CREATE TABLE IF NOT EXISTS trackers (
+  id             TEXT PRIMARY KEY,
+  user_id        TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name           TEXT NOT NULL,
+  bankroll_start REAL NOT NULL DEFAULT 0,
+  position       INTEGER NOT NULL DEFAULT 0,
+  created_at     TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_trackers_user ON trackers(user_id);
 `);
 
 // --- Lightweight migrations -------------------------------------------------
@@ -74,5 +86,36 @@ ensureColumn('bets', 'tipster', 'TEXT');
 ensureColumn('users', 'plan', "TEXT NOT NULL DEFAULT 'free'");
 ensureColumn('users', 'scan_month', 'TEXT'); // 'YYYY-MM' of the current window
 ensureColumn('users', 'scan_count', 'INTEGER NOT NULL DEFAULT 0');
+// Multiple trackers: each bet belongs to a tracker; a share targets one.
+ensureColumn('bets', 'tracker_id', 'TEXT');
+ensureColumn('shares', 'tracker_id', 'TEXT');
+
+// --- One-off data migration: give every user a default tracker and adopt any
+// bets that predate trackers. Idempotent — safe to run on every boot.
+const usersNeedingTracker = db
+  .prepare(
+    `SELECT u.id AS uid, s.data AS settings
+       FROM users u
+       LEFT JOIN settings s ON s.user_id = u.id
+      WHERE NOT EXISTS (SELECT 1 FROM trackers t WHERE t.user_id = u.id)`
+  )
+  .all();
+const makeId = () => 't' + Math.random().toString(36).slice(2, 12);
+const nowIso = () => new Date().toISOString();
+for (const row of usersNeedingTracker) {
+  let bankroll = 0;
+  try { bankroll = Number(JSON.parse(row.settings || '{}')?.bankroll?.starting) || 0; } catch {}
+  const tid = makeId();
+  db.prepare(
+    'INSERT INTO trackers (id, user_id, name, bankroll_start, position, created_at) VALUES (?, ?, ?, ?, 0, ?)'
+  ).run(tid, row.uid, 'My bets', bankroll, nowIso());
+  db.prepare('UPDATE bets SET tracker_id = ? WHERE user_id = ? AND (tracker_id IS NULL OR tracker_id = ?)').run(tid, row.uid, '');
+}
+// Adopt any still-orphaned bets (e.g. tracker existed but column was null).
+const orphans = db.prepare('SELECT DISTINCT user_id FROM bets WHERE tracker_id IS NULL OR tracker_id = ?').all('');
+for (const o of orphans) {
+  const t = db.prepare('SELECT id FROM trackers WHERE user_id = ? ORDER BY position, created_at LIMIT 1').get(o.user_id);
+  if (t) db.prepare('UPDATE bets SET tracker_id = ? WHERE user_id = ? AND (tracker_id IS NULL OR tracker_id = ?)').run(t.id, o.user_id, '');
+}
 
 export default db;

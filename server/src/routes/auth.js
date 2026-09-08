@@ -11,6 +11,7 @@ import {
 import { DEFAULT_SETTINGS } from '../lib/defaults.js';
 import { config } from '../lib/config.js';
 import { entitlements } from '../lib/plan.js';
+import { ensureDefaultTracker } from '../lib/trackers.js';
 import { sendMail, passwordResetEmail } from '../lib/mailer.js';
 import {
   validateEmail,
@@ -43,6 +44,7 @@ router.post('/register', (req, res) => {
     id,
     JSON.stringify(DEFAULT_SETTINGS)
   );
+  ensureDefaultTracker(id); // every account starts with one tracker
 
   const user = { id, email: normEmail, username: username.trim(), token_version: 0 };
   res.status(201).json({ token: signToken(user), user: publicUser(user) });

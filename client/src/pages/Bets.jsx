@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { scanBetSlip } from '../scan.js';
 import { usePlan } from '../usePlan.js';
+import { useTracker } from '../context/TrackerContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import BetForm from '../components/BetForm.jsx';
@@ -27,6 +28,7 @@ const SORTS = [
 
 export default function Bets() {
   const { settings } = useSettings();
+  const { activeId } = useTracker();
   const { ent, setEnt } = usePlan();
   const toast = useToast();
   const navigate = useNavigate();
@@ -53,11 +55,11 @@ export default function Bets() {
 
   const load = () =>
     api
-      .get('/bets')
+      .get('/bets' + (activeId ? `?tracker=${activeId}` : ''))
       .then((d) => { setBets(d.bets); setError(''); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (activeId) load(); }, [activeId]);
 
   // The mobile "+" button links here with ?new=1 to open the form directly.
   useEffect(() => {
@@ -139,7 +141,7 @@ export default function Bets() {
     const editingNow = editing;
     try {
       if (editingNow) await api.put(`/bets/${editingNow.id}`, form);
-      else await api.post('/bets', form);
+      else await api.post('/bets', { ...form, tracker_id: activeId });
     } catch (e) {
       toast(e.message, 'error');
       throw e; // keep the form open so the user can retry

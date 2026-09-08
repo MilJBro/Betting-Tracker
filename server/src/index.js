@@ -12,6 +12,7 @@ import authRoutes from './routes/auth.js';
 import betRoutes from './routes/bets.js';
 import scanRoutes from './routes/scan.js';
 import planRoutes from './routes/plan.js';
+import trackerRoutes from './routes/trackers.js';
 import settingsRoutes from './routes/settings.js';
 import shareRoutes from './routes/share.js';
 
@@ -60,6 +61,7 @@ const authLimiter = rateLimit({
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/bets', betRoutes);
+app.use('/api/trackers', trackerRoutes);
 app.use('/api/plan', planRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/share', shareRoutes);

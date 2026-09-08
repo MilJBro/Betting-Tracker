@@ -4,33 +4,36 @@ import { db } from '../lib/db.js';
 import { requireAuth } from '../lib/auth.js';
 import { mergeSettings } from '../lib/defaults.js';
 import { computeStats } from '../lib/stats.js';
+import { resolveTrackerId, getTracker } from '../lib/trackers.js';
 
 const router = Router();
 
 // --- Authenticated: manage your own share link ------------------------------
 router.get('/me', requireAuth, (req, res) => {
   const row = db
-    .prepare('SELECT public_id, enabled FROM shares WHERE user_id = ?')
+    .prepare('SELECT public_id, enabled, tracker_id FROM shares WHERE user_id = ?')
     .get(req.userId);
   if (!row) return res.json({ share: null });
-  res.json({ share: { publicId: row.public_id, enabled: !!row.enabled } });
+  res.json({ share: { publicId: row.public_id, enabled: !!row.enabled, trackerId: row.tracker_id } });
 });
 
-// Enable sharing (creates a link if one doesn't exist yet).
+// Enable sharing (creates a link if one doesn't exist yet). The share targets
+// one tracker — the active one, or the user's default.
 router.post('/enable', requireAuth, (req, res) => {
+  const trackerId = resolveTrackerId(req.userId, (req.body || {}).tracker_id);
   let row = db
     .prepare('SELECT public_id FROM shares WHERE user_id = ?')
     .get(req.userId);
   if (row) {
-    db.prepare('UPDATE shares SET enabled = 1 WHERE user_id = ?').run(req.userId);
+    db.prepare('UPDATE shares SET enabled = 1, tracker_id = ? WHERE user_id = ?').run(trackerId, req.userId);
   } else {
     const publicId = nanoid(10);
     db.prepare(
-      'INSERT INTO shares (public_id, user_id, enabled, created_at) VALUES (?, ?, 1, ?)'
-    ).run(publicId, req.userId, new Date().toISOString());
+      'INSERT INTO shares (public_id, user_id, enabled, tracker_id, created_at) VALUES (?, ?, 1, ?, ?)'
+    ).run(publicId, req.userId, trackerId, new Date().toISOString());
     row = { public_id: publicId };
   }
-  res.json({ share: { publicId: row.public_id, enabled: true } });
+  res.json({ share: { publicId: row.public_id, enabled: true, trackerId } });
 });
 
 router.post('/disable', requireAuth, (req, res) => {
@@ -55,9 +58,11 @@ router.get('/public/:publicId', (req, res) => {
   const settings = mergeSettings(settingsRow ? JSON.parse(settingsRow.data) : null);
   const sharing = settings.sharing;
 
+  // Scope to the shared tracker (fallback to the user's default for legacy shares).
+  const trackerId = share.tracker_id || resolveTrackerId(share.user_id, null);
   const rows = db
-    .prepare('SELECT * FROM bets WHERE user_id = ?')
-    .all(share.user_id)
+    .prepare('SELECT * FROM bets WHERE user_id = ? AND tracker_id = ?')
+    .all(share.user_id, trackerId)
     .map((r) => ({ ...r, tags: r.tags ? JSON.parse(r.tags) : [] }));
   const stats = computeStats(rows);
 

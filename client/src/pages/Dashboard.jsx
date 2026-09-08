@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useSettings } from '../context/SettingsContext.jsx';
+import { useTracker } from '../context/TrackerContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import StatCard from '../components/StatCard.jsx';
 import ProfitChart from '../components/ProfitChart.jsx';
@@ -10,17 +11,20 @@ import { formatStake, formatOdds, formatDate } from '../format.js';
 
 export default function Dashboard() {
   const { settings } = useSettings();
+  const { active, activeId } = useTracker();
   const toast = useToast();
   const [stats, setStats] = useState(null);
   const [bets, setBets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const load = () =>
-    Promise.all([
-      api.get('/bets/stats').then((d) => setStats(d.stats)),
-      api.get('/bets').then((d) => setBets(d.bets)),
+  const load = useCallback(() => {
+    const q = activeId ? `?tracker=${activeId}` : '';
+    return Promise.all([
+      api.get('/bets/stats' + q).then((d) => setStats(d.stats)),
+      api.get('/bets' + q).then((d) => setBets(d.bets)),
     ]);
-  useEffect(() => { load().finally(() => setLoading(false)); }, []);
+  }, [activeId]);
+  useEffect(() => { if (!activeId) return; setLoading(true); load().finally(() => setLoading(false)); }, [activeId, load]);
 
   async function settle(bet, status) {
     try {
@@ -41,8 +45,8 @@ export default function Dashboard() {
   const pendingStaked = pending.reduce((s, b) => s + b.stake, 0);
   const pendingReturn = pending.reduce((s, b) => s + b.stake * b.odds, 0);
 
-  // Bankroll: current balance is the starting bankroll plus realised profit.
-  const bankrollStart = Number(settings.bankroll?.starting) || 0;
+  // Bankroll: current balance is the tracker's starting bankroll plus realised profit.
+  const bankrollStart = Number(active?.bankroll_start) || 0;
   const balance = bankrollStart + stats.netProfit;
   const bankrollGrowth = bankrollStart > 0 ? Math.round((stats.netProfit / bankrollStart) * 1000) / 10 : null;
   const balanceTimeline = stats.timeline.map((p) => ({ ...p, balance: bankrollStart + p.profit }));

@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { api } from '../api.js';
 import { useSettings } from '../context/SettingsContext.jsx';
+import { useTracker } from '../context/TrackerContext.jsx';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
 import { formatStake } from '../format.js';
@@ -33,6 +34,7 @@ const BLANK_FILTERS = { from: '', to: '', sport: '', tipster: '' };
 
 export default function Analytics() {
   const { settings } = useSettings();
+  const { activeId } = useTracker();
   const [a, setA] = useState(null);
   const [meta, setMeta] = useState({ pro: false, options: { sports: [], tipsters: [], bookmakers: [] } });
   const [filters, setFilters] = useState(BLANK_FILTERS);
@@ -42,15 +44,16 @@ export default function Analytics() {
 
   const load = useCallback(() => {
     const q = new URLSearchParams();
+    if (activeId) q.set('tracker', activeId);
     Object.entries(filters).forEach(([k, v]) => { if (v) q.set(k, v); });
     const qs = q.toString();
     return api.get('/bets/analytics' + (qs ? `?${qs}` : '')).then((d) => {
       setA(d.analytics);
       setMeta({ pro: d.pro, options: d.options });
     });
-  }, [filters]);
+  }, [filters, activeId]);
 
-  useEffect(() => { load().finally(() => setLoading(false)); }, [load]);
+  useEffect(() => { if (!activeId) return; load().finally(() => setLoading(false)); }, [load, activeId]);
 
   if (loading) return <div className="main"><Spinner /></div>;
 

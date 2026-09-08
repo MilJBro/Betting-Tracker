@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 import { db } from '../lib/db.js';
 import { requireAuth } from '../lib/auth.js';
 import { isPro } from '../lib/plan.js';
+import { resolveTrackerId } from '../lib/trackers.js';
 import { computeStats, computeAnalytics } from '../lib/stats.js';
 
 const router = Router();
@@ -43,19 +44,21 @@ function sanitise(body) {
   };
 }
 
-// List all bets for the current user.
+// List all bets for the current user's active tracker.
 router.get('/', (req, res) => {
+  const trackerId = resolveTrackerId(req.userId, req.query.tracker);
   const rows = db
-    .prepare('SELECT * FROM bets WHERE user_id = ? ORDER BY placed_at DESC, created_at DESC')
-    .all(req.userId);
-  res.json({ bets: rows.map(rowToBet) });
+    .prepare('SELECT * FROM bets WHERE user_id = ? AND tracker_id = ? ORDER BY placed_at DESC, created_at DESC')
+    .all(req.userId, trackerId);
+  res.json({ bets: rows.map(rowToBet), tracker: trackerId });
 });
 
-// Aggregate stats for the dashboard.
+// Aggregate stats for the dashboard (scoped to the active tracker).
 router.get('/stats', (req, res) => {
+  const trackerId = resolveTrackerId(req.userId, req.query.tracker);
   const rows = db
-    .prepare('SELECT * FROM bets WHERE user_id = ?')
-    .all(req.userId)
+    .prepare('SELECT * FROM bets WHERE user_id = ? AND tracker_id = ?')
+    .all(req.userId, trackerId)
     .map(rowToBet);
   res.json({ stats: computeStats(rows) });
 });
@@ -64,9 +67,10 @@ router.get('/stats', (req, res) => {
 // range, sport and tipster; free accounts always get the all-time view (the
 // filter controls are Pro-gated on the client and ignored here for free users).
 router.get('/analytics', (req, res) => {
+  const trackerId = resolveTrackerId(req.userId, req.query.tracker);
   const all = db
-    .prepare('SELECT * FROM bets WHERE user_id = ?')
-    .all(req.userId)
+    .prepare('SELECT * FROM bets WHERE user_id = ? AND tracker_id = ?')
+    .all(req.userId, trackerId)
     .map(rowToBet);
 
   const pro = isPro(req.userId);
@@ -93,12 +97,13 @@ router.post('/', (req, res) => {
   const b = sanitise(req.body || {});
   const id = nanoid();
   const now = new Date().toISOString();
+  const trackerId = resolveTrackerId(req.userId, (req.body || {}).tracker_id || req.query.tracker);
   db.prepare(
-    `INSERT INTO bets (id, user_id, placed_at, sport, event, selection, bet_type,
+    `INSERT INTO bets (id, user_id, tracker_id, placed_at, sport, event, selection, bet_type,
        bookmaker, tipster, stake, odds, status, payout, notes, tags, created_at, updated_at)
-     VALUES (@id, @user_id, @placed_at, @sport, @event, @selection, @bet_type,
+     VALUES (@id, @user_id, @tracker_id, @placed_at, @sport, @event, @selection, @bet_type,
        @bookmaker, @tipster, @stake, @odds, @status, @payout, @notes, @tags, @created_at, @updated_at)`
-  ).run({ id, user_id: req.userId, ...b, created_at: now, updated_at: now });
+  ).run({ id, user_id: req.userId, tracker_id: trackerId, ...b, created_at: now, updated_at: now });
   const row = db.prepare('SELECT * FROM bets WHERE id = ?').get(id);
   res.status(201).json({ bet: rowToBet(row) });
 });

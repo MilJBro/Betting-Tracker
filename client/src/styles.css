@@ -108,7 +108,11 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6
 .nav-link.active { background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary); }
 .nav-spacer { flex: 1; }
 
+.content-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .main { flex: 1; padding: 26px 32px; max-width: var(--maxw); margin: 0 auto; width: 100%; }
+.tracker-bar { display: flex; align-items: center; gap: 10px; padding: 10px 32px; border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 5; }
+.tracker-bar select { flex: 1; max-width: 320px; }
+@media (max-width: 860px) { .tracker-bar { padding: 10px 14px; } }
 .page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; gap: 16px; flex-wrap: wrap; }
 .page-head h1 { margin: 0; font-size: 26px; font-weight: 800; }
 .page-head p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
