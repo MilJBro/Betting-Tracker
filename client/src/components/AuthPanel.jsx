@@ -1,0 +1,102 @@
+import { useState } from 'react';
+import { useAuth } from '../context/AuthContext.jsx';
+import { api } from '../api.js';
+
+// The login / sign-up / forgot-password card. Reused on the landing page and
+// anywhere else auth is needed.
+export default function AuthPanel({ initialMode = 'login', mode: modeProp, onMode }) {
+  const { login, register } = useAuth();
+  const [modeState, setModeState] = useState(initialMode); // login | register | forgot
+  // Optionally controlled by a parent (e.g. landing hero CTAs).
+  const mode = modeProp ?? modeState;
+  const setMode = onMode ?? setModeState;
+  const [form, setForm] = useState({ email: '', username: '', password: '' });
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [devLink, setDevLink] = useState('');
+  const [busy, setBusy] = useState(false);
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  function switchMode(m) {
+    setMode(m);
+    setError('');
+    setNotice('');
+    setDevLink('');
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    setError('');
+    setNotice('');
+    setDevLink('');
+    setBusy(true);
+    try {
+      if (mode === 'login') await login(form.email, form.password);
+      else if (mode === 'register') await register(form.email, form.username, form.password);
+      else {
+        const d = await api.post('/auth/forgot-password', { email: form.email });
+        setNotice(d.message || 'If that email is registered, a reset link is on its way.');
+        if (d.devResetUrl) setDevLink(d.devResetUrl);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="card auth-panel">
+      {mode !== 'forgot' && (
+        <div className="tabs">
+          <div className={`tab ${mode === 'login' ? 'active' : ''}`} onClick={() => switchMode('login')}>Log in</div>
+          <div className={`tab ${mode === 'register' ? 'active' : ''}`} onClick={() => switchMode('register')}>Sign up</div>
+        </div>
+      )}
+
+      {mode === 'forgot' && <h2 style={{ margin: '0 0 14px', fontSize: 19 }}>Reset your password</h2>}
+      {mode === 'register' && <p className="muted" style={{ margin: '0 0 14px', fontSize: 13 }}>Free to use. Your bets stay private until you choose to share.</p>}
+
+      {error && <div className="error-banner">{error}</div>}
+      {notice && <div className="success-banner">{notice}</div>}
+      {devLink && (
+        <div className="success-banner" style={{ wordBreak: 'break-all' }}>
+          Dev mode (no email configured): <a href={devLink}>open your reset link</a>
+        </div>
+      )}
+
+      <form onSubmit={submit}>
+        <div className="field">
+          <label>Email</label>
+          <input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="you@example.com" required />
+        </div>
+        {mode === 'register' && (
+          <div className="field">
+            <label>Username</label>
+            <input value={form.username} onChange={(e) => set('username', e.target.value)} placeholder="How your profile appears" required />
+          </div>
+        )}
+        {mode !== 'forgot' && (
+          <div className="field">
+            <label>Password</label>
+            <input type="password" value={form.password} onChange={(e) => set('password', e.target.value)} placeholder={mode === 'register' ? 'At least 8 characters' : '••••••••'} required />
+          </div>
+        )}
+        <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: 6 }} disabled={busy}>
+          {busy ? 'Please wait…' : mode === 'login' ? 'Log in' : mode === 'register' ? 'Create account' : 'Send reset link'}
+        </button>
+      </form>
+
+      {mode === 'login' && (
+        <p style={{ textAlign: 'center', margin: '14px 0 0', fontSize: 13 }}>
+          <a onClick={() => switchMode('forgot')} style={{ cursor: 'pointer' }}>Forgot your password?</a>
+        </p>
+      )}
+      {mode === 'forgot' && (
+        <p style={{ textAlign: 'center', margin: '14px 0 0', fontSize: 13 }}>
+          <a onClick={() => switchMode('login')} style={{ cursor: 'pointer' }}>← Back to log in</a>
+        </p>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,283 @@
+import { useMemo, useState } from 'react';
+import { currencySymbol } from '../format.js';
+
+const STATUS_OPTIONS = ['pending', 'won', 'lost', 'void', 'cashout'];
+
+const blank = () => ({
+  placed_at: new Date().toISOString().slice(0, 10),
+  sport: '',
+  event: '',
+  selection: '',
+  bet_type: '',
+  bookmaker: '',
+  tipster: '',
+  stake: '',
+  odds: '',
+  status: 'pending',
+  payout: '',
+  notes: '',
+  tags: [],
+  legs: [],
+});
+
+// Combined decimal odds for an accumulator = product of the legs' odds.
+function combinedOdds(legs) {
+  const valid = legs.filter((l) => Number(l.odds) > 0);
+  if (!valid.length) return 0;
+  return valid.reduce((p, l) => p * Number(l.odds), 1);
+}
+
+export default function BetForm({ initial, isEdit, fields, staking, currency, defaults, bookmakers = [], onSave, onClose }) {
+  const unitSize = Number(staking?.unitSize) || 0;
+  const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
+  const toUnits = (money) =>
+    money === '' || money == null ? money : String(Math.round((money / unitSize) * 100) / 100);
+
+  const [form, setForm] = useState(() => {
+    const base = blank();
+    // Pre-fill a brand-new bet (not an edit or a scan) with the user's defaults.
+    if (!initial) {
+      if (defaults?.stake !== '' && defaults?.stake != null) base.stake = String(defaults.stake);
+      if (defaults?.bookmaker) base.bookmaker = defaults.bookmaker;
+    }
+    const f = { ...base, ...(initial || {}) };
+    if (usesUnits && initial) {
+      f.stake = initial.stake ? toUnits(initial.stake) : '';
+      f.payout = initial.payout != null && initial.payout !== '' ? toUnits(initial.payout) : f.payout;
+    }
+    return f;
+  });
+
+  // Single vs accumulator. Legs carry their own selection + odds.
+  const initialLegs = Array.isArray(initial?.legs) ? initial.legs : [];
+  const [kind, setKind] = useState(
+    initialLegs.length >= 2 || initial?.bet_type === 'Accumulator' ? 'acca' : 'single'
+  );
+  const [legs, setLegs] = useState(() =>
+    initialLegs.length
+      ? initialLegs.map((l) => ({ selection: l.selection || '', odds: l.odds != null ? String(l.odds) : '' }))
+      : [{ selection: '', odds: '' }, { selection: '', odds: '' }]
+  );
+
+  const [tagInput, setTagInput] = useState('');
+  const [saving, setSaving] = useState(false);
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const show = (k) => fields[k] !== false;
+  const unitLabel = usesUnits ? ' (units)' : '';
+
+  const accaOdds = useMemo(() => combinedOdds(legs), [legs]);
+
+  const setLeg = (i, k, v) => setLegs((ls) => ls.map((l, j) => (j === i ? { ...l, [k]: v } : l)));
+  const addLeg = () => setLegs((ls) => [...ls, { selection: '', odds: '' }]);
+  const removeLeg = (i) => setLegs((ls) => (ls.length > 1 ? ls.filter((_, j) => j !== i) : ls));
+
+  async function submit(e) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = { ...form };
+      if (usesUnits) {
+        payload.stake = form.stake === '' ? '' : Number(form.stake) * unitSize;
+        payload.payout =
+          form.payout === '' || form.payout == null ? form.payout : Number(form.payout) * unitSize;
+      }
+      if (kind === 'acca') {
+        const cleaned = legs
+          .map((l) => ({ selection: l.selection.trim(), odds: Number(l.odds) || 0 }))
+          .filter((l) => l.selection || l.odds > 0);
+        payload.legs = cleaned;
+        payload.bet_type = 'Accumulator';
+        payload.odds = combinedOdds(cleaned) || '';
+        payload.event = '';
+        payload.selection = ''; // server builds a summary from the legs
+      } else {
+        payload.legs = [];
+        payload.bet_type = 'Single';
+      }
+      await onSave(payload);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function addTag() {
+    const t = tagInput.trim();
+    if (t && !form.tags.includes(t)) set('tags', [...form.tags, t]);
+    setTagInput('');
+  }
+
+  return (
+    <div className="modal-overlay" onMouseDown={onClose}>
+      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="row spread" style={{ marginBottom: 18 }}>
+          <h2 style={{ margin: 0, fontSize: 20 }}>{isEdit ? 'Edit bet' : 'Add a bet'}</h2>
+          <button className="btn-ghost btn-sm" type="button" onClick={onClose}>✕</button>
+        </div>
+        <form onSubmit={submit}>
+          <div className="grid-2">
+            <div className="field">
+              <label>Date</label>
+              <input type="date" value={form.placed_at} onChange={(e) => set('placed_at', e.target.value)} />
+            </div>
+            {show('sport') && (
+              <div className="field">
+                <label>Sport / Category</label>
+                <input value={form.sport} onChange={(e) => set('sport', e.target.value)} placeholder="Football" />
+              </div>
+            )}
+          </div>
+
+          {/* Bet kind: single or accumulator */}
+          <div className="field">
+            <label>Bet type</label>
+            <div className="seg-group">
+              <button type="button" className={kind === 'single' ? 'seg on' : 'seg'} onClick={() => setKind('single')}>Single</button>
+              <button type="button" className={kind === 'acca' ? 'seg on' : 'seg'} onClick={() => setKind('acca')}>Accumulator</button>
+            </div>
+          </div>
+
+          {kind === 'single' ? (
+            <>
+              {show('event') && (
+                <div className="field">
+                  <label>Event</label>
+                  <input value={form.event} onChange={(e) => set('event', e.target.value)} placeholder="Arsenal vs Chelsea" />
+                </div>
+              )}
+              {show('selection') && (
+                <div className="field">
+                  <label>Selection</label>
+                  <input value={form.selection} onChange={(e) => set('selection', e.target.value)} placeholder="Arsenal to win" />
+                </div>
+              )}
+              {show('odds') && (
+                <div className="field">
+                  <label>Odds (decimal)</label>
+                  <input type="number" step="0.01" min="0" value={form.odds} onChange={(e) => set('odds', e.target.value)} placeholder="e.g. 2.50" />
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="field">
+              <label>Selections</label>
+              <div className="legs">
+                {legs.map((l, i) => (
+                  <div className="leg-row" key={i}>
+                    <input
+                      value={l.selection}
+                      onChange={(e) => setLeg(i, 'selection', e.target.value)}
+                      placeholder={`Selection ${i + 1}`}
+                    />
+                    <input
+                      type="number" step="0.01" min="0" className="leg-odds"
+                      value={l.odds}
+                      onChange={(e) => setLeg(i, 'odds', e.target.value)}
+                      placeholder="Odds"
+                    />
+                    <button
+                      type="button" className="btn-ghost btn-sm leg-x"
+                      onClick={() => removeLeg(i)} disabled={legs.length <= 1} title="Remove"
+                    >✕</button>
+                  </div>
+                ))}
+              </div>
+              <div className="row spread" style={{ marginTop: 10 }}>
+                <button type="button" className="btn-ghost btn-sm" onClick={addLeg}>+ Add selection</button>
+                <div className="muted" style={{ fontSize: 13 }}>
+                  Total odds <strong style={{ color: 'var(--text)', fontSize: 15 }}>{accaOdds ? accaOdds.toFixed(2) : '—'}</strong>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {show('bookmaker') && (
+            <div className="field">
+              <label>Bookmaker</label>
+              <input
+                list="bookmaker-options"
+                value={form.bookmaker}
+                onChange={(e) => set('bookmaker', e.target.value)}
+                placeholder="Choose or type a bookmaker"
+              />
+              <datalist id="bookmaker-options">
+                {bookmakers.map((b) => <option key={b} value={b} />)}
+              </datalist>
+            </div>
+          )}
+
+          {show('tipster') && (
+            <div className="field">
+              <label>Tipster</label>
+              <input value={form.tipster} onChange={(e) => set('tipster', e.target.value)} placeholder="Who tipped this bet?" />
+            </div>
+          )}
+
+          <div className="grid-2">
+            {show('stake') && (
+              <div className="field">
+                <label>Stake{unitLabel}</label>
+                <input type="number" step="0.01" min="0" value={form.stake} onChange={(e) => set('stake', e.target.value)} placeholder={usesUnits ? 'e.g. 2' : 'e.g. 10.00'} />
+                {usesUnits && <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>1u = {currencySymbol(currency)}{unitSize}</div>}
+              </div>
+            )}
+            {show('status') && (
+              <div className="field">
+                <label>Status</label>
+                <select value={form.status} onChange={(e) => set('status', e.target.value)}>
+                  {STATUS_OPTIONS.map((s) => (
+                    <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          {show('payout') && (
+            <div className="field">
+              <label>Payout / Return{unitLabel} {form.status === 'won' ? '' : '(optional)'}</label>
+              <input type="number" step="0.01" min="0" value={form.payout ?? ''} onChange={(e) => set('payout', e.target.value)} placeholder="Auto for wins" />
+            </div>
+          )}
+
+          {show('tags') && (
+            <div className="field">
+              <label>Tags</label>
+              <div className="row" style={{ marginBottom: 8 }}>
+                <input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }}
+                  placeholder="value, in-play…"
+                />
+                <button type="button" className="btn-ghost btn-sm" onClick={addTag}>Add</button>
+              </div>
+              <div>
+                {form.tags.map((t) => (
+                  <span key={t} className="chip" style={{ cursor: 'pointer' }} onClick={() => set('tags', form.tags.filter((x) => x !== t))}>
+                    {t} ✕
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {show('notes') && (
+            <div className="field">
+              <label>Notes</label>
+              <textarea rows={2} value={form.notes} onChange={(e) => set('notes', e.target.value)} placeholder="Any reasoning or reminders…" />
+            </div>
+          )}
+
+          <div className="row" style={{ justifyContent: 'flex-end', marginTop: 8 }}>
+            <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add bet'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

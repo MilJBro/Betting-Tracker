@@ -1,0 +1,50 @@
+# Render blueprint for Betbooks.
+# One web service: the Node server builds and serves the React client, with the
+# SQLite database on a small persistent disk. Create it via Render → New →
+# Blueprint, pointed at this repo. Secrets (sync:false) are filled in the
+# Render dashboard, never committed. See DEPLOY.md for the full walkthrough.
+services:
+  - type: web
+    name: betbooks
+    runtime: node
+    plan: starter            # smallest paid plan — needed for a persistent disk
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    disk:
+      name: data
+      mountPath: /var/data   # SQLite + backups live here (survives deploys)
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true  # Render generates a strong secret once
+      - key: DB_PATH
+        value: /var/data/betbooks.db
+      # Public URL — set to your domain (or the onrender.com URL) after first deploy.
+      - key: APP_URL
+        sync: false
+      # Stripe (Pro billing)
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_ID
+        sync: false
+      - key: STRIPE_PRICE_LABEL
+        sync: false
+      # Password-reset email (any SMTP provider)
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false
