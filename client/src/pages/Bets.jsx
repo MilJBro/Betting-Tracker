@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
-import { scanBetSlip } from '../scan.js';
 import { usePlan } from '../usePlan.js';
 import { useTracker } from '../context/TrackerContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
@@ -30,7 +29,7 @@ const SORTS = [
 export default function Bets() {
   const { settings } = useSettings();
   const { activeId, active } = useTracker();
-  const { ent, setEnt } = usePlan();
+  const { ent } = usePlan();
   const toast = useToast();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -40,10 +39,8 @@ export default function Bets() {
   const [editing, setEditing] = useState(null);
   const [prefill, setPrefill] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [scanning, setScanning] = useState(false);
   const [importing, setImporting] = useState(false);
   const [dataMenu, setDataMenu] = useState(false);
-  const fileRef = useRef(null);
   const csvRef = useRef(null);
 
   // Filtering / search / sort state
@@ -180,33 +177,6 @@ export default function Bets() {
   function openNew() { setEditing(null); setPrefill(null); setShowForm(true); }
   function openEdit(b) { setEditing(b); setPrefill(null); setShowForm(true); }
 
-  // Scan a bet-slip screenshot and open the form pre-filled with what we read.
-  async function onScanFile(e) {
-    const file = e.target.files?.[0];
-    e.target.value = ''; // allow re-selecting the same file
-    if (!file) return;
-    setScanning(true);
-    try {
-      const { bet, confidence, scans } = await scanBetSlip(file);
-      if (scans && ent) setEnt({ ...ent, scans }); // update the free-scan meter
-      setEditing(null);
-      setPrefill(bet);
-      setShowForm(true);
-      const low = confidence != null && confidence < 0.5;
-      toast(low ? 'Scanned — please double-check the details' : 'Scanned your slip — review and save', low ? 'info' : 'success');
-    } catch (err) {
-      if (err.status === 402 || err.data?.upgrade) {
-        if (err.data?.scans && ent) setEnt({ ...ent, scans: err.data.scans });
-        toast(err.message, 'error');
-        navigate('/account'); // send them to the upgrade CTA
-      } else {
-        toast(err.message, 'error');
-      }
-    } finally {
-      setScanning(false);
-    }
-  }
-
   const isPro = !!ent?.pro;
   const slug = (s) => (s || 'bets').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'bets';
 
@@ -281,17 +251,10 @@ export default function Bets() {
               </>
             )}
           </div>
-          <button className="btn-ghost" onClick={() => fileRef.current?.click()} disabled={scanning}>
-            <Icon name="camera" size={16} /> {scanning ? 'Scanning…' : 'Scan slip'}
-            {ent && !ent.pro && !scanning && (
-              <span className="muted" style={{ marginLeft: 6, fontSize: 12, fontWeight: 500 }}>· {ent.scans.remaining} left</span>
-            )}
-          </button>
           <button className="btn-primary" onClick={openNew}>+ Add bet</button>
         </div>
       </div>
 
-      <input ref={fileRef} type="file" accept="image/*" onChange={onScanFile} style={{ display: 'none' }} />
       <input ref={csvRef} type="file" accept=".csv,text/csv" onChange={onImportFile} style={{ display: 'none' }} />
 
       {error && <div className="error-banner">{error} <button className="btn-ghost btn-sm" onClick={() => { setLoading(true); load(); }} style={{ marginLeft: 8 }}>Retry</button></div>}
@@ -302,11 +265,8 @@ export default function Bets() {
         <div className="card empty">
           <div className="em"><Icon name="target" size={40} /></div>
           <h3>No bets here yet</h3>
-          <p>Add your first bet, or scan a bet-slip screenshot and we’ll fill it in for you.</p>
+          <p>Add your first bet to start tracking your profit and form.</p>
           <div className="row" style={{ marginTop: 10, justifyContent: 'center', gap: 8 }}>
-            <button className="btn-ghost" onClick={() => fileRef.current?.click()} disabled={scanning}>
-              <Icon name="camera" size={16} /> {scanning ? 'Scanning…' : 'Scan slip'}
-            </button>
             <button className="btn-primary" onClick={openNew}>+ Add bet</button>
           </div>
         </div>
@@ -462,15 +422,6 @@ export default function Bets() {
         )}
       </div>
       </>
-      )}
-
-      {scanning && (
-        <div className="modal-overlay">
-          <div className="modal" style={{ textAlign: 'center' }}>
-            <Spinner label="Reading your bet slip…" />
-            <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>Extracting the selection, odds and stake.</p>
-          </div>
-        </div>
       )}
 
       {showForm && (

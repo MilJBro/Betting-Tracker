@@ -7,7 +7,7 @@ import { usePlan } from '../usePlan.js';
 import { formatDate } from '../format.js';
 
 const PRO_FEATURE_LABELS = [
-  'Unlimited bet-slip scanning',
+  'Multiple trackers (one per tipster or strategy)',
   'Advanced analytics (date ranges, filters, bankroll growth)',
   'CSV import & export',
   'Custom share page (no badge)',
@@ -149,26 +149,17 @@ export default function Account() {
         </div>
         {planMsg && <div className="muted" style={{ fontSize: 13, marginBottom: 8 }}>{planMsg}</div>}
         {ent && !ent.pro && (
-          <>
-            <div className="row spread" style={{ marginTop: 10 }}>
-              <span className="muted">Bet-slip scans this month</span>
-              <strong>{ent.scans.used} / {ent.scans.limit}</strong>
-            </div>
-            <div className="bar" style={{ marginTop: 8 }}>
-              <i style={{ width: `${Math.min(100, (ent.scans.used / Math.max(1, ent.scans.limit)) * 100)}%`, background: ent.scans.remaining === 0 ? 'var(--loss)' : 'var(--primary)' }} />
-            </div>
-            <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-              <div style={{ fontWeight: 700, marginBottom: 8 }}>Upgrade to Pro</div>
-              <ul className="muted" style={{ margin: '0 0 12px', paddingLeft: 18, fontSize: 13, lineHeight: 1.7 }}>
-                {PRO_FEATURE_LABELS.map((f) => <li key={f}>{f}</li>)}
-              </ul>
-              <button className="btn-primary" onClick={() => setPlanDev('pro')} disabled={planBusy}>{planBusy ? 'Working…' : 'Upgrade to Pro'}</button>
-            </div>
-          </>
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>Upgrade to Pro</div>
+            <ul className="muted" style={{ margin: '0 0 12px', paddingLeft: 18, fontSize: 13, lineHeight: 1.7 }}>
+              {PRO_FEATURE_LABELS.map((f) => <li key={f}>{f}</li>)}
+            </ul>
+            <button className="btn-primary" onClick={() => setPlanDev('pro')} disabled={planBusy}>{planBusy ? 'Working…' : 'Upgrade to Pro'}</button>
+          </div>
         )}
         {ent && ent.pro && (
           <>
-            <p className="muted" style={{ marginTop: 10, fontSize: 13 }}>You have unlimited scanning and all Pro features. Thanks for supporting Betfolio.</p>
+            <p className="muted" style={{ marginTop: 10, fontSize: 13 }}>You have all Pro features. Thanks for supporting Betfolio.</p>
             <button className="btn-ghost btn-sm" onClick={() => setPlanDev('free')} disabled={planBusy}>Switch back to Free</button>
           </>
         )}

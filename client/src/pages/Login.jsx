@@ -14,9 +14,9 @@ const FEATURES = [
     icon: <path d="M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5" />,
   },
   {
-    title: 'Snap a bet slip',
-    body: 'Screenshot your slip and it fills the Add Bet form in for you — no typing.',
-    icon: <><path d="M4 8h3l1.5-2h7L17 8h3v11H4z" /><circle cx="12" cy="13" r="3.2" /></>,
+    title: 'Share your form',
+    body: 'Publish a clean, read-only page of your ROI and results — show how you’re getting on.',
+    icon: <><circle cx="6" cy="12" r="2.4" /><circle cx="18" cy="6" r="2.4" /><circle cx="18" cy="18" r="2.4" /><path d="M8 11l8-4M8 13l8 4" /></>,
   },
   {
     title: 'See your true form',
@@ -26,7 +26,7 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  'Add a bet in seconds — or scan a bet slip and let it fill the form.',
+  'Add a bet in seconds — sport, selection, stake and odds.',
   "Mark it won or lost with one tap when the result's in.",
   'Watch your profit, ROI and form take shape automatically.',
 ];
