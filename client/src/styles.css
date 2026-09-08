@@ -193,6 +193,17 @@ tr:last-child td { border-bottom: none; }
 .data-menu-pop button:hover { background: var(--surface-2); }
 .pro-pill { font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 2px 7px; border-radius: 20px; background: color-mix(in srgb, var(--primary) 18%, transparent); color: var(--primary); }
 
+/* Single / accumulator segmented control */
+.seg-group { display: flex; gap: 6px; background: var(--surface-2); padding: 4px; border-radius: var(--radius-sm); }
+.seg-group .seg { flex: 1; padding: 9px; border-radius: calc(var(--radius-sm) - 3px); background: transparent; color: var(--muted); font-weight: 700; font-size: 13.5px; }
+.seg-group .seg.on { background: var(--primary); color: #04120a; }
+
+/* Accumulator legs editor */
+.legs { display: flex; flex-direction: column; gap: 8px; }
+.leg-row { display: flex; gap: 8px; align-items: center; }
+.leg-row .leg-odds { width: 96px; flex: none; }
+.leg-row .leg-x { flex: none; padding: 7px 10px; }
+
 /* ---- Modal / sheet ---- */
 .modal-overlay { position: fixed; inset: 0; background: rgba(4, 8, 16, 0.6); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
 .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow); }

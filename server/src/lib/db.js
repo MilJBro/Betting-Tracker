@@ -89,6 +89,8 @@ ensureColumn('users', 'scan_count', 'INTEGER NOT NULL DEFAULT 0');
 // Multiple trackers: each bet belongs to a tracker; a share targets one.
 ensureColumn('bets', 'tracker_id', 'TEXT');
 ensureColumn('shares', 'tracker_id', 'TEXT');
+// Accumulators: the individual legs (JSON array of {selection, odds}).
+ensureColumn('bets', 'legs', 'TEXT');
 
 // --- One-off data migration: give every user a default tracker and adopt any
 // bets that predate trackers. Idempotent — safe to run on every boot.

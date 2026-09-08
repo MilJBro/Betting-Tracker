@@ -481,6 +481,7 @@ export default function Bets() {
           staking={staking}
           currency={currency}
           defaults={settings?.defaults}
+          bookmakers={bookieOptions}
           onSave={save}
           onClose={() => { setShowForm(false); setPrefill(null); }}
         />
