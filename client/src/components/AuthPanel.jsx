@@ -4,9 +4,12 @@ import { api } from '../api.js';
 
 // The login / sign-up / forgot-password card. Reused on the landing page and
 // anywhere else auth is needed.
-export default function AuthPanel({ initialMode = 'login' }) {
+export default function AuthPanel({ initialMode = 'login', mode: modeProp, onMode }) {
   const { login, register } = useAuth();
-  const [mode, setMode] = useState(initialMode); // login | register | forgot
+  const [modeState, setModeState] = useState(initialMode); // login | register | forgot
+  // Optionally controlled by a parent (e.g. landing hero CTAs).
+  const mode = modeProp ?? modeState;
+  const setMode = onMode ?? setModeState;
   const [form, setForm] = useState({ email: '', username: '', password: '' });
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
