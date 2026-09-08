@@ -39,7 +39,7 @@ function FeatureIcon({ children }) {
   );
 }
 
-// The home page: a marketing landing that introduces Betfolio, then invites
+// The home page: a marketing landing that introduces Betbooks, then invites
 // the visitor to create an account or log in.
 export default function Login() {
   const [mode, setMode] = useState('login');
@@ -54,7 +54,7 @@ export default function Login() {
       <div className="landing">
         <div className="lp-hero">
           <div className="brand" style={{ justifyContent: 'center', fontSize: 22 }}>
-            <span className="brand-dot">₿</span> Betfolio
+            <span className="brand-dot">₿</span> Betbooks
           </div>
           <h1>Track your bets.<br />See your real edge.</h1>
           <p className="sub">
@@ -68,7 +68,7 @@ export default function Login() {
           <div className="lp-trust">Free to use · 18+ · Please gamble responsibly</div>
         </div>
 
-        <div className="section-title lp-h">Why Betfolio</div>
+        <div className="section-title lp-h">Why Betbooks</div>
         <div className="lp-features">
           {FEATURES.map((f) => (
             <div key={f.title} className="card lp-feat">

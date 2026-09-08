@@ -32,7 +32,7 @@ export default function ResetPassword() {
     <div className="auth-wrap">
       <div className="auth-card">
         <div className="brand" style={{ justifyContent: 'center', fontSize: 22, marginBottom: 18 }}>
-          <span className="brand-dot">₿</span> Betfolio
+          <span className="brand-dot">₿</span> Betbooks
         </div>
         <div className="card">
           <h2 style={{ margin: '0 0 14px', fontSize: 19 }}>Choose a new password</h2>

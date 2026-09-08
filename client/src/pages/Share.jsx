@@ -140,7 +140,7 @@ export default function Share() {
       )}
 
       <p className="muted" style={{ textAlign: 'center', fontSize: 12, marginTop: 30 }}>
-        Powered by Betfolio
+        Powered by Betbooks
       </p>
     </div>
   );

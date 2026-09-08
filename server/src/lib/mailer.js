@@ -33,7 +33,7 @@ export async function sendMail({ to, subject, text, html }) {
 
 export function passwordResetEmail(resetUrl) {
   return {
-    subject: 'Reset your Betfolio password',
+    subject: 'Reset your Betbooks password',
     text: `You asked to reset your password.\n\nOpen this link to choose a new one (valid for 1 hour):\n${resetUrl}\n\nIf you didn't request this, you can safely ignore this email.`,
     html: `<p>You asked to reset your password.</p>
 <p><a href="${resetUrl}">Choose a new password</a> — this link is valid for 1 hour.</p>

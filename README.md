@@ -1,6 +1,6 @@
-# Betfolio
+# Betbooks
 
-Betfolio is a fully customizable betting tracker. Create an account, log your bets, and
+Betbooks is a fully customizable betting tracker. Create an account, log your bets, and
 watch your profit, ROI and win rate build up on a dashboard you control — then
 share a read-only page of how you're getting on.
 
@@ -22,7 +22,7 @@ share a read-only page of how you're getting on.
   bookmaker, tipster, stake, odds, status (pending / won / lost / void /
   cash-out), payout, notes and tags. Profit, ROI and win rate are calculated
   for you.
-- **Scan a bet slip** — snap or upload a screenshot of a bet slip and Betfolio
+- **Scan a bet slip** — snap or upload a screenshot of a bet slip and Betbooks
   reads it with Claude vision, then opens the add-bet form pre-filled with the
   selection, event, sport, bookmaker, stake, odds (normalised to decimal) and
   more — you just review and save. Requires an Anthropic API key (see
@@ -66,7 +66,7 @@ share a read-only page of how you're getting on.
 ## Project structure
 
 ```
-betfolio/
+betbooks/
 ├── server/                 # Express API + SQLite
 │   └── src/
 │       ├── index.js        # app entry (also serves the built client)
@@ -124,7 +124,7 @@ The server reads these environment variables:
 | `SMTP_HOST`     | _(empty)_                        | SMTP server for password-reset emails. Without it, reset links are logged to the console (dev). |
 | `SMTP_PORT`     | `587`                            | SMTP port (`465` uses TLS).                                  |
 | `SMTP_USER` / `SMTP_PASS` | _(empty)_              | SMTP credentials.                                            |
-| `MAIL_FROM`     | `Betfolio <no-reply@…>`   | From-address on outgoing email.                              |
+| `MAIL_FROM`     | `Betbooks <no-reply@…>`   | From-address on outgoing email.                              |
 | `ANTHROPIC_API_KEY` | _(empty)_                    | Enables **Scan a bet slip**. Without it the scan endpoint returns a friendly "not enabled" message and the app still works for manual entry. |
 | `ANTHROPIC_MODEL`   | `claude-opus-5`              | Vision model used for slip scanning. Set to a cheaper model (e.g. `claude-haiku-4-5`) to reduce per-scan cost. |
 | `FREE_SCAN_LIMIT`   | `5`                          | How many bet-slip scans a **Free** account may run per month. Pro accounts are unlimited. |
@@ -157,7 +157,7 @@ its response (dev only) so the flow is testable without an email provider.
 
 ## Plans (Free vs Pro)
 
-Betfolio has a freemium foundation. **Free** covers the full core tracker —
+Betbooks has a freemium foundation. **Free** covers the full core tracker —
 unlimited manual bet logging, the dashboard, customisation, search/filter, a
 basic share page, and a small monthly allowance of AI bet-slip scans
 (`FREE_SCAN_LIMIT`). **Pro** is reserved for depth and the features that cost

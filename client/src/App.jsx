@@ -29,7 +29,7 @@ function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <span className="brand-dot">₿</span> Betfolio
+        <span className="brand-dot">₿</span> Betbooks
       </div>
       {NAV.map((n) => (
         <NavLink key={n.to} to={n.to} end={n.end} className={link}>

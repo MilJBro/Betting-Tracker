@@ -3,14 +3,14 @@ import { api } from '../api.js';
 import { useSettings } from '../context/SettingsContext.jsx';
 
 // One-time questionnaire shown right after sign-up to learn what kind of
-// bettor someone is, then tailor Betfolio to them.
+// bettor someone is, then tailor Betbooks to them.
 const SPORTS = ['Football', 'Horse Racing', 'Tennis', 'Basketball', 'Cricket', 'Golf', 'Esports', 'Other'];
 
 const STEPS = [
   {
     key: 'trackingStyle',
     title: 'How do you bet?',
-    subtitle: "This helps us set Betfolio up around the way you bet.",
+    subtitle: "This helps us set Betbooks up around the way you bet.",
     type: 'single',
     options: [
       { value: 'own', label: 'I track my own bets', desc: 'Your own picks and research.' },
@@ -129,7 +129,7 @@ export default function Onboarding() {
     <div className="auth-wrap">
       <div className="onboard">
         <div className="brand" style={{ justifyContent: 'center', marginBottom: 18 }}>
-          <span className="brand-dot">₿</span> Betfolio
+          <span className="brand-dot">₿</span> Betbooks
         </div>
 
         <div className="onboard-progress">

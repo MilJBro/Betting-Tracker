@@ -100,7 +100,7 @@ export default function Account() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'betfolio-export.json';
+    a.download = 'betbooks-export.json';
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -159,7 +159,7 @@ export default function Account() {
         )}
         {ent && ent.pro && (
           <>
-            <p className="muted" style={{ marginTop: 10, fontSize: 13 }}>You have all Pro features. Thanks for supporting Betfolio.</p>
+            <p className="muted" style={{ marginTop: 10, fontSize: 13 }}>You have all Pro features. Thanks for supporting Betbooks.</p>
             <button className="btn-ghost btn-sm" onClick={() => setPlanDev('free')} disabled={planBusy}>Switch back to Free</button>
           </>
         )}
@@ -234,7 +234,7 @@ export default function Account() {
       <div className="card" style={{ marginBottom: 18 }}>
         <h3 className="section-title">Responsible gambling</h3>
         <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
-          Betfolio is a tracker, not a bookmaker. Betting should be fun and within your means —
+          Betbooks is a tracker, not a bookmaker. Betting should be fun and within your means —
           if it stops feeling that way, free, confidential help is available.
         </p>
         <div className="stack" style={{ gap: 8 }}>

@@ -86,5 +86,5 @@ app.use((err, _req, res, _next) => {
 });
 
 app.listen(config.port, () => {
-  console.log(`Betfolio API running on http://localhost:${config.port}`);
+  console.log(`Betbooks API running on http://localhost:${config.port}`);
 });
