@@ -239,6 +239,30 @@ export default function Account() {
         </div>
       </div>
 
+      {/* Responsible gambling */}
+      <div className="card" style={{ marginBottom: 18 }}>
+        <h3 className="section-title">Responsible gambling</h3>
+        <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
+          Betfolio is a tracker, not a bookmaker. Betting should be fun and within your means —
+          if it stops feeling that way, free, confidential help is available.
+        </p>
+        <div className="stack" style={{ gap: 8 }}>
+          <a className="row spread" href="https://www.begambleaware.org/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <span style={{ fontWeight: 600 }}>BeGambleAware</span><span className="muted" style={{ fontSize: 13 }}>Advice & support →</span>
+          </a>
+          <a className="row spread" href="https://www.gamcare.org.uk/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit', borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+            <span style={{ fontWeight: 600 }}>GamCare</span><span className="muted" style={{ fontSize: 13 }}>Live chat & forum →</span>
+          </a>
+          <a className="row spread" href="https://www.gamstop.co.uk/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit', borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+            <span style={{ fontWeight: 600 }}>GAMSTOP</span><span className="muted" style={{ fontSize: 13 }}>Self-exclude from betting sites →</span>
+          </a>
+          <a className="row spread" href="tel:08088020133" style={{ textDecoration: 'none', color: 'inherit', borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+            <span style={{ fontWeight: 600 }}>National Gambling Helpline</span><span className="muted" style={{ fontSize: 13 }}>0808 8020 133 →</span>
+          </a>
+        </div>
+        <p className="muted" style={{ fontSize: 12, marginBottom: 0, marginTop: 12 }}>You must be 18+ to gamble. When the fun stops, stop.</p>
+      </div>
+
       <div className="card" style={{ borderColor: 'var(--loss)' }}>
         <h3 className="section-title" style={{ color: 'var(--loss)' }}>Danger zone</h3>
         {!confirming ? (

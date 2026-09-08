@@ -16,7 +16,8 @@ export default function Login() {
         <AuthPanel initialMode="login" />
 
         <p className="muted" style={{ textAlign: 'center', fontSize: 12, marginTop: 18 }}>
-          Free to use · 18+ · Please gamble responsibly.
+          Free to use · 18+ · Please gamble responsibly ·{' '}
+          <a href="https://www.begambleaware.org/" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>BeGambleAware</a>
         </p>
       </div>
     </div>
