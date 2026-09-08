@@ -8,7 +8,7 @@ import { useSettings } from '../context/SettingsContext.jsx';
 import { useTracker } from '../context/TrackerContext.jsx';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
-import { formatStake } from '../format.js';
+import { formatStake, units, currencySymbol } from '../format.js';
 
 function Bars({ rows, currency, staking }) {
   // Horizontal profit bars for a labelled breakdown (bookmaker, odds band…).
@@ -41,6 +41,7 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true);
   const currency = settings?.currency || 'GBP';
   const staking = settings?.staking;
+  const unitSize = Number(staking?.unitSize) || 0;
 
   const load = useCallback(() => {
     const q = new URLSearchParams();
@@ -123,6 +124,26 @@ export default function Analytics() {
     <div className="main">
       <div className="page-head"><div><h1>Analytics</h1><p>Insights from your betting.</p></div></div>
       {controls}
+
+      {/* In units — everything expressed in the user's unit size */}
+      {unitSize > 0 ? (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <div className="row spread" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 6 }}>
+            <h3 className="section-title" style={{ margin: 0 }}>In units</h3>
+            <span className="muted" style={{ fontSize: 12.5 }}>1u = {currencySymbol(currency)}{unitSize} · <Link to="/customise">change</Link></span>
+          </div>
+          <div className="stat-grid" style={{ marginBottom: 0 }}>
+            <div className="stat"><div className="label">Amount bet</div><div className="value">{units(a.overall.staked / unitSize)}</div></div>
+            <div className="stat"><div className="label">Net profit</div><div className={`value ${a.overall.profit > 0 ? 'pos' : a.overall.profit < 0 ? 'neg' : ''}`}>{units(a.overall.profit / unitSize, { signed: true })}</div></div>
+            <div className="stat"><div className="label">Avg stake</div><div className="value">{units(a.overall.bets ? (a.overall.staked / a.overall.bets) / unitSize : 0)}</div></div>
+          </div>
+        </div>
+      ) : (
+        <Link to="/customise" className="card" style={{ marginBottom: 16, display: 'block', textDecoration: 'none', color: 'inherit' }}>
+          <div style={{ fontWeight: 700 }}>See everything in units</div>
+          <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>Set what one unit is worth in Customise → Units &amp; staking, and your profit, stake and total bet show in units here.</div>
+        </Link>
+      )}
 
       {/* Headline numbers */}
       <div className="stat-grid">
