@@ -6,6 +6,7 @@ import Toggle from '../components/Toggle.jsx';
 import Spinner from '../components/Spinner.jsx';
 import { STAT_META } from '../components/StatCard.jsx';
 import { currencySymbol } from '../format.js';
+import { THEME_PRESETS, matchPreset } from '../themes.js';
 
 const PRESET_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#f59e0b', '#ef4444', '#14b8a6', '#eab308', '#6366f1', '#f97316'];
 const FONTS = [
@@ -160,6 +161,43 @@ export default function Customise() {
       {/* Appearance */}
       <div className="card" style={{ marginBottom: 18 }}>
         <h3 className="section-title">Appearance</h3>
+
+        <div className="field">
+          <label>Theme</label>
+          <p className="muted" style={{ marginTop: 0, marginBottom: 10, fontSize: 13 }}>Pick a look to start from — tweak the details below.</p>
+          <div className="theme-presets">
+            {THEME_PRESETS.map((p) => {
+              const active = matchPreset(t) === p.key;
+              const pt = p.theme;
+              const light = pt.mode === 'light';
+              const cardBg = light ? '#f4f6fb' : pt.background;
+              const cardSurface = light ? '#ffffff' : pt.surface;
+              const cardBorder = light ? '#dde3ec' : '#20304d';
+              const cardText = light ? '#131722' : '#e6edf7';
+              const cardMuted = light ? '#5b6675' : '#8a97ab';
+              return (
+                <button
+                  key={p.key}
+                  type="button"
+                  className={`theme-card ${active ? 'active' : ''}`}
+                  onClick={() => setTheme(pt)}
+                  style={{ background: cardBg, borderColor: active ? pt.primary : cardBorder }}
+                >
+                  <div className="theme-card-preview" style={{ background: cardSurface, borderColor: cardBorder }}>
+                    <span className="theme-dot" style={{ background: pt.primary }} />
+                    <span className="theme-dot" style={{ background: pt.accent }} />
+                    <span className="theme-bar" style={{ background: pt.primary }} />
+                    <span className="theme-bar short" style={{ background: cardMuted }} />
+                  </div>
+                  <div className="theme-card-meta">
+                    <strong style={{ color: cardText }}>{p.name}</strong>
+                    <span style={{ color: cardMuted }}>{p.blurb}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <div className="field">
           <label>Mode</label>

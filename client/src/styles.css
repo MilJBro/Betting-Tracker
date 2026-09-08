@@ -163,6 +163,21 @@ tr:last-child td { border-bottom: none; }
 .swatch { width: 36px; height: 36px; border-radius: 10px; border: 2px solid transparent; cursor: pointer; }
 .swatch.active { border-color: var(--text); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text); }
 
+.theme-presets { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.theme-card { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 14px; border: 2px solid var(--border); cursor: pointer; text-align: left; transition: transform .12s ease, box-shadow .12s ease; }
+.theme-card:hover { transform: translateY(-2px); }
+.theme-card.active { box-shadow: 0 0 0 3px rgba(0,0,0,.15); }
+.theme-card-preview { position: relative; height: 54px; border-radius: 10px; border: 1px solid; padding: 10px; overflow: hidden; }
+.theme-dot { position: absolute; top: 9px; width: 12px; height: 12px; border-radius: 50%; }
+.theme-dot:nth-of-type(1) { left: 10px; }
+.theme-dot:nth-of-type(2) { left: 26px; }
+.theme-bar { position: absolute; left: 10px; height: 6px; border-radius: 4px; }
+.theme-bar:nth-of-type(3) { bottom: 18px; width: 70%; }
+.theme-bar.short { bottom: 8px; width: 42%; }
+.theme-card-meta { display: flex; flex-direction: column; gap: 1px; }
+.theme-card-meta strong { font-size: 14px; }
+.theme-card-meta span { font-size: 12px; }
+
 /* ---- Modal / sheet ---- */
 .modal-overlay { position: fixed; inset: 0; background: rgba(4, 8, 16, 0.6); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
 .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow); }
