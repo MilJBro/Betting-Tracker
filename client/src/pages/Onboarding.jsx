@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api } from '../api.js';
+import BrandMark from '../components/BrandMark.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 
 // One-time questionnaire shown right after sign-up to learn what kind of
@@ -129,7 +130,7 @@ export default function Onboarding() {
     <div className="auth-wrap">
       <div className="onboard">
         <div className="brand" style={{ justifyContent: 'center', marginBottom: 18 }}>
-          <span className="brand-dot">₿</span> Betbooks
+          <BrandMark /> Betbooks
         </div>
 
         <div className="onboard-progress">

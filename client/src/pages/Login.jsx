@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import AuthPanel from '../components/AuthPanel.jsx';
+import BrandMark from '../components/BrandMark.jsx';
 
 const FEATURES = [
   {
@@ -54,7 +55,7 @@ export default function Login() {
       <div className="landing">
         <div className="lp-hero">
           <div className="brand" style={{ justifyContent: 'center', fontSize: 22 }}>
-            <span className="brand-dot">₿</span> Betbooks
+            <BrandMark /> Betbooks
           </div>
           <h1>Track your bets.<br />See your real edge.</h1>
           <p className="sub">
