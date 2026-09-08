@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine, Cell,
@@ -29,29 +29,85 @@ function Bars({ rows, currency, staking }) {
   );
 }
 
+const BLANK_FILTERS = { from: '', to: '', sport: '', tipster: '' };
+
 export default function Analytics() {
   const { settings } = useSettings();
   const [a, setA] = useState(null);
+  const [meta, setMeta] = useState({ pro: false, options: { sports: [], tipsters: [], bookmakers: [] } });
+  const [filters, setFilters] = useState(BLANK_FILTERS);
   const [loading, setLoading] = useState(true);
   const currency = settings?.currency || 'GBP';
   const staking = settings?.staking;
 
-  useEffect(() => {
-    api.get('/bets/analytics').then((d) => setA(d.analytics)).finally(() => setLoading(false));
-  }, []);
+  const load = useCallback(() => {
+    const q = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => { if (v) q.set(k, v); });
+    const qs = q.toString();
+    return api.get('/bets/analytics' + (qs ? `?${qs}` : '')).then((d) => {
+      setA(d.analytics);
+      setMeta({ pro: d.pro, options: d.options });
+    });
+  }, [filters]);
+
+  useEffect(() => { load().finally(() => setLoading(false)); }, [load]);
 
   if (loading) return <div className="main"><Spinner /></div>;
+
+  const anyFilter = Object.values(filters).some(Boolean);
+  const setFilter = (k, v) => setFilters((f) => ({ ...f, [k]: v }));
+
+  // Pro-only filter bar; free users see an upgrade teaser instead.
+  const controls = meta.pro ? (
+    <div className="card" style={{ marginBottom: 16, padding: 14 }}>
+      <div className="row spread" style={{ marginBottom: 10 }}>
+        <h3 className="section-title" style={{ margin: 0 }}>Filters</h3>
+        {anyFilter && <button className="btn-ghost btn-sm" onClick={() => setFilters(BLANK_FILTERS)}>Clear</button>}
+      </div>
+      <div className="grid-2">
+        <div className="field" style={{ margin: 0 }}><label>From date</label><input type="date" value={filters.from} onChange={(e) => setFilter('from', e.target.value)} /></div>
+        <div className="field" style={{ margin: 0 }}><label>To date</label><input type="date" value={filters.to} onChange={(e) => setFilter('to', e.target.value)} /></div>
+        <div className="field" style={{ margin: 0 }}>
+          <label>Sport</label>
+          <select value={filters.sport} onChange={(e) => setFilter('sport', e.target.value)}>
+            <option value="">All sports</option>
+            {meta.options.sports.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div className="field" style={{ margin: 0 }}>
+          <label>Tipster</label>
+          <select value={filters.tipster} onChange={(e) => setFilter('tipster', e.target.value)}>
+            <option value="">All tipsters</option>
+            {meta.options.tipsters.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <Link to="/account" className="card" style={{ marginBottom: 16, display: 'block', textDecoration: 'none', color: 'inherit', borderColor: 'var(--primary)' }}>
+      <div className="row spread" style={{ flexWrap: 'wrap', gap: 8 }}>
+        <div>
+          <div style={{ fontWeight: 700 }}>Filter by date, sport & tipster <span className="badge" style={{ textTransform: 'none' }}>Pro</span></div>
+          <div className="muted" style={{ fontSize: 13 }}>Zoom into any period or pick apart a single tipster or sport. Upgrade to unlock.</div>
+        </div>
+        <span className="btn-primary btn-sm" style={{ pointerEvents: 'none' }}>Upgrade</span>
+      </div>
+    </Link>
+  );
 
   const hasData = a && a.overall.bets > 0;
   if (!hasData) {
     return (
       <div className="main">
         <div className="page-head"><div><h1>Analytics</h1><p>Insights from your betting.</p></div></div>
+        {controls}
         <div className="card empty">
           <div className="em"><Icon name="analytics" size={40} /></div>
-          <h3>No settled bets yet</h3>
-          <p>Once you've settled a few bets, your trends and breakdowns show up here.</p>
-          <Link to="/bets?new=1" className="btn-primary" style={{ display: 'inline-block', marginTop: 10 }}>+ Add a bet</Link>
+          <h3>{anyFilter ? 'No bets in this view' : 'No settled bets yet'}</h3>
+          <p>{anyFilter ? 'Try widening your filters.' : "Once you've settled a few bets, your trends and breakdowns show up here."}</p>
+          {anyFilter
+            ? <button className="btn-ghost" onClick={() => setFilters(BLANK_FILTERS)} style={{ marginTop: 10 }}>Clear filters</button>
+            : <Link to="/bets?new=1" className="btn-primary" style={{ display: 'inline-block', marginTop: 10 }}>+ Add a bet</Link>}
         </div>
       </div>
     );
@@ -63,6 +119,7 @@ export default function Analytics() {
   return (
     <div className="main">
       <div className="page-head"><div><h1>Analytics</h1><p>Insights from your betting.</p></div></div>
+      {controls}
 
       {/* Headline numbers */}
       <div className="stat-grid">

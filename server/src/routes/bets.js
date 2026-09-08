@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { nanoid } from 'nanoid';
 import { db } from '../lib/db.js';
 import { requireAuth } from '../lib/auth.js';
+import { isPro } from '../lib/plan.js';
 import { computeStats, computeAnalytics } from '../lib/stats.js';
 
 const router = Router();
@@ -59,13 +60,33 @@ router.get('/stats', (req, res) => {
   res.json({ stats: computeStats(rows) });
 });
 
-// Deeper analytics for the Insights page.
+// Deeper analytics for the Insights page. Pro accounts may filter by date
+// range, sport and tipster; free accounts always get the all-time view (the
+// filter controls are Pro-gated on the client and ignored here for free users).
 router.get('/analytics', (req, res) => {
-  const rows = db
+  const all = db
     .prepare('SELECT * FROM bets WHERE user_id = ?')
     .all(req.userId)
     .map(rowToBet);
-  res.json({ analytics: computeAnalytics(rows) });
+
+  const pro = isPro(req.userId);
+  const applied = {};
+  let rows = all;
+  if (pro) {
+    const { from, to, sport, tipster } = req.query;
+    if (from) { rows = rows.filter((b) => (b.placed_at || '') >= from); applied.from = String(from); }
+    if (to) { rows = rows.filter((b) => (b.placed_at || '') <= to); applied.to = String(to); }
+    if (sport) { rows = rows.filter((b) => (b.sport || '') === sport); applied.sport = String(sport); }
+    if (tipster) { rows = rows.filter((b) => (b.tipster || '') === tipster); applied.tipster = String(tipster); }
+  }
+
+  const distinct = (key) => [...new Set(all.map((b) => b[key]).filter(Boolean))].sort();
+  res.json({
+    analytics: computeAnalytics(rows),
+    pro,
+    filters: applied,
+    options: { sports: distinct('sport'), tipsters: distinct('tipster'), bookmakers: distinct('bookmaker') },
+  });
 });
 
 router.post('/', (req, res) => {
