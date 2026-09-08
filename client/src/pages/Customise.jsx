@@ -6,7 +6,7 @@ import Toggle from '../components/Toggle.jsx';
 import Spinner from '../components/Spinner.jsx';
 import { STAT_META } from '../components/StatCard.jsx';
 import { currencySymbol } from '../format.js';
-import { THEME_PRESETS, matchPreset } from '../themes.js';
+import { THEME_PRESETS, THEME_STYLES, matchPreset } from '../themes.js';
 
 const PRESET_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#f59e0b', '#ef4444', '#14b8a6', '#eab308', '#6366f1', '#f97316'];
 const FONTS = [
@@ -169,6 +169,7 @@ export default function Customise() {
             {THEME_PRESETS.map((p) => {
               const active = matchPreset(t) === p.key;
               const pt = p.theme;
+              const st = THEME_STYLES[pt.style] || THEME_STYLES.soft;
               const light = pt.mode === 'light';
               const cardBg = light ? '#f4f6fb' : pt.background;
               const cardSurface = light ? '#ffffff' : pt.surface;
@@ -181,16 +182,16 @@ export default function Customise() {
                   type="button"
                   className={`theme-card ${active ? 'active' : ''}`}
                   onClick={() => setTheme(pt)}
-                  style={{ background: cardBg, borderColor: active ? pt.primary : cardBorder }}
+                  style={{ background: cardBg, borderColor: active ? pt.primary : cardBorder, borderRadius: `calc(${st.radius} + 4px)` }}
                 >
-                  <div className="theme-card-preview" style={{ background: cardSurface, borderColor: cardBorder }}>
+                  <div className="theme-card-preview" style={{ background: cardSurface, border: st.cardBorder.replace('var(--border)', cardBorder).replace('var(--accent)', pt.accent).replace('var(--primary)', pt.primary), borderRadius: st.radius, boxShadow: light ? 'none' : st.cardShadow.replace('var(--primary)', pt.primary).replace('var(--accent)', pt.accent) }}>
                     <span className="theme-dot" style={{ background: pt.primary }} />
                     <span className="theme-dot" style={{ background: pt.accent }} />
                     <span className="theme-bar" style={{ background: pt.primary }} />
                     <span className="theme-bar short" style={{ background: cardMuted }} />
                   </div>
                   <div className="theme-card-meta">
-                    <strong style={{ color: cardText }}>{p.name}</strong>
+                    <strong style={{ color: cardText, fontFamily: st.headFont, textTransform: st.headTransform, letterSpacing: st.headSpacing }}>{p.name}</strong>
                     <span style={{ color: cardMuted }}>{p.blurb}</span>
                   </div>
                 </button>

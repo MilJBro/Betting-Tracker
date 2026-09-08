@@ -10,6 +10,13 @@
   --font: "Manrope", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   --font-head: "Sora", "Manrope", system-ui, sans-serif;
   --radius: 16px;
+  --radius-sm: 11px;
+  --card-border: 1px solid var(--border);
+  --card-shadow: none;
+  --label-transform: uppercase;
+  --label-spacing: 0.06em;
+  --head-transform: none;
+  --head-spacing: -0.01em;
   --win: #22c55e;
   --loss: #ef4444;
   --pending: #f59e0b;
@@ -29,7 +36,7 @@ body {
   transition: background 0.3s, color 0.3s;
 }
 
-h1, h2, h3 { font-family: var(--font-head); letter-spacing: -0.01em; text-wrap: balance; }
+h1, h2, h3 { font-family: var(--font-head); letter-spacing: var(--head-spacing); text-transform: var(--head-transform); text-wrap: balance; }
 
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
@@ -38,7 +45,7 @@ button {
   font-family: inherit;
   cursor: pointer;
   border: none;
-  border-radius: 11px;
+  border-radius: var(--radius-sm);
   padding: 10px 16px;
   font-size: 14px;
   font-weight: 700;
@@ -57,7 +64,7 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 .settle-loss { color: var(--loss); border-color: color-mix(in srgb, var(--loss) 40%, var(--border)); font-weight: 700; }
 .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
 .btn-danger { background: transparent; color: var(--loss); border: 1px solid color-mix(in srgb, var(--loss) 55%, var(--border)); }
-.btn-sm { padding: 7px 11px; font-size: 13px; border-radius: 9px; }
+.btn-sm { padding: 7px 11px; font-size: 13px; border-radius: calc(var(--radius-sm) - 2px); }
 .btn-block { width: 100%; }
 
 input, select, textarea {
@@ -65,7 +72,7 @@ input, select, textarea {
   font-size: 15px;
   width: 100%;
   padding: 11px 12px;
-  border-radius: 11px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
@@ -78,7 +85,8 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6
 
 .card {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: var(--card-border);
+  box-shadow: var(--card-shadow);
   border-radius: var(--radius);
   padding: 20px;
 }
@@ -119,8 +127,8 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6
 
 /* ---- Stat cards ---- */
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
-.stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
-.stat .label { color: var(--muted); font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.stat { background: var(--surface); border: var(--card-border); box-shadow: var(--card-shadow); border-radius: var(--radius); padding: 18px; }
+.stat .label { color: var(--muted); font-size: 12.5px; font-weight: 700; text-transform: var(--label-transform); letter-spacing: var(--label-spacing); }
 .stat .value { font-family: var(--font-head); font-size: 27px; font-weight: 800; margin-top: 8px; letter-spacing: -0.02em; line-height: 1; }
 .stat .sub { font-size: 12px; color: var(--muted); margin-top: 6px; font-weight: 600; }
 .pos { color: var(--win); }
@@ -141,7 +149,7 @@ tr:last-child td { border-bottom: none; }
 
 /* ---- Grids & sections ---- */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.section-title { font-family: var(--font-head); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 14px; }
+.section-title { font-family: var(--font-head); font-size: 13px; font-weight: 700; text-transform: var(--label-transform); letter-spacing: var(--label-spacing); color: var(--muted); margin: 0 0 14px; }
 .row { display: flex; gap: 12px; align-items: center; }
 .spread { justify-content: space-between; }
 .muted { color: var(--muted); }

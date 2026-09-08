@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { api } from '../api.js';
 import { useAuth } from './AuthContext.jsx';
+import { THEME_STYLES } from '../themes.js';
 
 const SettingsContext = createContext(null);
 
@@ -26,13 +27,19 @@ export function applyTheme(theme) {
     serif: 'Georgia, "Times New Roman", serif',
   };
   root.style.setProperty('--font', fonts[theme.font] || fonts.system);
-  // Headings/brand keep a consistent display face regardless of body choice.
-  root.style.setProperty(
-    '--font-head',
-    theme.font === 'serif' || theme.font === 'mono'
-      ? fonts[theme.font]
-      : '"Sora", "Manrope", system-ui, sans-serif'
-  );
+
+  // A style is a whole visual language (radius, card treatment, heading face,
+  // label casing) — this is what makes each theme look like a different app.
+  const style = THEME_STYLES[theme.style] || THEME_STYLES.soft;
+  root.style.setProperty('--font-head', style.headFont);
+  root.style.setProperty('--radius', style.radius);
+  root.style.setProperty('--radius-sm', style.radiusSm);
+  root.style.setProperty('--card-border', style.cardBorder);
+  root.style.setProperty('--card-shadow', style.cardShadow);
+  root.style.setProperty('--label-transform', style.labelTransform);
+  root.style.setProperty('--label-spacing', style.labelSpacing);
+  root.style.setProperty('--head-transform', style.headTransform);
+  root.style.setProperty('--head-spacing', style.headSpacing);
 }
 
 export function SettingsProvider({ children }) {
