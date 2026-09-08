@@ -10,6 +10,7 @@ import BetForm from '../components/BetForm.jsx';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
 import { formatStake, formatOdds, formatDate } from '../format.js';
+import { betsToCsv, csvToBets, downloadCsv } from '../csv.js';
 
 function profitOf(b) {
   if (b.status === 'won') return (b.payout ?? b.stake * b.odds) - b.stake;
@@ -28,7 +29,7 @@ const SORTS = [
 
 export default function Bets() {
   const { settings } = useSettings();
-  const { activeId } = useTracker();
+  const { activeId, active } = useTracker();
   const { ent, setEnt } = usePlan();
   const toast = useToast();
   const navigate = useNavigate();
@@ -40,7 +41,10 @@ export default function Bets() {
   const [prefill, setPrefill] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [dataMenu, setDataMenu] = useState(false);
   const fileRef = useRef(null);
+  const csvRef = useRef(null);
 
   // Filtering / search / sort state
   const [status, setStatus] = useState('all');
@@ -203,6 +207,48 @@ export default function Bets() {
     }
   }
 
+  const isPro = !!ent?.pro;
+  const slug = (s) => (s || 'bets').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'bets';
+
+  // Export the active tracker's bets to a CSV download (Pro).
+  function exportCsv() {
+    setDataMenu(false);
+    if (!isPro) { toast('Exporting to CSV is a Pro feature', 'info'); navigate('/account'); return; }
+    if (!bets.length) { toast('No bets to export yet'); return; }
+    const date = new Date().toISOString().slice(0, 10);
+    downloadCsv(`${slug(active?.name)}-${date}.csv`, betsToCsv(bets));
+    toast(`Exported ${bets.length} bet${bets.length !== 1 ? 's' : ''}`, 'success');
+  }
+
+  // Import bets from a CSV file into the active tracker (Pro).
+  async function onImportFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const { bets: parsed, skipped } = csvToBets(text);
+      if (!parsed.length) {
+        toast('No bets found in that file — check it has a header row with Stake / Selection columns', 'error');
+        return;
+      }
+      const d = await api.post('/bets/import', { bets: parsed, tracker_id: activeId });
+      await load();
+      const extra = skipped ? ` (${skipped} row${skipped !== 1 ? 's' : ''} skipped)` : '';
+      toast(`Imported ${d.imported} bet${d.imported !== 1 ? 's' : ''}${extra}`, 'success');
+    } catch (err) {
+      if (err.status === 402 || err.data?.upgrade) {
+        toast('Importing from CSV is a Pro feature', 'info');
+        navigate('/account');
+      } else {
+        toast(err.message || 'Import failed', 'error');
+      }
+    } finally {
+      setImporting(false);
+    }
+  }
+
   function toggleSort(key) {
     if (sortBy === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else { setSortBy(key); setSortDir(key === 'date' ? 'desc' : 'desc'); }
@@ -217,6 +263,24 @@ export default function Bets() {
           <p>{bets.length} bet{bets.length !== 1 ? 's' : ''} logged.</p>
         </div>
         <div className="row" style={{ gap: 8 }}>
+          <div className="data-menu">
+            <button className="btn-ghost" onClick={() => setDataMenu((v) => !v)} disabled={importing} aria-haspopup="true" aria-expanded={dataMenu}>
+              {importing ? 'Importing…' : 'Data'} <span aria-hidden="true">▾</span>
+            </button>
+            {dataMenu && (
+              <>
+                <div className="data-menu-backdrop" onClick={() => setDataMenu(false)} />
+                <div className="data-menu-pop" role="menu">
+                  <button role="menuitem" onClick={exportCsv}>
+                    Export CSV{!isPro && <span className="pro-pill">Pro</span>}
+                  </button>
+                  <button role="menuitem" onClick={() => { setDataMenu(false); csvRef.current?.click(); }}>
+                    Import CSV{!isPro && <span className="pro-pill">Pro</span>}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <button className="btn-ghost" onClick={() => fileRef.current?.click()} disabled={scanning}>
             <Icon name="camera" size={16} /> {scanning ? 'Scanning…' : 'Scan slip'}
             {ent && !ent.pro && !scanning && (
@@ -228,6 +292,7 @@ export default function Bets() {
       </div>
 
       <input ref={fileRef} type="file" accept="image/*" onChange={onScanFile} style={{ display: 'none' }} />
+      <input ref={csvRef} type="file" accept=".csv,text/csv" onChange={onImportFile} style={{ display: 'none' }} />
 
       {error && <div className="error-banner">{error} <button className="btn-ghost btn-sm" onClick={() => { setLoading(true); load(); }} style={{ marginLeft: 8 }}>Retry</button></div>}
 

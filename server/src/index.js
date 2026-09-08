@@ -47,6 +47,10 @@ const scanLimiter = rateLimit({
 });
 app.use('/api/bets/scan', scanLimiter, express.json({ limit: '12mb' }), scanRoutes);
 
+// CSV import can carry thousands of rows; give it a bigger limit before the
+// global 1mb parser (which then no-ops since the body is already parsed).
+app.use('/api/bets/import', express.json({ limit: '6mb' }));
+
 app.use(express.json({ limit: '1mb' }));
 
 // Rate limit authentication endpoints to blunt brute-force and abuse.

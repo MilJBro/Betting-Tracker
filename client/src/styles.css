@@ -178,6 +178,13 @@ tr:last-child td { border-bottom: none; }
 .theme-card-meta strong { font-size: 14px; }
 .theme-card-meta span { font-size: 12px; }
 
+.data-menu { position: relative; }
+.data-menu-backdrop { position: fixed; inset: 0; z-index: 40; }
+.data-menu-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 41; min-width: 172px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.28); padding: 6px; }
+.data-menu-pop button { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 9px 11px; border: none; background: transparent; color: var(--text); font-size: 14px; font-weight: 600; border-radius: 8px; cursor: pointer; text-align: left; }
+.data-menu-pop button:hover { background: var(--surface-2); }
+.pro-pill { font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 2px 7px; border-radius: 20px; background: color-mix(in srgb, var(--primary) 18%, transparent); color: var(--primary); }
+
 /* ---- Modal / sheet ---- */
 .modal-overlay { position: fixed; inset: 0; background: rgba(4, 8, 16, 0.6); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
 .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow); }

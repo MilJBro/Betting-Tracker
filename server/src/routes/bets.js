@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { nanoid } from 'nanoid';
 import { db } from '../lib/db.js';
 import { requireAuth } from '../lib/auth.js';
-import { isPro } from '../lib/plan.js';
+import { isPro, requirePro } from '../lib/plan.js';
 import { resolveTrackerId } from '../lib/trackers.js';
 import { computeStats, computeAnalytics } from '../lib/stats.js';
 
@@ -106,6 +106,34 @@ router.post('/', (req, res) => {
   ).run({ id, user_id: req.userId, tracker_id: trackerId, ...b, created_at: now, updated_at: now });
   const row = db.prepare('SELECT * FROM bets WHERE id = ?').get(id);
   res.status(201).json({ bet: rowToBet(row) });
+});
+
+// Bulk-import bets (CSV upload, parsed client-side) into the active tracker.
+// Pro-only: bringing an existing history across is a premium convenience.
+const IMPORT_MAX = 5000;
+router.post('/import', requirePro, (req, res) => {
+  const list = Array.isArray((req.body || {}).bets) ? req.body.bets : null;
+  if (!list) return res.status(400).json({ error: 'Expected a "bets" array.' });
+  if (list.length === 0) return res.status(400).json({ error: 'No rows to import.' });
+  if (list.length > IMPORT_MAX) {
+    return res.status(400).json({ error: `Too many rows — import up to ${IMPORT_MAX} at a time.` });
+  }
+  const trackerId = resolveTrackerId(req.userId, (req.body || {}).tracker_id || req.query.tracker);
+  const now = new Date().toISOString();
+  const stmt = db.prepare(
+    `INSERT INTO bets (id, user_id, tracker_id, placed_at, sport, event, selection, bet_type,
+       bookmaker, tipster, stake, odds, status, payout, notes, tags, created_at, updated_at)
+     VALUES (@id, @user_id, @tracker_id, @placed_at, @sport, @event, @selection, @bet_type,
+       @bookmaker, @tipster, @stake, @odds, @status, @payout, @notes, @tags, @created_at, @updated_at)`
+  );
+  const insertAll = db.transaction((rows) => {
+    for (const raw of rows) {
+      const b = sanitise(raw || {});
+      stmt.run({ id: nanoid(), user_id: req.userId, tracker_id: trackerId, ...b, created_at: now, updated_at: now });
+    }
+  });
+  insertAll(list);
+  res.status(201).json({ imported: list.length, tracker: trackerId });
 });
 
 router.put('/:id', (req, res) => {
