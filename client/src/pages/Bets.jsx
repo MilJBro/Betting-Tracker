@@ -148,10 +148,12 @@ export default function Bets() {
       toast(e.message, 'error');
       throw e; // keep the form open so the user can retry
     }
-    await load();
-    await rememberTeams(form.event);
-    if (form.placed_at) setLastDate(form.placed_at); // next new bet defaults to this date
+    // The bet is saved. Everything below is best-effort — a failure here must
+    // not throw back into the form and make a successful save look broken.
     toast(editingNow ? 'Bet updated' : 'Bet added', 'success');
+    if (form.placed_at) setLastDate(form.placed_at); // next new bet defaults to this date
+    try { await load(); } catch (e) { /* list will refresh on next load */ }
+    try { await rememberTeams(form.event); } catch (e) { /* non-critical */ }
   }
 
   // Remember any team names from an event ("Home v Away") for future
