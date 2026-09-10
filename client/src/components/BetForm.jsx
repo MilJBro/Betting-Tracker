@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
-import { currencySymbol } from '../format.js';
+import { currencySymbol, money } from '../format.js';
 
 const STATUS_OPTIONS = ['pending', 'won', 'lost', 'void', 'cashout'];
+// Common unit stakes offered as a quick-pick when the user stakes in units.
+const UNIT_STEPS = [0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 5, 10];
 
 const blank = () => ({
   placed_at: new Date().toISOString().slice(0, 10),
@@ -34,7 +36,7 @@ function splitEvent(ev) {
   return { home: (parts[0] || '').trim(), away: (parts.length > 1 ? parts.slice(1).join(' v ') : '').trim() };
 }
 
-export default function BetForm({ initial, isEdit, fields, staking, currency, defaults, bookmakers = [], teams = [], onSave, onClose }) {
+export default function BetForm({ initial, isEdit, fields, staking, currency, defaults, bookmakers = [], teams = [], defaultDate, onSave, onClose }) {
   const unitSize = Number(staking?.unitSize) || 0;
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
   const toUnits = (money) =>
@@ -44,6 +46,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
     const base = blank();
     // Pre-fill a brand-new bet (not an edit or a scan) with the user's defaults.
     if (!initial) {
+      if (defaultDate) base.placed_at = defaultDate; // keep the last date when adding several
       if (defaults?.stake !== '' && defaults?.stake != null) base.stake = String(defaults.stake);
       if (defaults?.bookmaker) base.bookmaker = defaults.bookmaker;
     }
@@ -238,8 +241,24 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
             {show('stake') && (
               <div className="field">
                 <label>Stake{unitLabel}</label>
-                <input type="number" step="0.01" min="0" value={form.stake} onChange={(e) => set('stake', e.target.value)} aria-label="Stake" />
-                {usesUnits && <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>1u = {currencySymbol(currency)}{unitSize}</div>}
+                {usesUnits ? (
+                  <>
+                    <div className="row" style={{ gap: 8 }}>
+                      <input type="number" step="0.01" min="0" value={form.stake} onChange={(e) => set('stake', e.target.value)} aria-label="Stake in units" style={{ flex: 1 }} />
+                      <select aria-label="Quick unit stake" value="" onChange={(e) => { if (e.target.value) set('stake', e.target.value); }} style={{ flex: 'none', width: 96 }}>
+                        <option value="">Units</option>
+                        {UNIT_STEPS.map((u) => <option key={u} value={u}>{u}u</option>)}
+                      </select>
+                    </div>
+                    <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
+                      {form.stake !== '' && Number(form.stake) > 0
+                        ? `${Number(form.stake)}u = ${money(Number(form.stake) * unitSize, currency)}`
+                        : `1u = ${money(unitSize, currency)}`}
+                    </div>
+                  </>
+                ) : (
+                  <input type="number" step="0.01" min="0" value={form.stake} onChange={(e) => set('stake', e.target.value)} aria-label="Stake" />
+                )}
               </div>
             )}
             {show('status') && (

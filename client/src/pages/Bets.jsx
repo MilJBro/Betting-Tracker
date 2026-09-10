@@ -41,6 +41,7 @@ export default function Bets() {
   const [showForm, setShowForm] = useState(false);
   const [importing, setImporting] = useState(false);
   const [dataMenu, setDataMenu] = useState(false);
+  const [lastDate, setLastDate] = useState(''); // reuse the previous bet's date when adding several
   const csvRef = useRef(null);
 
   // Filtering / search / sort state
@@ -149,6 +150,7 @@ export default function Bets() {
     }
     await load();
     await rememberTeams(form.event);
+    if (form.placed_at) setLastDate(form.placed_at); // next new bet defaults to this date
     toast(editingNow ? 'Bet updated' : 'Bet added', 'success');
   }
 
@@ -451,6 +453,7 @@ export default function Bets() {
           defaults={settings?.defaults}
           bookmakers={bookieOptions}
           teams={Array.isArray(settings?.teams) ? settings.teams : []}
+          defaultDate={lastDate}
           onSave={save}
           onClose={() => { setShowForm(false); setPrefill(null); }}
         />
