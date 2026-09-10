@@ -198,6 +198,11 @@ tr:last-child td { border-bottom: none; }
 .seg-group .seg { flex: 1; padding: 9px; border-radius: calc(var(--radius-sm) - 3px); background: transparent; color: var(--muted); font-weight: 700; font-size: 13.5px; }
 .seg-group .seg.on { background: var(--primary); color: #04120a; }
 
+/* Event = Home v Away */
+.team-vs { display: flex; align-items: center; gap: 10px; }
+.team-vs input { flex: 1; min-width: 0; }
+.team-vs .vs { flex: none; color: var(--muted); font-weight: 700; font-size: 13px; }
+
 /* Accumulator legs editor */
 .legs { display: flex; flex-direction: column; gap: 8px; }
 .leg-row { display: flex; gap: 8px; align-items: center; }

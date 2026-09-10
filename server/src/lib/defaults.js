@@ -29,6 +29,10 @@ export const DEFAULT_SETTINGS = {
     bookmaker: '',
   },
 
+  // Teams the user has entered on a bet, remembered for autocomplete. Kept
+  // sorted alphabetically. Grows as new teams are used.
+  teams: [],
+
   // Bankroll tracking. `starting` is the bankroll you began with (in the
   // account currency); current balance is derived as starting + net profit.
   bankroll: {
