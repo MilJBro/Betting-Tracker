@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { currencySymbol, money } from '../format.js';
+import { useEffect, useMemo, useState } from 'react';
+import { currencySymbol, money, formatOdds, parseOdds } from '../format.js';
 
 const STATUS_OPTIONS = ['pending', 'won', 'lost', 'void', 'cashout'];
 // Common unit stakes offered as a quick-pick when the user stakes in units.
@@ -23,10 +23,11 @@ const blank = () => ({
 });
 
 // Combined decimal odds for an accumulator = product of the legs' odds.
-function combinedOdds(legs) {
-  const valid = legs.filter((l) => Number(l.odds) > 0);
+// Legs hold odds in the user's chosen format, so parse each to decimal first.
+function combinedOdds(legs, fmt = 'decimal') {
+  const valid = legs.filter((l) => parseOdds(l.odds, fmt) > 0);
   if (!valid.length) return 0;
-  return valid.reduce((p, l) => p * Number(l.odds), 1);
+  return valid.reduce((p, l) => p * parseOdds(l.odds, fmt), 1);
 }
 
 // An event is stored as "Home v Away". Split it back into the two sides for
@@ -36,7 +37,7 @@ function splitEvent(ev) {
   return { home: (parts[0] || '').trim(), away: (parts.length > 1 ? parts.slice(1).join(' v ') : '').trim() };
 }
 
-export default function BetForm({ initial, isEdit, fields, staking, currency, defaults, bookmakers = [], teams = [], defaultDate, onSetUnitSize, onSave, onClose }) {
+export default function BetForm({ initial, isEdit, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], teams = [], defaultDate, onSetUnitSize, onSave, onClose }) {
   const unitSize = Number(staking?.unitSize) || 0;
   const [editUnit, setEditUnit] = useState(false);
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
@@ -52,6 +53,8 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
       if (defaults?.bookmaker) base.bookmaker = defaults.bookmaker;
     }
     const f = { ...base, ...(initial || {}) };
+    // Show a saved bet's odds back in the user's chosen format for editing.
+    if (initial) f.odds = Number(initial.odds) > 0 ? formatOdds(initial.odds, oddsFormat) : '';
     if (usesUnits && initial) {
       f.stake = initial.stake ? toUnits(initial.stake) : '';
       f.payout = initial.payout != null && initial.payout !== '' ? toUnits(initial.payout) : f.payout;
@@ -66,7 +69,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
   );
   const [legs, setLegs] = useState(() =>
     initialLegs.length
-      ? initialLegs.map((l) => ({ selection: l.selection || '', odds: l.odds != null ? String(l.odds) : '' }))
+      ? initialLegs.map((l) => ({ selection: l.selection || '', odds: Number(l.odds) > 0 ? formatOdds(l.odds, oddsFormat) : '' }))
       : [{ selection: '', odds: '' }, { selection: '', odds: '' }]
   );
 
@@ -97,12 +100,27 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
 
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
+  // Once the user edits the payout themselves, stop auto-filling it.
+  const [payoutTouched, setPayoutTouched] = useState(
+    () => !!(initial && initial.payout != null && initial.payout !== '')
+  );
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const show = (k) => fields[k] !== false;
   const unitLabel = usesUnits ? ' (units)' : '';
 
-  const accaOdds = useMemo(() => combinedOdds(legs), [legs]);
+  const accaOdds = useMemo(() => combinedOdds(legs, oddsFormat), [legs, oddsFormat]);
+
+  // Auto-fill the payout (potential return = stake × odds) as the user types,
+  // until they edit the payout box themselves. Stake and payout share the same
+  // unit (money or units), so the odds is a plain multiplier for both.
+  useEffect(() => {
+    if (payoutTouched) return;
+    const d = kind === 'acca' ? accaOdds : parseOdds(form.odds, oddsFormat);
+    const st = Number(form.stake);
+    const next = d > 0 && st > 0 ? String(Math.round(st * d * 100) / 100) : '';
+    setForm((f) => (f.payout === next ? f : { ...f, payout: next }));
+  }, [form.stake, form.odds, kind, accaOdds, oddsFormat, payoutTouched]);
 
   const setLeg = (i, k, v) => setLegs((ls) => ls.map((l, j) => (j === i ? { ...l, [k]: v } : l)));
   const addLeg = () => setLegs((ls) => [...ls, { selection: '', odds: '' }]);
@@ -120,16 +138,18 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
       }
       if (kind === 'acca') {
         const cleaned = legs
-          .map((l) => ({ selection: l.selection.trim(), odds: Number(l.odds) || 0 }))
+          .map((l) => ({ selection: l.selection.trim(), odds: parseOdds(l.odds, oddsFormat) }))
           .filter((l) => l.selection || l.odds > 0);
+        const validOdds = cleaned.filter((l) => l.odds > 0);
         payload.legs = cleaned;
         payload.bet_type = 'Accumulator';
-        payload.odds = combinedOdds(cleaned) || '';
+        payload.odds = validOdds.length ? validOdds.reduce((p, l) => p * l.odds, 1) : '';
         payload.event = '';
         payload.selection = ''; // server builds a summary from the legs
       } else {
         payload.legs = [];
         payload.bet_type = 'Single';
+        payload.odds = parseOdds(form.odds, oddsFormat);
         payload.event = composeEvent();
       }
       await onSave(payload);
@@ -198,8 +218,16 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
               )}
               {show('odds') && (
                 <div className="field">
-                  <label>Odds (decimal)</label>
-                  <input type="number" step="0.01" min="0" value={form.odds} onChange={(e) => set('odds', e.target.value)} aria-label="Odds (decimal)" />
+                  <label>Odds</label>
+                  <input
+                    type={oddsFormat === 'decimal' ? 'number' : 'text'}
+                    {...(oddsFormat === 'decimal' ? { step: '0.01', min: '0' } : {})}
+                    inputMode={oddsFormat === 'american' ? 'text' : 'decimal'}
+                    value={form.odds}
+                    onChange={(e) => set('odds', e.target.value)}
+                    aria-label="Odds"
+                    autoComplete="off"
+                  />
                 </div>
               )}
             </>
@@ -215,7 +243,10 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
                       aria-label={`Selection ${i + 1}`}
                     />
                     <input
-                      type="number" step="0.01" min="0" className="leg-odds"
+                      type={oddsFormat === 'decimal' ? 'number' : 'text'}
+                      {...(oddsFormat === 'decimal' ? { step: '0.01', min: '0' } : {})}
+                      inputMode={oddsFormat === 'american' ? 'text' : 'decimal'}
+                      className="leg-odds"
                       value={l.odds}
                       onChange={(e) => setLeg(i, 'odds', e.target.value)}
                       aria-label={`Odds for selection ${i + 1}`}
@@ -230,7 +261,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
               <div className="row spread" style={{ marginTop: 10 }}>
                 <button type="button" className="btn-ghost btn-sm" onClick={addLeg}>+ Add selection</button>
                 <div className="muted" style={{ fontSize: 13 }}>
-                  Total odds <strong style={{ color: 'var(--text)', fontSize: 15 }}>{accaOdds ? accaOdds.toFixed(2) : '—'}</strong>
+                  Total odds <strong style={{ color: 'var(--text)', fontSize: 15 }}>{accaOdds ? formatOdds(accaOdds, oddsFormat) : '—'}</strong>
                 </div>
               </div>
             </div>
@@ -332,8 +363,12 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
 
           {show('payout') && (
             <div className="field">
-              <label>Payout / Return{unitLabel} {form.status === 'won' ? '' : '(optional)'}</label>
-              <input type="number" step="0.01" min="0" value={form.payout ?? ''} onChange={(e) => set('payout', e.target.value)} aria-label="Payout or return" />
+              <label>Payout / Return{unitLabel}</label>
+              <input
+                type="number" step="0.01" min="0" value={form.payout ?? ''}
+                onChange={(e) => { set('payout', e.target.value); setPayoutTouched(e.target.value !== ''); }}
+                aria-label="Payout or return"
+              />
             </div>
           )}
 
@@ -356,13 +391,6 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
                   </span>
                 ))}
               </div>
-            </div>
-          )}
-
-          {show('notes') && (
-            <div className="field">
-              <label>Notes</label>
-              <textarea rows={2} value={form.notes} onChange={(e) => set('notes', e.target.value)} aria-label="Notes" />
             </div>
           )}
 
