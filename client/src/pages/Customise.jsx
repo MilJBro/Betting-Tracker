@@ -122,18 +122,16 @@ export default function Customise() {
                 <option value="both">Both (money &amp; units)</option>
               </select>
             </div>
-            {settings.staking.mode !== 'currency' && (
-              <div className="field">
-                <label>1 unit equals</label>
-                <div className="row" style={{ gap: 8 }}>
-                  <span className="muted" style={{ fontWeight: 700 }}>{currencySymbol(settings.currency)}</span>
-                  <input
-                    type="number" min="0.01" step="0.01" value={settings.staking.unitSize}
-                    onChange={(e) => update({ staking: { ...settings.staking, unitSize: Number(e.target.value) || 0 } })}
-                  />
-                </div>
+            <div className="field">
+              <label>1 unit equals</label>
+              <div className="row" style={{ gap: 8 }}>
+                <span className="muted" style={{ fontWeight: 700 }}>{currencySymbol(settings.currency)}</span>
+                <input
+                  type="number" min="0.01" step="0.01" value={settings.staking.unitSize}
+                  onChange={(e) => update({ staking: { ...settings.staking, unitSize: Number(e.target.value) || 0 } })}
+                />
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
