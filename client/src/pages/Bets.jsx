@@ -452,6 +452,7 @@ export default function Bets() {
           fields={fields}
           staking={staking}
           currency={currency}
+          oddsFormat={oddsFormat}
           defaults={settings?.defaults}
           bookmakers={bookieOptions}
           teams={Array.isArray(settings?.teams) ? settings.teams : []}

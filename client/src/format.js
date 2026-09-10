@@ -66,6 +66,25 @@ function gcd(a, b) {
   return a || 1;
 }
 
+// Parse odds the user typed in their chosen format into a decimal number.
+// Fractional "5/2" -> 3.5; American "+150"/"-200" -> 2.5/1.5; decimal as-is.
+export function parseOdds(str, format = 'decimal') {
+  const s = String(str == null ? '' : str).trim();
+  if (!s) return 0;
+  if (format === 'fractional') {
+    const m = s.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
+    if (m) { const den = Number(m[2]); return den ? 1 + Number(m[1]) / den : 0; }
+    const n = Number(s); return Number.isFinite(n) ? n : 0; // no slash: treat as decimal
+  }
+  if (format === 'american') {
+    const a = Number(s.replace(/^\+/, ''));
+    if (!Number.isFinite(a) || a === 0) return 0;
+    return a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a);
+  }
+  const d = Number(s);
+  return Number.isFinite(d) ? d : 0;
+}
+
 export function formatDate(iso) {
   if (!iso) return '';
   const d = new Date(iso.length <= 10 ? iso + 'T00:00:00' : iso);
