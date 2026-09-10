@@ -74,6 +74,17 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
   const [away, setAway] = useState(() => splitEvent(form.event).away);
   const composeEvent = () => [home.trim(), away.trim()].filter(Boolean).join(' v ');
 
+  // The little note under the stake box, converting between units and money.
+  const stakeHint = () => {
+    const n = Number(form.stake);
+    if (form.stake !== '' && n > 0) {
+      return usesUnits
+        ? `${n}u = ${money(n * unitSize, currency)}`
+        : `${money(n, currency)} = ${Math.round((n / unitSize) * 100) / 100}u`;
+    }
+    return `1u = ${money(unitSize, currency)}`;
+  };
+
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -241,20 +252,26 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
             {show('stake') && (
               <div className="field">
                 <label>Stake{unitLabel}</label>
-                {usesUnits ? (
+                {unitSize > 0 ? (
                   <>
                     <div className="row" style={{ gap: 8 }}>
-                      <input type="number" step="0.01" min="0" value={form.stake} onChange={(e) => set('stake', e.target.value)} aria-label="Stake in units" style={{ flex: 1 }} />
-                      <select aria-label="Quick unit stake" value="" onChange={(e) => { if (e.target.value) set('stake', e.target.value); }} style={{ flex: 'none', width: 96 }}>
+                      <input type="number" step="0.01" min="0" value={form.stake} onChange={(e) => set('stake', e.target.value)} aria-label={usesUnits ? 'Stake in units' : 'Stake'} style={{ flex: 1 }} />
+                      <select
+                        aria-label="Quick unit stake"
+                        value=""
+                        onChange={(e) => {
+                          if (!e.target.value) return;
+                          const u = Number(e.target.value);
+                          // In units mode the box holds units; in currency mode fill the money value.
+                          set('stake', usesUnits ? String(u) : String(Math.round(u * unitSize * 100) / 100));
+                        }}
+                        style={{ flex: 'none', width: 96 }}
+                      >
                         <option value="">Units</option>
                         {UNIT_STEPS.map((u) => <option key={u} value={u}>{u}u</option>)}
                       </select>
                     </div>
-                    <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
-                      {form.stake !== '' && Number(form.stake) > 0
-                        ? `${Number(form.stake)}u = ${money(Number(form.stake) * unitSize, currency)}`
-                        : `1u = ${money(unitSize, currency)}`}
-                    </div>
+                    <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>{stakeHint()}</div>
                   </>
                 ) : (
                   <input type="number" step="0.01" min="0" value={form.stake} onChange={(e) => set('stake', e.target.value)} aria-label="Stake" />
