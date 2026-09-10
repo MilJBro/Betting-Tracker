@@ -74,6 +74,15 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
   const [away, setAway] = useState(() => splitEvent(form.event).away);
   const composeEvent = () => [home.trim(), away.trim()].filter(Boolean).join(' v ');
 
+  // Which preset unit the current stake matches, so the quick-pick shows the
+  // chosen unit instead of snapping back to the placeholder. '' when custom.
+  const stakeUnits = () => {
+    if (form.stake === '' || form.stake == null || unitSize <= 0) return '';
+    const u = usesUnits ? Number(form.stake) : Number(form.stake) / unitSize;
+    const match = UNIT_STEPS.find((s) => Math.abs(s - u) < 1e-6);
+    return match != null ? String(match) : '';
+  };
+
   // The little note under the stake box, converting between units and money.
   const stakeHint = () => {
     const n = Number(form.stake);
@@ -258,7 +267,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
                       <input type="number" step="0.01" min="0" value={form.stake} onChange={(e) => set('stake', e.target.value)} aria-label={usesUnits ? 'Stake in units' : 'Stake'} style={{ flex: 1 }} />
                       <select
                         aria-label="Quick unit stake"
-                        value=""
+                        value={stakeUnits()}
                         onChange={(e) => {
                           if (!e.target.value) return;
                           const u = Number(e.target.value);
