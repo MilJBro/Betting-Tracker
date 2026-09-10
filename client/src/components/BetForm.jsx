@@ -222,7 +222,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                   <input
                     type={oddsFormat === 'decimal' ? 'number' : 'text'}
                     {...(oddsFormat === 'decimal' ? { step: '0.01', min: '0' } : {})}
-                    inputMode={oddsFormat === 'american' ? 'text' : 'decimal'}
+                    inputMode={oddsFormat === 'decimal' ? 'decimal' : 'text'}
                     value={form.odds}
                     onChange={(e) => set('odds', e.target.value)}
                     aria-label="Odds"
@@ -245,7 +245,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                     <input
                       type={oddsFormat === 'decimal' ? 'number' : 'text'}
                       {...(oddsFormat === 'decimal' ? { step: '0.01', min: '0' } : {})}
-                      inputMode={oddsFormat === 'american' ? 'text' : 'decimal'}
+                      inputMode={oddsFormat === 'decimal' ? 'decimal' : 'text'}
                       className="leg-odds"
                       value={l.odds}
                       onChange={(e) => setLeg(i, 'odds', e.target.value)}
