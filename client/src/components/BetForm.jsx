@@ -299,7 +299,14 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
                         <input
                           type="number" min="0.01" step="0.01" defaultValue={unitSize || ''}
                           aria-label="Set unit size"
-                          onChange={(e) => onSetUnitSize(Number(e.target.value) || 0)}
+                          onChange={(e) => {
+                            const v = Number(e.target.value) || 0;
+                            // Keep the selected preset unit and rescale the money,
+                            // so "1u" stays 1u and the stake follows the new size.
+                            const cur = stakeUnits();
+                            if (cur !== '' && !usesUnits) set('stake', String(Math.round(Number(cur) * v * 100) / 100));
+                            onSetUnitSize(v);
+                          }}
                           style={{ width: 110 }}
                           autoFocus
                         />
