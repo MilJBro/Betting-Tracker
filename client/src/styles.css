@@ -40,6 +40,9 @@ h1, h2, h3 { font-family: var(--font-head); letter-spacing: var(--head-spacing);
 
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* An inline text button that reads like a link (used for small in-form shortcuts). */
+.linklike { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: underline; }
+.linklike:hover { filter: brightness(1.15); }
 
 button {
   font-family: inherit;

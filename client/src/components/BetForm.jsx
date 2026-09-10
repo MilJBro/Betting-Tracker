@@ -36,8 +36,9 @@ function splitEvent(ev) {
   return { home: (parts[0] || '').trim(), away: (parts.length > 1 ? parts.slice(1).join(' v ') : '').trim() };
 }
 
-export default function BetForm({ initial, isEdit, fields, staking, currency, defaults, bookmakers = [], teams = [], defaultDate, onSave, onClose }) {
+export default function BetForm({ initial, isEdit, fields, staking, currency, defaults, bookmakers = [], teams = [], defaultDate, onSetUnitSize, onSave, onClose }) {
   const unitSize = Number(staking?.unitSize) || 0;
+  const [editUnit, setEditUnit] = useState(false);
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
   const toUnits = (money) =>
     money === '' || money == null ? money : String(Math.round((money / unitSize) * 100) / 100);
@@ -280,7 +281,30 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
                         {UNIT_STEPS.map((u) => <option key={u} value={u}>{u}u</option>)}
                       </select>
                     </div>
-                    <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>{stakeHint()}</div>
+                    <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
+                      {stakeHint()}
+                      {onSetUnitSize && (
+                        <>
+                          {' · '}
+                          <button type="button" className="linklike" onClick={() => setEditUnit((v) => !v)}>
+                            {editUnit ? 'Done' : 'Change unit size'}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    {onSetUnitSize && editUnit && (
+                      <div className="row" style={{ gap: 8, marginTop: 8, alignItems: 'center' }}>
+                        <span className="muted" style={{ fontSize: 13 }}>1 unit =</span>
+                        <span className="muted" style={{ fontWeight: 700 }}>{currencySymbol(currency)}</span>
+                        <input
+                          type="number" min="0.01" step="0.01" defaultValue={unitSize || ''}
+                          aria-label="Set unit size"
+                          onChange={(e) => onSetUnitSize(Number(e.target.value) || 0)}
+                          style={{ width: 110 }}
+                          autoFocus
+                        />
+                      </div>
+                    )}
                   </>
                 ) : (
                   <input type="number" step="0.01" min="0" value={form.stake} onChange={(e) => set('stake', e.target.value)} aria-label="Stake" />

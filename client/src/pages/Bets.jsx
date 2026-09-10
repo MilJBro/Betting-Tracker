@@ -454,6 +454,7 @@ export default function Bets() {
           bookmakers={bookieOptions}
           teams={Array.isArray(settings?.teams) ? settings.teams : []}
           defaultDate={lastDate}
+          onSetUnitSize={(v) => updateSettings({ staking: { ...settings.staking, unitSize: v } })}
           onSave={save}
           onClose={() => { setShowForm(false); setPrefill(null); }}
         />
