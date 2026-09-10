@@ -27,7 +27,14 @@ function combinedOdds(legs) {
   return valid.reduce((p, l) => p * Number(l.odds), 1);
 }
 
-export default function BetForm({ initial, isEdit, fields, staking, currency, defaults, bookmakers = [], onSave, onClose }) {
+// An event is stored as "Home v Away". Split it back into the two sides for
+// editing; join non-empty sides with " v " when saving.
+function splitEvent(ev) {
+  const parts = (ev || '').split(/\s+v(?:s\.?|ersus)?\s+/i);
+  return { home: (parts[0] || '').trim(), away: (parts.length > 1 ? parts.slice(1).join(' v ') : '').trim() };
+}
+
+export default function BetForm({ initial, isEdit, fields, staking, currency, defaults, bookmakers = [], teams = [], onSave, onClose }) {
   const unitSize = Number(staking?.unitSize) || 0;
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
   const toUnits = (money) =>
@@ -58,6 +65,11 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
       ? initialLegs.map((l) => ({ selection: l.selection || '', odds: l.odds != null ? String(l.odds) : '' }))
       : [{ selection: '', odds: '' }, { selection: '', odds: '' }]
   );
+
+  // Event is entered as two teams: "Home v Away".
+  const [home, setHome] = useState(() => splitEvent(form.event).home);
+  const [away, setAway] = useState(() => splitEvent(form.event).away);
+  const composeEvent = () => [home.trim(), away.trim()].filter(Boolean).join(' v ');
 
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
@@ -94,6 +106,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
       } else {
         payload.legs = [];
         payload.bet_type = 'Single';
+        payload.event = composeEvent();
       }
       await onSave(payload);
       onClose();
@@ -143,7 +156,14 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
               {show('event') && (
                 <div className="field">
                   <label>Event</label>
-                  <input value={form.event} onChange={(e) => set('event', e.target.value)} placeholder="Arsenal vs Chelsea" />
+                  <div className="team-vs">
+                    <input list="team-options" value={home} onChange={(e) => setHome(e.target.value)} placeholder="Home team" autoComplete="off" />
+                    <span className="vs">v</span>
+                    <input list="team-options" value={away} onChange={(e) => setAway(e.target.value)} placeholder="Away team" autoComplete="off" />
+                  </div>
+                  <datalist id="team-options">
+                    {teams.map((t) => <option key={t} value={t} />)}
+                  </datalist>
                 </div>
               )}
               {show('selection') && (
