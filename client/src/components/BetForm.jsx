@@ -137,7 +137,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
             {show('sport') && (
               <div className="field">
                 <label>Sport / Category</label>
-                <input value={form.sport} onChange={(e) => set('sport', e.target.value)} placeholder="Football" />
+                <input value={form.sport} onChange={(e) => set('sport', e.target.value)} aria-label="Sport or category" />
               </div>
             )}
           </div>
@@ -157,9 +157,9 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
                 <div className="field">
                   <label>Event</label>
                   <div className="team-vs">
-                    <input list="team-options" value={home} onChange={(e) => setHome(e.target.value)} placeholder="Home team" autoComplete="off" />
+                    <input list="team-options" value={home} onChange={(e) => setHome(e.target.value)} aria-label="Home team" autoComplete="off" />
                     <span className="vs">v</span>
-                    <input list="team-options" value={away} onChange={(e) => setAway(e.target.value)} placeholder="Away team" autoComplete="off" />
+                    <input list="team-options" value={away} onChange={(e) => setAway(e.target.value)} aria-label="Away team" autoComplete="off" />
                   </div>
                   <datalist id="team-options">
                     {teams.map((t) => <option key={t} value={t} />)}
@@ -169,13 +169,13 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
               {show('selection') && (
                 <div className="field">
                   <label>Selection</label>
-                  <input value={form.selection} onChange={(e) => set('selection', e.target.value)} placeholder="Arsenal to win" />
+                  <input value={form.selection} onChange={(e) => set('selection', e.target.value)} aria-label="Selection" />
                 </div>
               )}
               {show('odds') && (
                 <div className="field">
                   <label>Odds (decimal)</label>
-                  <input type="number" step="0.01" min="0" value={form.odds} onChange={(e) => set('odds', e.target.value)} placeholder="e.g. 2.50" />
+                  <input type="number" step="0.01" min="0" value={form.odds} onChange={(e) => set('odds', e.target.value)} aria-label="Odds (decimal)" />
                 </div>
               )}
             </>
@@ -188,13 +188,13 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
                     <input
                       value={l.selection}
                       onChange={(e) => setLeg(i, 'selection', e.target.value)}
-                      placeholder={`Selection ${i + 1}`}
+                      aria-label={`Selection ${i + 1}`}
                     />
                     <input
                       type="number" step="0.01" min="0" className="leg-odds"
                       value={l.odds}
                       onChange={(e) => setLeg(i, 'odds', e.target.value)}
-                      placeholder="Odds"
+                      aria-label={`Odds for selection ${i + 1}`}
                     />
                     <button
                       type="button" className="btn-ghost btn-sm leg-x"
@@ -219,7 +219,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
                 list="bookmaker-options"
                 value={form.bookmaker}
                 onChange={(e) => set('bookmaker', e.target.value)}
-                placeholder="Choose or type a bookmaker"
+                aria-label="Bookmaker"
               />
               <datalist id="bookmaker-options">
                 {bookmakers.map((b) => <option key={b} value={b} />)}
@@ -230,7 +230,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
           {show('tipster') && (
             <div className="field">
               <label>Tipster</label>
-              <input value={form.tipster} onChange={(e) => set('tipster', e.target.value)} placeholder="Who tipped this bet?" />
+              <input value={form.tipster} onChange={(e) => set('tipster', e.target.value)} aria-label="Tipster" />
             </div>
           )}
 
@@ -238,7 +238,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
             {show('stake') && (
               <div className="field">
                 <label>Stake{unitLabel}</label>
-                <input type="number" step="0.01" min="0" value={form.stake} onChange={(e) => set('stake', e.target.value)} placeholder={usesUnits ? 'e.g. 2' : 'e.g. 10.00'} />
+                <input type="number" step="0.01" min="0" value={form.stake} onChange={(e) => set('stake', e.target.value)} aria-label="Stake" />
                 {usesUnits && <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>1u = {currencySymbol(currency)}{unitSize}</div>}
               </div>
             )}
@@ -257,7 +257,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
           {show('payout') && (
             <div className="field">
               <label>Payout / Return{unitLabel} {form.status === 'won' ? '' : '(optional)'}</label>
-              <input type="number" step="0.01" min="0" value={form.payout ?? ''} onChange={(e) => set('payout', e.target.value)} placeholder="Auto for wins" />
+              <input type="number" step="0.01" min="0" value={form.payout ?? ''} onChange={(e) => set('payout', e.target.value)} aria-label="Payout or return" />
             </div>
           )}
 
@@ -269,7 +269,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }}
-                  placeholder="value, in-play…"
+                  aria-label="Add a tag"
                 />
                 <button type="button" className="btn-ghost btn-sm" onClick={addTag}>Add</button>
               </div>
@@ -286,7 +286,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, de
           {show('notes') && (
             <div className="field">
               <label>Notes</label>
-              <textarea rows={2} value={form.notes} onChange={(e) => set('notes', e.target.value)} placeholder="Any reasoning or reminders…" />
+              <textarea rows={2} value={form.notes} onChange={(e) => set('notes', e.target.value)} aria-label="Notes" />
             </div>
           )}
 
