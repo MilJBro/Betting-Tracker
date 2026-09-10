@@ -1,21 +1,32 @@
 # Render blueprint for Betbooks.
-# One web service: the Node server builds and serves the React client, with the
-# SQLite database on a small persistent disk. Create it via Render → New →
-# Blueprint, pointed at this repo. Secrets (sync:false) are filled in the
-# Render dashboard, never committed. See DEPLOY.md for the full walkthrough.
+# One web service: the Node server builds and serves the React client.
+# Create it via Render → New → Blueprint, pointed at this repo. Secrets
+# (sync:false) are filled in the Render dashboard, never committed.
+# See DEPLOY.md for the full walkthrough.
+#
+# ── This file is currently set to Render's FREE plan, for testing ──
+# The free plan has NO persistent disk, so the SQLite database is wiped on
+# every deploy/restart and the service sleeps when idle (first visit after a
+# nap takes ~30s to wake). Great for trying it out; not for real data.
+#
+# To go to PRODUCTION later, switch to the paid Starter plan with a disk that
+# keeps your data. Change the two marked lines below and add this block back
+# under the service (indented like envVars):
+#     disk:
+#       name: data
+#       mountPath: /var/data
+#       sizeGB: 1
+# ...and add an env var  DB_PATH = /var/data/betbooks.db  so the database
+# lives on that disk. DEPLOY.md spells this out.
 services:
   - type: web
     name: betbooks
     runtime: node
-    plan: starter            # smallest paid plan — needed for a persistent disk
+    plan: free               # ← PRODUCTION: change to "starter" (and add the disk + DB_PATH)
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     autoDeploy: true
-    disk:
-      name: data
-      mountPath: /var/data   # SQLite + backups live here (survives deploys)
-      sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: "20"
@@ -23,12 +34,12 @@ services:
         value: production
       - key: JWT_SECRET
         generateValue: true  # Render generates a strong secret once
-      - key: DB_PATH
-        value: /var/data/betbooks.db
-      # Public URL — set to your domain (or the onrender.com URL) after first deploy.
+      # On free (no disk) the database uses the app's own data folder, which is
+      # wiped on redeploy. On the paid plan, set DB_PATH to the disk instead.
+      # Public URL — set to your onrender.com URL after the first deploy.
       - key: APP_URL
         sync: false
-      # Stripe (Pro billing)
+      # Stripe (Pro billing) — leave blank until you're ready to charge.
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
@@ -37,7 +48,7 @@ services:
         sync: false
       - key: STRIPE_PRICE_LABEL
         sync: false
-      # Password-reset email (any SMTP provider)
+      # Password-reset email (any SMTP provider) — leave blank for now.
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
