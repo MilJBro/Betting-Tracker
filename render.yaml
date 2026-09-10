@@ -23,7 +23,10 @@ services:
     name: betbooks
     runtime: node
     plan: free               # ← PRODUCTION: change to "starter" (and add the disk + DB_PATH)
-    buildCommand: npm install && npm run build
+    # --include=dev forces devDependencies (Vite, the build tool) to install
+    # even though NODE_ENV=production, which otherwise skips them and the
+    # client build fails with "vite: not found".
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     autoDeploy: true
