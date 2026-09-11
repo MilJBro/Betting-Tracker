@@ -252,6 +252,17 @@ tr:last-child td { border-bottom: none; }
 .tpl-chip-x { border: 0; background: none; color: var(--muted); font-size: 11px; padding: 0 10px 0 6px; cursor: pointer; }
 .tpl-chip-x:hover { color: var(--loss); }
 
+/* Bulk-settle action bar */
+.bulk-bar {
+  position: sticky; top: 0; z-index: 6; display: flex; align-items: center;
+  justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  margin-bottom: 12px; padding: 10px 14px;
+  background: var(--surface); border: 1px solid color-mix(in srgb, var(--primary) 45%, var(--border));
+  border-radius: 12px; box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
+}
+.bulk-count { font-weight: 800; font-size: 14px; }
+tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transparent); }
+
 /* Accumulator legs editor */
 .legs { display: flex; flex-direction: column; gap: 8px; }
 .leg-row { display: flex; gap: 8px; align-items: center; }
