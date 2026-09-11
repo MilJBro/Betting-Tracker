@@ -74,7 +74,7 @@ function splitRace(ev) {
   return { course: s, time: '' };
 }
 
-export default function BetForm({ initial, isEdit, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], defaultDate, onSetUnitSize, onSave, onClose }) {
+export default function BetForm({ initial, isEdit, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], template, defaultDate, onSetUnitSize, onSaveTemplate, onSave, onClose }) {
   const unitSize = Number(staking?.unitSize) || 0;
   const [editUnit, setEditUnit] = useState(false);
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
@@ -88,6 +88,14 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
       if (defaultDate) base.placed_at = defaultDate; // keep the last date when adding several
       if (defaults?.stake !== '' && defaults?.stake != null) base.stake = String(defaults.stake);
       if (defaults?.bookmaker) base.bookmaker = defaults.bookmaker;
+      // A quick-add template seeds the starting fields for a new bet.
+      if (template) {
+        if (template.sport) base.sport = template.sport;
+        if (template.bookmaker) base.bookmaker = template.bookmaker;
+        if (template.tipster) base.tipster = template.tipster;
+        if (template.stake !== '' && template.stake != null) base.stake = String(template.stake);
+        if (template.each_way) { base.each_way = true; base.ew_fraction = template.ew_fraction || '1/5'; }
+      }
     }
     const f = { ...base, ...(initial || {}) };
     if (initial) {
@@ -213,6 +221,24 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
 
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [tplOpen, setTplOpen] = useState(false);
+  const [tplName, setTplName] = useState('');
+
+  function saveTemplate() {
+    const name = tplName.trim();
+    if (!name || !onSaveTemplate) return;
+    onSaveTemplate({
+      name,
+      sport: form.sport,
+      bookmaker: form.bookmaker,
+      tipster: form.tipster,
+      stake: form.stake,
+      each_way: eachWay,
+      ew_fraction: form.ew_fraction,
+    });
+    setTplName('');
+    setTplOpen(false);
+  }
   // Once the user edits the payout themselves, stop auto-filling it.
   const [payoutTouched, setPayoutTouched] = useState(
     () => !!(initial && initial.payout != null && initial.payout !== '')
@@ -616,6 +642,31 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {!isEdit && onSaveTemplate && (
+            <div style={{ marginTop: 14 }}>
+              {tplOpen ? (
+                <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+                  <input
+                    value={tplName}
+                    onChange={(e) => setTplName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveTemplate(); } }}
+                    placeholder="Template name — e.g. Football single"
+                    aria-label="Template name"
+                    maxLength={40}
+                    style={{ flex: 1 }}
+                    autoFocus
+                  />
+                  <button type="button" className="btn-ghost btn-sm" onClick={saveTemplate} disabled={!tplName.trim()}>Save</button>
+                  <button type="button" className="btn-ghost btn-sm" onClick={() => { setTplOpen(false); setTplName(''); }}>✕</button>
+                </div>
+              ) : (
+                <button type="button" className="linklike" onClick={() => setTplOpen(true)}>
+                  Save these settings as a template
+                </button>
+              )}
             </div>
           )}
 

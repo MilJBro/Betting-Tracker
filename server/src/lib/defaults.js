@@ -90,6 +90,10 @@ export const DEFAULT_SETTINGS = {
     displayName: '',
   },
 
+  // Saved bet templates for quick-add — a starting set of fields (sport,
+  // bookmaker, stake, each-way…) the user can re-apply to a new bet.
+  templates: [],
+
   // Bettor profile, gathered from the sign-up questionnaire. `onboarded`
   // gates whether the questionnaire still needs to be shown.
   profile: {
@@ -119,5 +123,6 @@ export function mergeSettings(saved) {
     statCards: Array.isArray(saved.statCards) && saved.statCards.length
       ? saved.statCards
       : base.statCards,
+    templates: Array.isArray(saved.templates) ? saved.templates : base.templates,
   };
 }
