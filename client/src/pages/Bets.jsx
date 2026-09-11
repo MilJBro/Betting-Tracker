@@ -308,7 +308,7 @@ export default function Bets() {
         <div className="card empty">
           <div className="em"><Icon name="target" size={40} /></div>
           <h3>No bets here yet</h3>
-          <p>Add your first bet to start tracking your profit and form.</p>
+          <p>Add your first bet to start tracking your profit and win rate.</p>
           <div className="row" style={{ marginTop: 10, justifyContent: 'center', gap: 8 }}>
             <button className="btn-primary" onClick={openNew}>+ Add bet</button>
           </div>
