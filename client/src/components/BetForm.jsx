@@ -194,6 +194,15 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
     return `1u = ${money(unitSize, currency)}`;
   };
 
+  // The note under the payout box, showing the return in both money and units.
+  const payoutHint = () => {
+    const n = Number(form.payout);
+    if (form.payout === '' || form.payout == null || !(n > 0) || unitSize <= 0) return '';
+    return usesUnits
+      ? `${n}u = ${money(n * unitSize, currency)}`
+      : `${money(n, currency)} = ${Math.round((n / unitSize) * 100) / 100}u`;
+  };
+
   // The note under the each-way controls: total outlay (both parts) and terms.
   const ewHint = () => {
     const p = Number(form.stake);
@@ -570,6 +579,9 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                 onChange={(e) => { set('payout', e.target.value); setPayoutTouched(e.target.value !== ''); }}
                 aria-label="Payout or return"
               />
+              {payoutHint() && (
+                <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>{payoutHint()}</div>
+              )}
             </div>
           )}
 
