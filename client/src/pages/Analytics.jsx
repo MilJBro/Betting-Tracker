@@ -32,6 +32,25 @@ function Bars({ rows, currency, staking }) {
 
 const BLANK_FILTERS = { from: '', to: '', sport: '', tipster: '' };
 
+// Turn the breakdowns into a few plain-English "here's your edge" lines.
+function buildHighlights(a, fmt) {
+  const out = [];
+  const sports = (a.bySport || []).filter((s) => s.bets > 0);
+  if (sports.length) {
+    const best = sports[0]; // already profit-sorted, desc
+    if (best.profit > 0) out.push({ text: `Most profitable sport: ${best.sport}`, value: `${fmt(best.profit)} · ${best.roi}% ROI`, tone: 'pos' });
+    const worst = sports[sports.length - 1];
+    if (worst.profit < 0 && worst.sport !== best.sport && worst.bets >= 2) out.push({ text: `Toughest sport: ${worst.sport}`, value: `${fmt(worst.profit)} · ${worst.roi}% ROI`, tone: 'neg' });
+  }
+  const days = (a.byDay || []).filter((d) => d.bets >= 2).slice().sort((x, y) => y.profit - x.profit);
+  if (days.length && days[0].profit > 0) out.push({ text: `Your best day is ${days[0].day}`, value: fmt(days[0].profit), tone: 'pos' });
+  const bands = (a.byOddsBand || []).filter((o) => o.bets >= 2).slice().sort((x, y) => y.profit - x.profit);
+  if (bands.length && bands[0].profit > 0) out.push({ text: `Best odds range: ${bands[0].band}`, value: fmt(bands[0].profit), tone: 'pos' });
+  const books = (a.byBookmaker || []).filter((b) => b.bets >= 2);
+  if (books.length > 1 && books[0].profit > 0) out.push({ text: `Best with ${books[0].bookmaker}`, value: fmt(books[0].profit), tone: 'pos' });
+  return out.slice(0, 4);
+}
+
 export default function Analytics() {
   const { settings } = useSettings();
   const { activeId } = useTracker();
@@ -119,6 +138,9 @@ export default function Analytics() {
 
   const monthly = a.monthly.map((m) => ({ ...m, name: m.label }));
   const st = a.streaks;
+  const highlights = a.overall.bets >= 3
+    ? buildHighlights(a, (v) => formatStake(v, currency, staking, { signed: true }))
+    : [];
 
   return (
     <div className="main">
@@ -154,6 +176,29 @@ export default function Analytics() {
         <div className="stat"><div className="label">Biggest Win</div><div className="value pos">{formatStake(a.biggestWin, currency, staking, { signed: true })}</div></div>
         <div className="stat"><div className="label">Biggest Loss</div><div className="value neg">{formatStake(a.biggestLoss, currency, staking, { signed: true })}</div></div>
       </div>
+
+      {/* Where your edge is — auto-surfaced findings */}
+      {highlights.length > 0 && (
+        <div className="card" style={{ marginBottom: 18 }}>
+          <h3 className="section-title">Where your edge is</h3>
+          <div className="stack" style={{ gap: 10 }}>
+            {highlights.map((h, i) => (
+              <div key={i} className="row spread" style={{ fontSize: 14, borderBottom: i < highlights.length - 1 ? '1px solid var(--border)' : 'none', paddingBottom: i < highlights.length - 1 ? 10 : 0 }}>
+                <span>{h.text}</span>
+                <span className={h.tone} style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{h.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* By sport / category */}
+      {a.bySport && a.bySport.length > 0 && (
+        <div className="card" style={{ marginBottom: 18 }}>
+          <h3 className="section-title">By sport / category</h3>
+          <Bars rows={a.bySport.map((s) => ({ ...s, label: s.sport }))} currency={currency} staking={staking} />
+        </div>
+      )}
 
       {/* Monthly P/L */}
       <div className="card" style={{ marginBottom: 18 }}>
