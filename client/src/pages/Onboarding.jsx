@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
+import { currencySymbol } from '../format.js';
 import BrandMark from '../components/BrandMark.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 
@@ -75,6 +76,8 @@ export default function Onboarding() {
     currency: settings?.currency || 'GBP',
     oddsFormat: settings?.oddsFormat || 'decimal',
     bankroll: settings?.bankroll?.starting || '',
+    // Optional: only set if they already stake in units.
+    unitSize: settings?.staking && settings.staking.mode !== 'currency' ? (settings.staking.unitSize ?? '') : '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -97,11 +100,16 @@ export default function Onboarding() {
     const a = answers;
     const style = Array.isArray(a.trackingStyle) ? a.trackingStyle : [a.trackingStyle];
     const followsTipster = style.includes('tipster') || style.includes('both');
+    // Only switch on units if they actually set a unit size; otherwise leave
+    // staking as-is (money only).
+    const unit = Number(prefs.unitSize);
+    const usesUnits = !skip && prefs.unitSize !== '' && unit > 0;
     const next = {
       ...settings,
       currency: skip ? settings.currency : prefs.currency,
       oddsFormat: skip ? settings.oddsFormat : prefs.oddsFormat,
       bankroll: { ...settings.bankroll, starting: skip ? (settings.bankroll?.starting || 0) : (Number(prefs.bankroll) || 0) },
+      staking: usesUnits ? { ...settings.staking, mode: 'both', unitSize: unit } : settings.staking,
       // Turn the tipster field on automatically for people who follow tipsters.
       fields: { ...settings.fields, tipster: followsTipster || settings.fields.tipster },
       profile: {
@@ -204,6 +212,16 @@ export default function Onboarding() {
               <div className="field">
                 <label>Starting bankroll <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
                 <input type="number" min="0" step="0.01" value={prefs.bankroll} placeholder="e.g. 500" onChange={(e) => setPrefs({ ...prefs, bankroll: e.target.value })} />
+              </div>
+              <div className="field" style={{ gridColumn: '1 / -1' }}>
+                <label>Unit size <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
+                <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+                  <span className="muted" style={{ fontWeight: 700 }}>{currencySymbol(prefs.currency)}</span>
+                  <input type="number" min="0.01" step="0.01" value={prefs.unitSize} placeholder="e.g. 10" onChange={(e) => setPrefs({ ...prefs, unitSize: e.target.value })} />
+                </div>
+                <div className="muted" style={{ fontSize: 12, marginTop: 5 }}>
+                  If you stake in units, set what 1 unit is worth. Leave blank if you don’t — you can always turn units on later.
+                </div>
               </div>
             </div>
           )}
