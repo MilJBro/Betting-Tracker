@@ -166,6 +166,23 @@ export default function Account() {
         <button className="btn-ghost" onClick={signOut}>↪ Log out</button>
       </div>
 
+      <button
+        type="button"
+        onClick={() => navigate('/customise')}
+        className="card"
+        style={{
+          display: 'flex', width: '100%', textAlign: 'left', alignItems: 'center',
+          justifyContent: 'space-between', gap: 12, marginBottom: 18, cursor: 'pointer',
+          background: 'var(--surface)', border: '1px solid var(--border)',
+        }}
+      >
+        <span>
+          <strong style={{ display: 'block' }}>Style &amp; customisation</strong>
+          <span className="muted" style={{ fontSize: 13 }}>Theme, dashboard stats, currency, odds format and sharing.</span>
+        </span>
+        <span className="muted" style={{ fontSize: 20 }}>→</span>
+      </button>
+
       <div className="card" style={{ marginBottom: 18 }}>
         <h3 className="section-title">Profile</h3>
         <div className="stack" style={{ gap: 8 }}>

@@ -62,24 +62,46 @@ export default function Dashboard() {
             <p>Let's get your tracker set up.</p>
           </div>
         </div>
-        <div className="card" style={{ marginBottom: 16 }}>
-          <h3 className="section-title">Getting started</h3>
-          <div className="stack" style={{ gap: 14 }}>
-            <div className="row spread" style={{ flexWrap: 'wrap', gap: 10 }}>
-              <div><strong>1. Log your first bet</strong><div className="muted" style={{ fontSize: 13 }}>Record the stake, odds and result — profit and ROI are worked out for you.</div></div>
-              <Link to="/bets?new=1" className="btn-primary" style={{ display: 'inline-block' }}>+ Add a bet</Link>
+        <div className="gs-list">
+          <div className="gs-card">
+            <div className="gs-num">1</div>
+            <div className="gs-content">
+              <h4>Log your first bet</h4>
+              <p>Add the stake, odds and result — we work out your profit and win rate for you.</p>
+              <Link to="/bets?new=1" className="btn-primary btn-sm">+ Add a bet</Link>
             </div>
-            <div className="row spread" style={{ flexWrap: 'wrap', gap: 10, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-              <div><strong>2. Make it yours</strong><div className="muted" style={{ fontSize: 13 }}>Pick your colour, currency, odds format, and what to track.</div></div>
-              <Link to="/customise" className="btn-ghost" style={{ display: 'inline-block' }}>Customise</Link>
+          </div>
+          <div className="gs-card">
+            <div className="gs-num">2</div>
+            <div className="gs-content">
+              <h4>Make it yours</h4>
+              <p>Choose your currency and odds format, then pick the stats you want on your dashboard.</p>
+              <Link to="/customise" className="btn-ghost btn-sm">Customise</Link>
             </div>
-            <div className="row spread" style={{ flexWrap: 'wrap', gap: 10, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-              <div><strong>3. Share your form</strong><div className="muted" style={{ fontSize: 13 }}>When you're ready, publish a read-only page of how you're doing.</div></div>
-              <Link to="/customise" className="btn-ghost" style={{ display: 'inline-block' }}>Set up sharing</Link>
+          </div>
+          <div className="gs-card">
+            <div className="gs-num">3</div>
+            <div className="gs-content">
+              <h4>Share your record</h4>
+              <p>When you’re ready, publish a clean, read-only page of how you’re getting on.</p>
+              <Link to="/customise" className="btn-ghost btn-sm">Set up sharing</Link>
             </div>
           </div>
         </div>
-        <p className="muted" style={{ textAlign: 'center', fontSize: 12 }}>Please gamble responsibly. You must be 18+ to bet.</p>
+
+        {enabledCards.length > 0 && (
+          <>
+            <h3 className="section-title" style={{ marginTop: 26 }}>Your dashboard</h3>
+            <div className="stat-grid">
+              {enabledCards.map((c) => (
+                <StatCard key={c.key} statKey={c.key} stats={stats} currency={currency} staking={staking} />
+              ))}
+            </div>
+            <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>These fill in as soon as you start logging bets.</p>
+          </>
+        )}
+
+        <p className="muted" style={{ textAlign: 'center', fontSize: 12, marginTop: 22 }}>Please gamble responsibly.</p>
       </div>
     );
   }
