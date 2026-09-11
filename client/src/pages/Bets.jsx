@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../api.js';
 import { usePlan } from '../usePlan.js';
 import { useTracker } from '../context/TrackerContext.jsx';
@@ -32,7 +32,11 @@ export default function Bets() {
   const { ent } = usePlan();
   const toast = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [params, setParams] = useSearchParams();
+  // Where to return when the Add-bet form is closed (set when opened from
+  // another tab's "+"), so closing takes you back where you were.
+  const returnToRef = useRef(null);
   const [bets, setBets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -68,6 +72,7 @@ export default function Bets() {
     if (params.get('new')) {
       setEditing(null);
       setShowForm(true);
+      returnToRef.current = location.state?.returnTo || null;
       params.delete('new');
       setParams(params, { replace: true });
     }
@@ -459,7 +464,13 @@ export default function Bets() {
           defaultDate={lastDate}
           onSetUnitSize={(v) => updateSettings({ staking: { ...settings.staking, unitSize: v } })}
           onSave={save}
-          onClose={() => { setShowForm(false); setPrefill(null); }}
+          onClose={() => {
+            setShowForm(false);
+            setPrefill(null);
+            const back = returnToRef.current;
+            returnToRef.current = null;
+            if (back && back !== '/bets') navigate(back);
+          }}
         />
       )}
     </div>

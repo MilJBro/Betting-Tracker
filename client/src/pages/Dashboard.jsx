@@ -68,7 +68,7 @@ export default function Dashboard() {
             <div className="gs-content">
               <h4>Log your first bet</h4>
               <p>Add the stake, odds and result — we work out your profit and win rate for you.</p>
-              <Link to="/bets?new=1" className="btn-primary btn-sm">+ Add a bet</Link>
+              <Link to="/bets?new=1" state={{ returnTo: '/' }} className="btn-ghost btn-sm">+ Add a bet</Link>
             </div>
           </div>
           <div className="gs-card">
@@ -113,7 +113,7 @@ export default function Dashboard() {
           <h1>Dashboard</h1>
           <p>Here's how you're getting on.</p>
         </div>
-        <Link to="/bets?new=1" className="btn-primary" style={{ display: 'inline-block' }}>+ Add bet</Link>
+        <Link to="/bets?new=1" state={{ returnTo: '/' }} className="btn-primary" style={{ display: 'inline-block' }}>+ Add bet</Link>
       </div>
 
       {enabledCards.length === 0 ? (
