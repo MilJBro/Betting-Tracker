@@ -37,15 +37,31 @@ function splitEvent(ev) {
   return { home: (parts[0] || '').trim(), away: (parts.length > 1 ? parts.slice(1).join(' v ') : '').trim() };
 }
 
-// Field sports back one runner from a field, so there's no "Home v Away" —
-// just a single event/race and your selection. Head-to-head sports (football,
-// tennis, boxing…) keep the two-sided event.
-const FIELD_SPORT_HINTS = ['horse', 'greyhound', 'golf', 'cycl', 'athletic', 'motor', 'nascar', 'formula', 'rally'];
-function isFieldSport(sport) {
+// The bet slip adapts to the sport:
+//  · 'versus'  head-to-head (football, tennis, boxing…) — "Home v Away".
+//  · 'racing'  horse / greyhound racing — a course + time and the runner.
+//  · 'field'   other field sports (golf, motorsport, cycling…) — one event.
+const RACING_HINTS = ['horse', 'greyhound', 'harness'];
+const FIELD_HINTS = ['golf', 'cycl', 'athletic', 'motor', 'nascar', 'formula', 'rally', 'darts', 'snooker'];
+function sportLayout(sport) {
   const s = (sport || '').trim().toLowerCase();
-  if (!s) return false;
-  if (s === 'f1') return true;
-  return FIELD_SPORT_HINTS.some((k) => s.includes(k));
+  if (!s) return 'versus';
+  if (RACING_HINTS.some((k) => s.includes(k))) return 'racing';
+  if (s === 'f1' || FIELD_HINTS.some((k) => s.includes(k))) return 'field';
+  return 'versus';
+}
+
+// A racing event is stored as "Course HH:MM" (e.g. "Ascot 15:30"). Split it
+// back into its parts for editing; the time is any HH:MM / H.MM token.
+function splitRace(ev) {
+  const s = (ev || '').trim();
+  const m = s.match(/\b(\d{1,2})[:.](\d{2})\b/);
+  if (m) {
+    const time = `${m[1].padStart(2, '0')}:${m[2]}`;
+    const course = (s.slice(0, m.index) + s.slice(m.index + m[0].length)).replace(/\s+/g, ' ').trim();
+    return { course, time };
+  }
+  return { course: s, time: '' };
 }
 
 export default function BetForm({ initial, isEdit, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], teams = [], defaultDate, onSetUnitSize, onSave, onClose }) {
@@ -88,8 +104,18 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
   const [home, setHome] = useState(() => splitEvent(form.event).home);
   const [away, setAway] = useState(() => splitEvent(form.event).away);
   const composeEvent = () => [home.trim(), away.trim()].filter(Boolean).join(' v ');
-  // Field sports (horses, golf…) drop the two-team "v" for a single event.
-  const versus = !isFieldSport(form.sport);
+  // Racing events split into a course and a time ("Ascot 15:30").
+  const [course, setCourse] = useState(() => splitRace(form.event).course);
+  const [raceTime, setRaceTime] = useState(() => splitRace(form.event).time);
+  const composeRace = () => [course.trim(), raceTime.trim()].filter(Boolean).join(' ');
+  // The slip layout follows the chosen sport.
+  const layout = sportLayout(form.sport);
+  const versus = layout === 'versus';
+
+  // Sport is a dropdown; "Other…" reveals a free-text box for anything not
+  // in the list. Match the saved sport to a list option case-insensitively.
+  const sportOption = sports.find((s) => s.toLowerCase() === (form.sport || '').trim().toLowerCase()) || '';
+  const [otherSport, setOtherSport] = useState(() => !!(form.sport || '').trim() && !sportOption);
 
   // Which preset unit the current stake matches, so the quick-pick shows the
   // chosen unit instead of snapping back to the placeholder. '' when custom.
@@ -163,7 +189,10 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
         payload.legs = [];
         payload.bet_type = 'Single';
         payload.odds = parseOdds(form.odds, oddsFormat);
-        payload.event = versus ? composeEvent() : (form.event || '').trim();
+        payload.event =
+          layout === 'racing' ? composeRace()
+          : versus ? composeEvent()
+          : (form.event || '').trim();
       }
       await onSave(payload);
       onClose();
@@ -194,16 +223,29 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
             {show('sport') && (
               <div className="field">
                 <label>Sport / Category</label>
-                <input
-                  list="sport-options"
-                  value={form.sport}
-                  onChange={(e) => set('sport', e.target.value)}
+                <select
+                  value={otherSport ? '__other__' : sportOption}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === '__other__') { setOtherSport(true); set('sport', ''); }
+                    else { setOtherSport(false); set('sport', v); }
+                  }}
                   aria-label="Sport or category"
-                  autoComplete="off"
-                />
-                <datalist id="sport-options">
-                  {sports.map((s) => <option key={s} value={s} />)}
-                </datalist>
+                >
+                  <option value="">Select a sport…</option>
+                  {sports.map((s) => <option key={s} value={s}>{s}</option>)}
+                  <option value="__other__">Other…</option>
+                </select>
+                {otherSport && (
+                  <input
+                    style={{ marginTop: 8 }}
+                    value={form.sport}
+                    onChange={(e) => set('sport', e.target.value)}
+                    aria-label="Custom sport"
+                    placeholder="Type a sport"
+                    autoComplete="off"
+                  />
+                )}
               </div>
             )}
           </div>
@@ -219,28 +261,41 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
 
           {kind === 'single' ? (
             <>
-              {show('event') && (versus ? (
-                <div className="field">
-                  <label>Event</label>
-                  <div className="team-vs">
-                    <input list="team-options" value={home} onChange={(e) => setHome(e.target.value)} aria-label="Home team" autoComplete="off" />
-                    <span className="vs">v</span>
-                    <input list="team-options" value={away} onChange={(e) => setAway(e.target.value)} aria-label="Away team" autoComplete="off" />
+              {show('event') && (
+                layout === 'racing' ? (
+                  <div className="grid-2">
+                    <div className="field">
+                      <label>Course / track</label>
+                      <input value={course} onChange={(e) => setCourse(e.target.value)} aria-label="Course or track" placeholder="e.g. Ascot" autoComplete="off" />
+                    </div>
+                    <div className="field">
+                      <label>Time <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
+                      <input type="time" value={raceTime} onChange={(e) => setRaceTime(e.target.value)} aria-label="Race time" />
+                    </div>
                   </div>
-                  <datalist id="team-options">
-                    {teams.map((t) => <option key={t} value={t} />)}
-                  </datalist>
-                </div>
-              ) : (
-                <div className="field">
-                  <label>Event <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
-                  <input value={form.event} onChange={(e) => set('event', e.target.value)} aria-label="Event or race" autoComplete="off" />
-                </div>
-              ))}
+                ) : versus ? (
+                  <div className="field">
+                    <label>Event</label>
+                    <div className="team-vs">
+                      <input list="team-options" value={home} onChange={(e) => setHome(e.target.value)} aria-label="Home team" autoComplete="off" />
+                      <span className="vs">v</span>
+                      <input list="team-options" value={away} onChange={(e) => setAway(e.target.value)} aria-label="Away team" autoComplete="off" />
+                    </div>
+                    <datalist id="team-options">
+                      {teams.map((t) => <option key={t} value={t} />)}
+                    </datalist>
+                  </div>
+                ) : (
+                  <div className="field">
+                    <label>Event / tournament <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
+                    <input value={form.event} onChange={(e) => set('event', e.target.value)} aria-label="Event or race" autoComplete="off" />
+                  </div>
+                )
+              )}
               {show('selection') && (
                 <div className="field">
-                  <label>{versus ? 'Selection' : 'Your selection'}</label>
-                  <input value={form.selection} onChange={(e) => set('selection', e.target.value)} aria-label="Selection" />
+                  <label>{layout === 'racing' ? 'Horse / runner' : versus ? 'Selection' : 'Your selection'}</label>
+                  <input value={form.selection} onChange={(e) => set('selection', e.target.value)} aria-label="Selection" placeholder={layout === 'racing' ? 'e.g. Constitution Hill' : undefined} />
                 </div>
               )}
               {show('odds') && (
