@@ -574,11 +574,23 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
           {show('payout') && (
             <div className="field">
               <label>Payout / Return{unitLabel}</label>
-              <input
-                type="number" step="0.01" min="0" value={form.payout ?? ''}
-                onChange={(e) => { set('payout', e.target.value); setPayoutTouched(e.target.value !== ''); }}
-                aria-label="Payout or return"
-              />
+              {usesUnits ? (
+                <input
+                  type="number" step="0.01" min="0" value={form.payout ?? ''}
+                  onChange={(e) => { set('payout', e.target.value); setPayoutTouched(e.target.value !== ''); }}
+                  aria-label="Payout or return"
+                />
+              ) : (
+                <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+                  <span className="muted" style={{ fontWeight: 700 }}>{currencySymbol(currency)}</span>
+                  <input
+                    type="number" step="0.01" min="0" value={form.payout ?? ''}
+                    onChange={(e) => { set('payout', e.target.value); setPayoutTouched(e.target.value !== ''); }}
+                    aria-label="Payout or return"
+                    style={{ flex: 1 }}
+                  />
+                </div>
+              )}
               {payoutHint() && (
                 <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>{payoutHint()}</div>
               )}
