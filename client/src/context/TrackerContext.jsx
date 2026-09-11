@@ -35,8 +35,8 @@ export function TrackerProvider({ children }) {
 
   const switchTo = useCallback((id) => persist(id), []);
 
-  const create = useCallback(async (name) => {
-    const d = await api.post('/trackers', { name }); // throws on 402 (Pro)
+  const create = useCallback(async (name, bankroll_start = 0) => {
+    const d = await api.post('/trackers', { name, bankroll_start }); // throws on 402 (Pro)
     await load();
     persist(d.tracker.id);
     return d.tracker;

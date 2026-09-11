@@ -15,6 +15,7 @@ export default function TrackerBar() {
   const [name, setName] = useState('');
   const [bankroll, setBankroll] = useState('');
   const [newName, setNewName] = useState('');
+  const [newBankroll, setNewBankroll] = useState('');
   const [busy, setBusy] = useState(false);
 
   if (!active) return null;
@@ -24,6 +25,7 @@ export default function TrackerBar() {
     setName(active.name);
     setBankroll(String(active.bankroll_start || 0));
     setNewName('');
+    setNewBankroll('');
     setManage(true);
   }
 
@@ -39,7 +41,7 @@ export default function TrackerBar() {
   async function createTracker() {
     setBusy(true);
     try {
-      await create(newName.trim() || 'New tracker');
+      await create(newName.trim() || 'New tracker', Number(newBankroll) || 0);
       toast('Tracker created', 'success');
       setManage(false);
     } catch (e) {
@@ -103,9 +105,22 @@ export default function TrackerBar() {
             <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
               <h3 className="section-title">New tracker {!pro && <span className="badge" style={{ textTransform: 'none' }}>Pro</span>}</h3>
               <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>Keep separate trackers — one per tipster, say — so their bets never mix.</p>
-              <div className="row" style={{ gap: 8 }}>
-                <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Tipster A" style={{ flex: 1 }} />
-                <button className="btn-ghost" onClick={createTracker} disabled={busy}>+ Create</button>
+              <div className="grid-2 onb-prefs">
+                <div className="field" style={{ gridColumn: '1 / -1' }}>
+                  <label>Tracker name</label>
+                  <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Tipster A" maxLength={60} />
+                </div>
+                <div className="field" style={{ gridColumn: '1 / -1' }}>
+                  <label>Starting bankroll <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
+                  <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+                    <span className="muted" style={{ fontWeight: 700 }}>{sym}</span>
+                    <input type="number" min="0" step="0.01" value={newBankroll} placeholder="e.g. 500" onChange={(e) => setNewBankroll(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+              <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>Currency, odds format and unit size are shared across all your trackers.</p>
+              <div className="row" style={{ marginTop: 10 }}>
+                <button className="btn-ghost" onClick={createTracker} disabled={busy}>+ Create tracker</button>
               </div>
             </div>
           </div>
