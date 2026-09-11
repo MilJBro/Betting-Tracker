@@ -37,6 +37,17 @@ function splitEvent(ev) {
   return { home: (parts[0] || '').trim(), away: (parts.length > 1 ? parts.slice(1).join(' v ') : '').trim() };
 }
 
+// Field sports back one runner from a field, so there's no "Home v Away" —
+// just a single event/race and your selection. Head-to-head sports (football,
+// tennis, boxing…) keep the two-sided event.
+const FIELD_SPORT_HINTS = ['horse', 'greyhound', 'golf', 'cycl', 'athletic', 'motor', 'nascar', 'formula', 'rally'];
+function isFieldSport(sport) {
+  const s = (sport || '').trim().toLowerCase();
+  if (!s) return false;
+  if (s === 'f1') return true;
+  return FIELD_SPORT_HINTS.some((k) => s.includes(k));
+}
+
 export default function BetForm({ initial, isEdit, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], teams = [], defaultDate, onSetUnitSize, onSave, onClose }) {
   const unitSize = Number(staking?.unitSize) || 0;
   const [editUnit, setEditUnit] = useState(false);
@@ -77,6 +88,8 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
   const [home, setHome] = useState(() => splitEvent(form.event).home);
   const [away, setAway] = useState(() => splitEvent(form.event).away);
   const composeEvent = () => [home.trim(), away.trim()].filter(Boolean).join(' v ');
+  // Field sports (horses, golf…) drop the two-team "v" for a single event.
+  const versus = !isFieldSport(form.sport);
 
   // Which preset unit the current stake matches, so the quick-pick shows the
   // chosen unit instead of snapping back to the placeholder. '' when custom.
@@ -150,7 +163,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
         payload.legs = [];
         payload.bet_type = 'Single';
         payload.odds = parseOdds(form.odds, oddsFormat);
-        payload.event = composeEvent();
+        payload.event = versus ? composeEvent() : (form.event || '').trim();
       }
       await onSave(payload);
       onClose();
@@ -206,7 +219,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
 
           {kind === 'single' ? (
             <>
-              {show('event') && (
+              {show('event') && (versus ? (
                 <div className="field">
                   <label>Event</label>
                   <div className="team-vs">
@@ -218,10 +231,15 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                     {teams.map((t) => <option key={t} value={t} />)}
                   </datalist>
                 </div>
-              )}
+              ) : (
+                <div className="field">
+                  <label>Event <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
+                  <input value={form.event} onChange={(e) => set('event', e.target.value)} aria-label="Event or race" autoComplete="off" />
+                </div>
+              ))}
               {show('selection') && (
                 <div className="field">
-                  <label>Selection</label>
+                  <label>{versus ? 'Selection' : 'Your selection'}</label>
                   <input value={form.selection} onChange={(e) => set('selection', e.target.value)} aria-label="Selection" />
                 </div>
               )}
