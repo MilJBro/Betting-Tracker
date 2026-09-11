@@ -73,7 +73,7 @@ function splitRace(ev) {
   return { course: s, time: '' };
 }
 
-export default function BetForm({ initial, isEdit, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], teams = [], defaultDate, onSetUnitSize, onSave, onClose }) {
+export default function BetForm({ initial, isEdit, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], defaultDate, onSetUnitSize, onSave, onClose }) {
   const unitSize = Number(staking?.unitSize) || 0;
   const [editUnit, setEditUnit] = useState(false);
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
@@ -141,6 +141,37 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
   // in the list. Match the saved sport to a list option case-insensitively.
   const sportOption = sports.find((s) => s.toLowerCase() === (form.sport || '').trim().toLowerCase()) || '';
   const [otherSport, setOtherSport] = useState(() => !!(form.sport || '').trim() && !sportOption);
+
+  // Autocomplete suggestions drawn ONLY from bets in the same sport, so a
+  // football team never shows up on the horse-racing slip and vice versa.
+  // Teams come from head-to-head events, courses from racing events, and
+  // selections (players / runners / picks) from every bet in that sport.
+  const suggestions = useMemo(() => {
+    const key = (form.sport || '').trim().toLowerCase();
+    const teams = new Map(), selections = new Map(), courses = new Map(), events = new Map();
+    const push = (map, v) => {
+      const val = (v || '').trim();
+      if (!val) return;
+      const k = val.toLowerCase();
+      if (!map.has(k)) map.set(k, val);
+    };
+    if (key) {
+      for (const b of bets) {
+        if ((b.sport || '').trim().toLowerCase() !== key) continue;
+        const lay = sportLayout(b.sport);
+        if (lay === 'versus') {
+          String(b.event || '').split(/\s+v(?:s\.?|ersus)?\s+/i).map((s) => s.trim()).filter(Boolean).forEach((t) => push(teams, t));
+        } else if (lay === 'racing') {
+          push(courses, splitRace(b.event).course);
+        } else {
+          push(events, b.event);
+        }
+        push(selections, b.selection);
+      }
+    }
+    const sorted = (m) => [...m.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    return { teams: sorted(teams), selections: sorted(selections), courses: sorted(courses), events: sorted(events) };
+  }, [bets, form.sport]);
 
   // Which preset unit the current stake matches, so the quick-pick shows the
   // chosen unit instead of snapping back to the placeholder. '' when custom.
@@ -324,7 +355,10 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                   <div className="grid-2">
                     <div className="field">
                       <label>Course / track</label>
-                      <input value={course} onChange={(e) => setCourse(e.target.value)} aria-label="Course or track" placeholder="e.g. Ascot" autoComplete="off" />
+                      <input list="course-options" value={course} onChange={(e) => setCourse(e.target.value)} aria-label="Course or track" placeholder="e.g. Ascot" autoComplete="off" />
+                      <datalist id="course-options">
+                        {suggestions.courses.map((c) => <option key={c} value={c} />)}
+                      </datalist>
                     </div>
                     <div className="field">
                       <label>Time <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
@@ -340,20 +374,26 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                       <input list="team-options" value={away} onChange={(e) => setAway(e.target.value)} aria-label="Away team" autoComplete="off" />
                     </div>
                     <datalist id="team-options">
-                      {teams.map((t) => <option key={t} value={t} />)}
+                      {suggestions.teams.map((t) => <option key={t} value={t} />)}
                     </datalist>
                   </div>
                 ) : (
                   <div className="field">
                     <label>Event / tournament <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
-                    <input value={form.event} onChange={(e) => set('event', e.target.value)} aria-label="Event or race" autoComplete="off" />
+                    <input list="event-options" value={form.event} onChange={(e) => set('event', e.target.value)} aria-label="Event or race" autoComplete="off" />
+                    <datalist id="event-options">
+                      {suggestions.events.map((ev) => <option key={ev} value={ev} />)}
+                    </datalist>
                   </div>
                 )
               )}
               {show('selection') && (
                 <div className="field">
                   <label>{layout === 'racing' ? 'Horse / runner' : versus ? 'Selection' : 'Your selection'}</label>
-                  <input value={form.selection} onChange={(e) => set('selection', e.target.value)} aria-label="Selection" placeholder={layout === 'racing' ? 'e.g. Constitution Hill' : undefined} />
+                  <input list="selection-options" value={form.selection} onChange={(e) => set('selection', e.target.value)} aria-label="Selection" placeholder={layout === 'racing' ? 'e.g. Constitution Hill' : undefined} autoComplete="off" />
+                  <datalist id="selection-options">
+                    {suggestions.selections.map((s) => <option key={s} value={s} />)}
+                  </datalist>
                 </div>
               )}
               {show('odds') && (
@@ -409,9 +449,11 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                 {legs.map((l, i) => (
                   <div className="leg-row" key={i}>
                     <input
+                      list="selection-options"
                       value={l.selection}
                       onChange={(e) => setLeg(i, 'selection', e.target.value)}
                       aria-label={`Selection ${i + 1}`}
+                      autoComplete="off"
                     />
                     <input
                       type={oddsFormat === 'decimal' ? 'number' : 'text'}
@@ -429,6 +471,9 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                   </div>
                 ))}
               </div>
+              <datalist id="selection-options">
+                {suggestions.selections.map((s) => <option key={s} value={s} />)}
+              </datalist>
               <div className="row spread" style={{ marginTop: 10 }}>
                 <button type="button" className="btn-ghost btn-sm" onClick={addLeg}>+ Add selection</button>
                 <div className="muted" style={{ fontSize: 13 }}>
