@@ -187,23 +187,8 @@ export default function Bets() {
     toast(editingNow ? 'Bet updated' : 'Bet added', 'success');
     if (form.placed_at) setLastDate(form.placed_at); // next new bet defaults to this date
     try { await load(); } catch (e) { /* list will refresh on next load */ }
-    try { await rememberTeams(form.event); } catch (e) { /* non-critical */ }
-  }
-
-  // Remember any team names from an event ("Home v Away") for future
-  // autocomplete, kept de-duplicated (case-insensitive) and alphabetical.
-  async function rememberTeams(event) {
-    const found = String(event || '')
-      .split(/\s+v(?:s\.?|ersus)?\s+/i)
-      .map((s) => s.trim())
-      .filter(Boolean);
-    if (!found.length || !settings) return;
-    const existing = Array.isArray(settings.teams) ? settings.teams : [];
-    const seen = new Set(existing.map((t) => t.toLowerCase()));
-    const added = found.filter((t) => !seen.has(t.toLowerCase()));
-    if (!added.length) return;
-    const next = [...existing, ...added].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-    await updateSettings({ teams: next });
+    // Autocomplete for teams / runners / selections is derived per-sport from
+    // your saved bets (see BetForm), so there's nothing extra to remember here.
   }
 
   async function remove(id) {
@@ -490,7 +475,7 @@ export default function Bets() {
           defaults={settings?.defaults}
           bookmakers={bookieOptions}
           sports={sportSuggestions}
-          teams={Array.isArray(settings?.teams) ? settings.teams : []}
+          bets={bets}
           defaultDate={lastDate}
           onSetUnitSize={(v) => updateSettings({ staking: { ...settings.staking, unitSize: v } })}
           onSave={save}
