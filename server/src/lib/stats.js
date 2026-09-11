@@ -148,6 +148,11 @@ export function computeAnalytics(bets) {
       return { month: k, label: `${MONTHS[Number(m) - 1]} ${y}`, ...summarise(rows) };
     });
 
+  // By sport / category (most profitable first).
+  const bySport = [...bucket(settled, (b) => b.sport || 'Uncategorised').entries()]
+    .map(([sport, rows]) => ({ sport, ...summarise(rows) }))
+    .sort((a, b) => b.profit - a.profit);
+
   // By bookmaker (most profitable first).
   const byBookmaker = [...bucket(settled, (b) => b.bookmaker || 'Unknown').entries()]
     .map(([bookmaker, rows]) => ({ bookmaker, ...summarise(rows) }))
@@ -201,6 +206,7 @@ export function computeAnalytics(bets) {
   return {
     overall: summarise(settled),
     monthly,
+    bySport,
     byBookmaker,
     byTipster,
     byOddsBand,
