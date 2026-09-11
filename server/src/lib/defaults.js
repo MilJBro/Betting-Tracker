@@ -94,11 +94,11 @@ export const DEFAULT_SETTINGS = {
   // gates whether the questionnaire still needs to be shown.
   profile: {
     onboarded: false,
-    trackingStyle: '', // 'own' | 'tipster' | 'both'
+    trackingStyle: [], // any of 'own' | 'tipster' (multi-select)
     sports: [],
-    frequency: '', // 'daily' | 'weekly' | 'occasional'
-    goal: '', // 'profit' | 'discipline' | 'fun' | 'analyse'
-    experience: '', // 'new' | 'casual' | 'experienced' | 'serious'
+    frequency: '', // 'daily' | 'weekly' | 'occasional' (single)
+    goal: [], // any of 'profit' | 'discipline' | 'fun' | 'analyse' (multi-select)
+    experience: '', // 'new' | 'casual' | 'experienced' | 'serious' (single)
   },
 };
 

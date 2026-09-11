@@ -11,17 +11,16 @@ const STEPS = [
   {
     key: 'trackingStyle',
     title: 'How do you bet?',
-    subtitle: "This helps us set Betbooks up around the way you bet.",
-    type: 'single',
+    subtitle: 'Pick any that apply — you can choose both.',
+    type: 'multi',
     options: [
-      { value: 'own', label: 'I track my own bets', desc: 'Your own picks and research.' },
-      { value: 'tipster', label: 'I follow tipsters', desc: "You bet on other people's tips." },
-      { value: 'both', label: 'A bit of both', desc: 'Your own bets and tipster tips.' },
+      { value: 'own', label: 'I track my own bets' },
+      { value: 'tipster', label: 'I follow tipsters' },
     ],
   },
   {
     key: 'sports',
-    title: 'What do you mostly bet on?',
+    title: 'What do you bet on?',
     subtitle: 'Pick any that apply.',
     type: 'multi',
     options: SPORTS.map((s) => ({ value: s, label: s })),
@@ -29,6 +28,7 @@ const STEPS = [
   {
     key: 'frequency',
     title: 'How often do you bet?',
+    subtitle: 'Pick the closest one.',
     type: 'single',
     options: [
       { value: 'daily', label: 'Most days' },
@@ -38,8 +38,9 @@ const STEPS = [
   },
   {
     key: 'goal',
-    title: "What's your main goal?",
-    type: 'single',
+    title: "What are your goals?",
+    subtitle: 'Pick any that apply.',
+    type: 'multi',
     options: [
       { value: 'profit', label: 'Make a long-term profit' },
       { value: 'discipline', label: 'Stay disciplined with my staking' },
@@ -50,6 +51,7 @@ const STEPS = [
   {
     key: 'experience',
     title: 'How would you describe yourself?',
+    subtitle: 'Pick the closest one.',
     type: 'single',
     options: [
       { value: 'new', label: 'New to betting' },
@@ -65,7 +67,7 @@ export default function Onboarding() {
   const { settings, save } = useSettings();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({
-    trackingStyle: '', sports: [], frequency: '', goal: '', experience: '',
+    trackingStyle: [], sports: [], frequency: '', goal: [], experience: '',
   });
   const [prefs, setPrefs] = useState({
     currency: settings?.currency || 'GBP',
@@ -77,9 +79,9 @@ export default function Onboarding() {
   const s = STEPS[step];
   const isLast = step === STEPS.length - 1;
 
+  // Selecting no longer jumps ahead — people choose, then tap Continue.
   function pickSingle(key, value) {
-    setAnswers((a) => ({ ...a, [key]: value }));
-    setTimeout(() => setStep((n) => Math.min(n + 1, STEPS.length - 1)), 120);
+    setAnswers((a) => ({ ...a, [key]: a[key] === value ? '' : value }));
   }
   function toggleMulti(key, value) {
     setAnswers((a) => {
@@ -91,7 +93,8 @@ export default function Onboarding() {
   async function finish(skip = false) {
     setSaving(true);
     const a = answers;
-    const followsTipster = a.trackingStyle === 'tipster' || a.trackingStyle === 'both';
+    const style = Array.isArray(a.trackingStyle) ? a.trackingStyle : [a.trackingStyle];
+    const followsTipster = style.includes('tipster') || style.includes('both');
     const next = {
       ...settings,
       currency: skip ? settings.currency : prefs.currency,
@@ -124,7 +127,9 @@ export default function Onboarding() {
   }
 
   const canContinue =
-    s.type === 'multi' ? (answers[s.key] || []).length > 0 : true;
+    s.type === 'multi' ? (answers[s.key] || []).length > 0
+      : s.type === 'single' ? !!answers[s.key]
+      : true;
 
   return (
     <div className="auth-wrap">
@@ -206,10 +211,8 @@ export default function Onboarding() {
               <button className="btn-primary" onClick={() => finish(false)} disabled={saving}>
                 {saving ? 'Setting up…' : 'Finish'}
               </button>
-            ) : s.type !== 'single' ? (
-              <button className="btn-primary" onClick={() => setStep(step + 1)} disabled={!canContinue}>Continue</button>
             ) : (
-              <span style={{ fontSize: 12 }} className="muted">Tap an option to continue</span>
+              <button className="btn-primary" onClick={() => setStep(step + 1)} disabled={!canContinue}>Continue</button>
             )}
           </div>
         </div>

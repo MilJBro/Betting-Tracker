@@ -214,12 +214,18 @@ export default function Account() {
             <button className="btn-ghost btn-sm" onClick={retakeQuestionnaire}>Retake questionnaire</button>
           </div>
           <div className="stack" style={{ gap: 8, marginTop: 12 }}>
-            {Object.keys(PROFILE_LABELS).map((k) => (
-              <div className="row spread" key={k}>
-                <span className="muted">{PROFILE_LABELS[k].title}</span>
-                <strong>{PROFILE_LABELS[k].map[profile[k]] || '—'}</strong>
-              </div>
-            ))}
+            {Object.keys(PROFILE_LABELS).map((k) => {
+              // Answers may be a single value or (for multi-select questions) an array.
+              const raw = profile[k];
+              const vals = Array.isArray(raw) ? raw : raw ? [raw] : [];
+              const text = vals.map((v) => PROFILE_LABELS[k].map[v] || v).join(', ');
+              return (
+                <div className="row spread" key={k} style={{ alignItems: 'flex-start' }}>
+                  <span className="muted">{PROFILE_LABELS[k].title}</span>
+                  <strong style={{ textAlign: 'right', maxWidth: '65%' }}>{text || '—'}</strong>
+                </div>
+              );
+            })}
             {profile.sports?.length > 0 && (
               <div className="row spread" style={{ alignItems: 'flex-start' }}>
                 <span className="muted">Sports</span>
