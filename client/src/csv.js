@@ -87,6 +87,7 @@ const STATUS_MAP = {
   pending: 'pending', open: 'pending', unsettled: 'pending', p: 'pending', '': 'pending',
   void: 'void', voided: 'void', push: 'void', cancelled: 'void', canceled: 'void', refund: 'void',
   cashout: 'cashout', 'cash out': 'cashout', 'cashed out': 'cashout',
+  placed: 'placed', place: 'placed', placed_ew: 'placed', 'e/w place': 'placed',
 };
 
 // Turn assorted date strings into YYYY-MM-DD; leave good ISO dates alone.

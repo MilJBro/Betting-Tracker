@@ -1,10 +1,15 @@
 // Performance metrics derived from a user's bets. Kept server-side so the
 // dashboard and the public share page report identical numbers.
 
+// Statuses that count as settled (contribute to realised profit / staked).
+const SETTLED = ['won', 'lost', 'void', 'cashout', 'placed'];
+
 function profitOf(bet) {
   // Only settled bets contribute to realised profit.
   if (bet.status === 'won') return (bet.payout ?? bet.stake * bet.odds) - bet.stake;
   if (bet.status === 'lost') return -bet.stake;
+  // Each-way "placed": the place part returned; the exact return is stored in payout.
+  if (bet.status === 'placed') return (bet.payout ?? 0) - bet.stake;
   if (bet.status === 'void' || bet.status === 'cashout') {
     return (bet.payout ?? bet.stake) - bet.stake;
   }
@@ -12,9 +17,7 @@ function profitOf(bet) {
 }
 
 export function computeStats(bets) {
-  const settled = bets.filter((b) =>
-    ['won', 'lost', 'void', 'cashout'].includes(b.status)
-  );
+  const settled = bets.filter((b) => SETTLED.includes(b.status));
   const pending = bets.filter((b) => b.status === 'pending');
 
   const totalStaked = settled.reduce((s, b) => s + b.stake, 0);
@@ -133,7 +136,7 @@ function summarise(rows) {
 }
 
 export function computeAnalytics(bets) {
-  const settled = bets.filter((b) => ['won', 'lost', 'void', 'cashout'].includes(b.status));
+  const settled = bets.filter((b) => SETTLED.includes(b.status));
 
   // Monthly P/L, chronological.
   const byMonth = bucket(settled, (b) => (b.placed_at || '').slice(0, 7)); // YYYY-MM

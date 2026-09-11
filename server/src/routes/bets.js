@@ -9,13 +9,14 @@ import { computeStats, computeAnalytics } from '../lib/stats.js';
 const router = Router();
 router.use(requireAuth);
 
-const STATUSES = ['pending', 'won', 'lost', 'void', 'cashout'];
+const STATUSES = ['pending', 'won', 'lost', 'void', 'cashout', 'placed'];
 
 function rowToBet(row) {
   return {
     ...row,
     tags: row.tags ? JSON.parse(row.tags) : [],
     legs: row.legs ? safeJson(row.legs, []) : [],
+    each_way: !!row.each_way,
   };
 }
 
@@ -51,9 +52,16 @@ function sanitise(body) {
     bet_type = 'Accumulator';
   }
 
+  // Each-way: total outlay (Win + Place) is stored in `stake`. The client
+  // computes the each-way return and sends it as `payout`, so we don't try to
+  // second-guess it here — we only auto-fill the simple win = stake × odds case.
+  const eachWay = !!body.each_way;
+  const ewFraction = eachWay ? (String(body.ew_fraction || '').trim() || '1/5') : null;
+  const ewPlaces = eachWay && body.ew_places !== '' && body.ew_places != null ? Math.max(0, Math.round(num(body.ew_places))) : null;
+
   let payout = body.payout === '' || body.payout == null ? null : num(body.payout);
-  // Auto-fill payout for a won bet if not supplied.
-  if (status === 'won' && (payout == null || payout === 0)) {
+  // Auto-fill payout for a plain (non-each-way) won bet if not supplied.
+  if (!eachWay && status === 'won' && (payout == null || payout === 0)) {
     payout = Number((num(body.stake) * odds).toFixed(2));
   }
   if (status === 'lost') payout = 0;
@@ -72,6 +80,9 @@ function sanitise(body) {
     notes: (body.notes || '').trim(),
     tags: JSON.stringify(Array.isArray(body.tags) ? body.tags : []),
     legs: JSON.stringify(legs),
+    each_way: eachWay ? 1 : 0,
+    ew_fraction: ewFraction,
+    ew_places: ewPlaces,
   };
 }
 
@@ -131,9 +142,9 @@ router.post('/', (req, res) => {
   const trackerId = resolveTrackerId(req.userId, (req.body || {}).tracker_id || req.query.tracker);
   db.prepare(
     `INSERT INTO bets (id, user_id, tracker_id, placed_at, sport, event, selection, bet_type,
-       bookmaker, tipster, stake, odds, status, payout, notes, tags, legs, created_at, updated_at)
+       bookmaker, tipster, stake, odds, status, payout, notes, tags, legs, each_way, ew_fraction, ew_places, created_at, updated_at)
      VALUES (@id, @user_id, @tracker_id, @placed_at, @sport, @event, @selection, @bet_type,
-       @bookmaker, @tipster, @stake, @odds, @status, @payout, @notes, @tags, @legs, @created_at, @updated_at)`
+       @bookmaker, @tipster, @stake, @odds, @status, @payout, @notes, @tags, @legs, @each_way, @ew_fraction, @ew_places, @created_at, @updated_at)`
   ).run({ id, user_id: req.userId, tracker_id: trackerId, ...b, created_at: now, updated_at: now });
   const row = db.prepare('SELECT * FROM bets WHERE id = ?').get(id);
   res.status(201).json({ bet: rowToBet(row) });
@@ -153,9 +164,9 @@ router.post('/import', requirePro, (req, res) => {
   const now = new Date().toISOString();
   const stmt = db.prepare(
     `INSERT INTO bets (id, user_id, tracker_id, placed_at, sport, event, selection, bet_type,
-       bookmaker, tipster, stake, odds, status, payout, notes, tags, legs, created_at, updated_at)
+       bookmaker, tipster, stake, odds, status, payout, notes, tags, legs, each_way, ew_fraction, ew_places, created_at, updated_at)
      VALUES (@id, @user_id, @tracker_id, @placed_at, @sport, @event, @selection, @bet_type,
-       @bookmaker, @tipster, @stake, @odds, @status, @payout, @notes, @tags, @legs, @created_at, @updated_at)`
+       @bookmaker, @tipster, @stake, @odds, @status, @payout, @notes, @tags, @legs, @each_way, @ew_fraction, @ew_places, @created_at, @updated_at)`
   );
   const insertAll = db.transaction((rows) => {
     for (const raw of rows) {
@@ -177,7 +188,8 @@ router.put('/:id', (req, res) => {
     `UPDATE bets SET placed_at=@placed_at, sport=@sport, event=@event,
        selection=@selection, bet_type=@bet_type, bookmaker=@bookmaker,
        tipster=@tipster, stake=@stake, odds=@odds, status=@status, payout=@payout,
-       notes=@notes, tags=@tags, legs=@legs, updated_at=@updated_at WHERE id=@id AND user_id=@user_id`
+       notes=@notes, tags=@tags, legs=@legs, each_way=@each_way, ew_fraction=@ew_fraction,
+       ew_places=@ew_places, updated_at=@updated_at WHERE id=@id AND user_id=@user_id`
   ).run({
     ...b,
     id: req.params.id,
