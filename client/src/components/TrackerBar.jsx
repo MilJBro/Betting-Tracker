@@ -4,6 +4,7 @@ import { useTracker } from '../context/TrackerContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { currencySymbol } from '../format.js';
+import Icon from './Icon.jsx';
 
 export default function TrackerBar() {
   const { trackers, active, activeId, pro, switchTo, create, update, remove } = useTracker();
@@ -63,11 +64,18 @@ export default function TrackerBar() {
   return (
     <>
       <div className="tracker-bar">
-        <span className="muted" style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em' }}>Tracker</span>
-        <select value={activeId} onChange={(e) => switchTo(e.target.value)} aria-label="Active tracker">
-          {trackers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
-        <button className="btn-ghost btn-sm" onClick={openManage}>Manage</button>
+        <div className="tracker-switch">
+          <span className="tsw-ic"><Icon name="layers" size={18} /></span>
+          <div className="tsw-body">
+            <span className="tsw-label">Tracker{trackers.length > 1 ? ` · ${trackers.length}` : ''}</span>
+            <span className="tsw-name">{active.name}</span>
+          </div>
+          <span className="tsw-chev"><Icon name="chevron" size={18} /></span>
+          <select value={activeId} onChange={(e) => switchTo(e.target.value)} className="tsw-native" aria-label="Switch tracker">
+            {trackers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        </div>
+        <button className="btn-ghost btn-sm tsw-manage" onClick={openManage}>Manage</button>
       </div>
 
       {manage && (
