@@ -14,6 +14,8 @@ import Customise from './pages/Customise.jsx';
 import Account from './pages/Account.jsx';
 import Share from './pages/Share.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
+import Terms from './pages/Terms.jsx';
+import Privacy from './pages/Privacy.jsx';
 
 const NAV = [
   { to: '/', end: true, icon: 'house', label: 'Dashboard', short: 'Home' },
@@ -127,6 +129,8 @@ export default function App() {
       {/* Public routes — accessible without a session. */}
       <Route path="/share/:publicId" element={<Share />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/privacy" element={<Privacy />} />
       <Route
         path="*"
         element={

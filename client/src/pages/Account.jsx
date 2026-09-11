@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { api, setToken, getToken } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
@@ -343,6 +343,11 @@ export default function Account() {
           </form>
         )}
       </div>
+
+      <p className="muted" style={{ textAlign: 'center', fontSize: 12, marginTop: 20 }}>
+        <Link to="/terms" style={{ color: 'inherit' }}>Terms</Link> ·{' '}
+        <Link to="/privacy" style={{ color: 'inherit' }}>Privacy</Link>
+      </p>
     </div>
   );
 }
