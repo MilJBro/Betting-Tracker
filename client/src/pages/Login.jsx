@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import AuthPanel from '../components/AuthPanel.jsx';
 import BrandMark from '../components/BrandMark.jsx';
 
@@ -92,6 +93,10 @@ export default function Login() {
         <p className="muted" style={{ textAlign: 'center', fontSize: 12, marginTop: 18 }}>
           Free to use · Please gamble responsibly ·{' '}
           <a href="https://www.begambleaware.org/" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>BeGambleAware</a>
+        </p>
+        <p className="muted" style={{ textAlign: 'center', fontSize: 12, marginTop: 6 }}>
+          <Link to="/terms" style={{ color: 'inherit' }}>Terms</Link> ·{' '}
+          <Link to="/privacy" style={{ color: 'inherit' }}>Privacy</Link>
         </p>
       </div>
     </div>
