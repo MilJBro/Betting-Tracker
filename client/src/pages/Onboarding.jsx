@@ -69,6 +69,9 @@ export default function Onboarding() {
   const { settings, save } = useSettings();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
+  // Track whether the prefs step was reached by skipping the questions, so its
+  // Back button returns to the first question rather than the last one.
+  const [skipped, setSkipped] = useState(false);
   const [answers, setAnswers] = useState({
     trackingStyle: [], sports: [], frequency: '', goal: [], experience: '',
   });
@@ -245,7 +248,11 @@ export default function Onboarding() {
                 preferences — so "Skip" jumps to the final preferences step. */}
             <button
               className="btn-ghost btn-sm"
-              onClick={() => (step === 0 ? setStep(STEPS.length - 1) : setStep(step - 1))}
+              onClick={() => {
+                if (step === 0) { setSkipped(true); setStep(STEPS.length - 1); }
+                else if (isLast && skipped) { setSkipped(false); setStep(0); }
+                else setStep(step - 1);
+              }}
               disabled={saving}
             >
               {step === 0 ? 'Skip questions' : '← Back'}
@@ -255,7 +262,7 @@ export default function Onboarding() {
                 {saving ? 'Setting up…' : 'Finish'}
               </button>
             ) : (
-              <button className="btn-primary" onClick={() => setStep(step + 1)} disabled={!canContinue}>Continue</button>
+              <button className="btn-primary" onClick={() => { setSkipped(false); setStep(step + 1); }} disabled={!canContinue}>Continue</button>
             )}
           </div>
         </div>
