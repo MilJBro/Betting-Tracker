@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import BrandMark from '../components/BrandMark.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
@@ -65,6 +66,7 @@ const STEPS = [
 
 export default function Onboarding() {
   const { settings, save } = useSettings();
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({
     trackingStyle: [], sports: [], frequency: '', goal: [], experience: '',
@@ -121,6 +123,9 @@ export default function Onboarding() {
         const first = d?.trackers?.[0];
         if (first) await api.put(`/trackers/${first.id}`, { bankroll_start: bk }).catch(() => {});
       }
+      // Always land on the Welcome dashboard once onboarding is done — even if
+      // the questionnaire was retaken from another page.
+      navigate('/', { replace: true });
     } finally {
       setSaving(false);
     }
