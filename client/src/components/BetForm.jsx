@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { currencySymbol, money, formatOdds, parseOdds } from '../format.js';
+import AutocompleteInput from './AutocompleteInput.jsx';
 
 const STATUS_OPTIONS = ['pending', 'won', 'lost', 'void', 'cashout'];
 // Each-way place-terms fractions (the place part pays at this fraction of odds).
@@ -355,10 +356,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                   <div className="grid-2">
                     <div className="field">
                       <label>Course / track</label>
-                      <input list="course-options" value={course} onChange={(e) => setCourse(e.target.value)} aria-label="Course or track" placeholder="e.g. Ascot" autoComplete="off" />
-                      <datalist id="course-options">
-                        {suggestions.courses.map((c) => <option key={c} value={c} />)}
-                      </datalist>
+                      <AutocompleteInput value={course} onChange={setCourse} options={suggestions.courses} ariaLabel="Course or track" placeholder="e.g. Ascot" />
                     </div>
                     <div className="field">
                       <label>Time <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
@@ -369,31 +367,22 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                   <div className="field">
                     <label>Event</label>
                     <div className="team-vs">
-                      <input list="team-options" value={home} onChange={(e) => setHome(e.target.value)} aria-label="Home team" autoComplete="off" />
+                      <AutocompleteInput value={home} onChange={setHome} options={suggestions.teams} ariaLabel="Home team" />
                       <span className="vs">v</span>
-                      <input list="team-options" value={away} onChange={(e) => setAway(e.target.value)} aria-label="Away team" autoComplete="off" />
+                      <AutocompleteInput value={away} onChange={setAway} options={suggestions.teams} ariaLabel="Away team" />
                     </div>
-                    <datalist id="team-options">
-                      {suggestions.teams.map((t) => <option key={t} value={t} />)}
-                    </datalist>
                   </div>
                 ) : (
                   <div className="field">
                     <label>Event / tournament <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
-                    <input list="event-options" value={form.event} onChange={(e) => set('event', e.target.value)} aria-label="Event or race" autoComplete="off" />
-                    <datalist id="event-options">
-                      {suggestions.events.map((ev) => <option key={ev} value={ev} />)}
-                    </datalist>
+                    <AutocompleteInput value={form.event} onChange={(v) => set('event', v)} options={suggestions.events} ariaLabel="Event or race" />
                   </div>
                 )
               )}
               {show('selection') && (
                 <div className="field">
                   <label>{layout === 'racing' ? 'Horse / runner' : versus ? 'Selection' : 'Your selection'}</label>
-                  <input list="selection-options" value={form.selection} onChange={(e) => set('selection', e.target.value)} aria-label="Selection" placeholder={layout === 'racing' ? 'e.g. Constitution Hill' : undefined} autoComplete="off" />
-                  <datalist id="selection-options">
-                    {suggestions.selections.map((s) => <option key={s} value={s} />)}
-                  </datalist>
+                  <AutocompleteInput value={form.selection} onChange={(v) => set('selection', v)} options={suggestions.selections} ariaLabel="Selection" placeholder={layout === 'racing' ? 'e.g. Constitution Hill' : undefined} />
                 </div>
               )}
               {show('odds') && (
@@ -448,12 +437,11 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
               <div className="legs">
                 {legs.map((l, i) => (
                   <div className="leg-row" key={i}>
-                    <input
-                      list="selection-options"
+                    <AutocompleteInput
                       value={l.selection}
-                      onChange={(e) => setLeg(i, 'selection', e.target.value)}
-                      aria-label={`Selection ${i + 1}`}
-                      autoComplete="off"
+                      onChange={(v) => setLeg(i, 'selection', v)}
+                      options={suggestions.selections}
+                      ariaLabel={`Selection ${i + 1}`}
                     />
                     <input
                       type={oddsFormat === 'decimal' ? 'number' : 'text'}
@@ -471,9 +459,6 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                   </div>
                 ))}
               </div>
-              <datalist id="selection-options">
-                {suggestions.selections.map((s) => <option key={s} value={s} />)}
-              </datalist>
               <div className="row spread" style={{ marginTop: 10 }}>
                 <button type="button" className="btn-ghost btn-sm" onClick={addLeg}>+ Add selection</button>
                 <div className="muted" style={{ fontSize: 13 }}>
