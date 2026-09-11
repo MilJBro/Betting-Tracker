@@ -203,13 +203,11 @@ export default function Onboarding() {
           )}
 
           {s.type === 'prefs' && (
-            <div className="grid-2">
+            <div className="grid-2 onb-prefs">
               <div className="field" style={{ gridColumn: '1 / -1' }}>
                 <label>Tracker name <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
                 <input value={prefs.trackerName} placeholder="e.g. My bets, Football tips" maxLength={60} onChange={(e) => setPrefs({ ...prefs, trackerName: e.target.value })} />
-                <div className="muted" style={{ fontSize: 12, marginTop: 5 }}>
-                  Name your first tracker. You can add more later — one per tipster or strategy.
-                </div>
+                <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>Name your first tracker — add more later.</div>
               </div>
               <div className="field">
                 <label>Currency</label>
@@ -226,18 +224,18 @@ export default function Onboarding() {
                 </select>
               </div>
               <div className="field">
-                <label>Starting bankroll <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
+                <label>Bankroll <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
                 <input type="number" min="0" step="0.01" value={prefs.bankroll} placeholder="e.g. 500" onChange={(e) => setPrefs({ ...prefs, bankroll: e.target.value })} />
               </div>
-              <div className="field" style={{ gridColumn: '1 / -1' }}>
+              <div className="field">
                 <label>Unit size <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
                 <div className="row" style={{ gap: 8, alignItems: 'center' }}>
                   <span className="muted" style={{ fontWeight: 700 }}>{currencySymbol(prefs.currency)}</span>
                   <input type="number" min="0.01" step="0.01" value={prefs.unitSize} placeholder="e.g. 10" onChange={(e) => setPrefs({ ...prefs, unitSize: e.target.value })} />
                 </div>
-                <div className="muted" style={{ fontSize: 12, marginTop: 5 }}>
-                  If you stake in units, set what 1 unit is worth. Leave blank if you don’t — you can always turn units on later.
-                </div>
+              </div>
+              <div className="muted" style={{ gridColumn: '1 / -1', fontSize: 11.5, marginTop: -4 }}>
+                Unit size is what 1 unit is worth — leave blank if you don’t stake in units.
               </div>
             </div>
           )}
