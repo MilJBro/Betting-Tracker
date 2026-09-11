@@ -6,7 +6,9 @@ import { useTracker } from '../context/TrackerContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import StatCard from '../components/StatCard.jsx';
 import ProfitChart from '../components/ProfitChart.jsx';
+import SettleControls from '../components/SettleControls.jsx';
 import Spinner from '../components/Spinner.jsx';
+import { settlePayout } from '../settle.js';
 import { formatStake, formatOdds, formatDate } from '../format.js';
 
 export default function Dashboard() {
@@ -28,9 +30,10 @@ export default function Dashboard() {
 
   async function settle(bet, status) {
     try {
-      await api.put(`/bets/${bet.id}`, { ...bet, status, payout: '' });
+      await api.put(`/bets/${bet.id}`, { ...bet, status, payout: settlePayout(bet, status) });
       await load();
-      toast(status === 'won' ? 'Marked won' : 'Marked lost');
+      const label = { won: 'won', lost: 'lost', placed: 'placed', void: 'void' }[status] || status;
+      toast(`Marked ${label}`);
     } catch (e) { toast(e.message, 'error'); }
   }
 
@@ -172,10 +175,7 @@ export default function Dashboard() {
                     {formatDate(b.placed_at)} · {formatStake(b.stake, currency, staking)} @ {formatOdds(b.odds, settings.oddsFormat)} → {formatStake(b.stake * b.odds, currency, staking)}
                   </div>
                 </div>
-                <div className="row" style={{ flexWrap: 'nowrap' }}>
-                  <button className="btn-ghost btn-sm settle-win" onClick={() => settle(b, 'won')}>Won</button>
-                  <button className="btn-ghost btn-sm settle-loss" onClick={() => settle(b, 'lost')}>Lost</button>
-                </div>
+                <SettleControls bet={b} onSettle={(status) => settle(b, status)} />
               </div>
             ))}
           </div>
