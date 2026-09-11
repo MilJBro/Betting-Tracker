@@ -16,11 +16,20 @@ import Share from './pages/Share.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
 
 const NAV = [
-  { to: '/', end: true, icon: 'dashboard', label: 'Dashboard', short: 'Home' },
+  { to: '/', end: true, icon: 'house', label: 'Dashboard', short: 'Home' },
   { to: '/bets', icon: 'bets', label: 'My bets', short: 'Bets' },
   { to: '/analytics', icon: 'analytics', label: 'Analytics', short: 'Stats' },
   { to: '/customise', icon: 'sliders', label: 'Customise', short: 'Style' },
   { to: '/account', icon: 'account', label: 'Account', short: 'You' },
+];
+
+// The mobile bottom bar: Home · Bets · [+ add] · Stats · You. Customise
+// (Style) lives inside the You/Account page there to keep the bar to five.
+const BOTTOM_NAV = [
+  { to: '/', end: true, icon: 'house', short: 'Home' },
+  { to: '/bets', icon: 'bets', short: 'Bets' },
+  { to: '/analytics', icon: 'analytics', short: 'Stats' },
+  { to: '/account', icon: 'account', short: 'You' },
 ];
 
 function Sidebar() {
@@ -45,13 +54,25 @@ function Sidebar() {
 }
 
 function BottomNav() {
+  const navigate = useNavigate();
   const bnav = ({ isActive }) => 'bnav' + (isActive ? ' active' : '');
+  const left = BOTTOM_NAV.slice(0, 2);
+  const right = BOTTOM_NAV.slice(2);
   return (
     <nav className="bottom-nav">
-      {NAV.map((n) => (
+      {left.map((n) => (
         <NavLink key={n.to} to={n.to} end={n.end} className={bnav}>
           <Icon name={n.icon} size={22} />
-          {n.short || n.label}
+          {n.short}
+        </NavLink>
+      ))}
+      <button type="button" className="bnav-add" aria-label="Add bet" onClick={() => navigate('/bets?new=1')}>
+        <span>+</span>
+      </button>
+      {right.map((n) => (
+        <NavLink key={n.to} to={n.to} end={n.end} className={bnav}>
+          <Icon name={n.icon} size={22} />
+          {n.short}
         </NavLink>
       ))}
     </nav>
@@ -59,7 +80,6 @@ function BottomNav() {
 }
 
 function ShellInner() {
-  const navigate = useNavigate();
   const { settings } = useSettings();
 
   // Wait for settings, then send brand-new accounts through the questionnaire.
@@ -82,8 +102,7 @@ function ShellInner() {
           </Routes>
         </div>
       </div>
-      {/* Mobile-only: floating add + bottom tab bar */}
-      <button className="fab" aria-label="Add bet" onClick={() => navigate('/bets?new=1')}>+</button>
+      {/* Mobile-only: bottom tab bar with a centred add button */}
       <BottomNav />
     </TrackerProvider>
   );
