@@ -7,6 +7,7 @@ import { useSettings } from '../context/SettingsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import BetForm from '../components/BetForm.jsx';
 import SettleControls from '../components/SettleControls.jsx';
+import PendingReminder from '../components/PendingReminder.jsx';
 import { settlePayout } from '../settle.js';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
@@ -339,6 +340,8 @@ export default function Bets() {
       </div>
 
       <input ref={csvRef} type="file" accept=".csv,text/csv" onChange={onImportFile} style={{ display: 'none' }} />
+
+      <PendingReminder bets={bets} onReview={() => { clearFilters(); setStatus('pending'); }} reviewLabel="Show open bets" />
 
       {templates.length > 0 && (
         <div className="tpl-row" style={{ marginBottom: 14 }}>
