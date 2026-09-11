@@ -6,6 +6,8 @@ import { useTracker } from '../context/TrackerContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import BetForm from '../components/BetForm.jsx';
+import SettleControls from '../components/SettleControls.jsx';
+import { settlePayout } from '../settle.js';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
 import { formatStake, formatOdds, formatDate } from '../format.js';
@@ -202,13 +204,14 @@ export default function Bets() {
     }
   }
 
-  // Quick-settle a pending bet without opening the form. Payout is auto-filled
-  // server-side (stake × odds for a win, 0 for a loss).
+  // Quick-settle a pending bet without opening the form. The payout is worked
+  // out client-side (settlePayout) so each-way returns are correct.
   async function settle(bet, status) {
     try {
-      await api.put(`/bets/${bet.id}`, { ...bet, status, payout: '' });
+      await api.put(`/bets/${bet.id}`, { ...bet, status, payout: settlePayout(bet, status) });
       await load();
-      toast(status === 'won' ? 'Marked won' : status === 'lost' ? 'Marked lost' : 'Marked void');
+      const label = { won: 'won', lost: 'lost', placed: 'placed', void: 'void' }[status] || status;
+      toast(`Marked ${label}`);
     } catch (e) {
       toast(e.message, 'error');
     }
@@ -444,10 +447,7 @@ export default function Bets() {
                       <td>
                         <div className="row" style={{ flexWrap: 'nowrap' }}>
                           {b.status === 'pending' && (
-                            <>
-                              <button className="btn-ghost btn-sm settle-win" onClick={() => settle(b, 'won')} title="Mark won">Won</button>
-                              <button className="btn-ghost btn-sm settle-loss" onClick={() => settle(b, 'lost')} title="Mark lost">Lost</button>
-                            </>
+                            <SettleControls bet={b} onSettle={(status) => settle(b, status)} />
                           )}
                           <button className="btn-ghost btn-sm" onClick={() => openEdit(b)}>Edit</button>
                           <button className="btn-danger btn-sm" onClick={() => remove(b.id)}>✕</button>
