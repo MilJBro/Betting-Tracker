@@ -5,7 +5,7 @@ import BrandMark from '../components/BrandMark.jsx';
 const FEATURES = [
   {
     title: 'Tailored to you',
-    body: 'Show the stats you care about, hide the rest, reorder your dashboard and pick a theme.',
+    body: 'Show the stats you care about, hide the rest, and reorder your dashboard to suit you.',
     icon: <><path d="M4 8h16M4 16h16" /><circle cx="9" cy="8" r="2.3" /><circle cx="15" cy="16" r="2.3" /></>,
   },
   {
