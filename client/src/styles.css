@@ -319,10 +319,10 @@ tr:last-child td { border-bottom: none; }
 
   /* Centre "add bet" button, raised out of the bar. */
   .bnav-add {
-    justify-self: center; width: 46px; height: 46px; border-radius: 15px; margin-top: -4px;
+    justify-self: center; align-self: center; width: 44px; height: 44px; border-radius: 14px; margin: 0;
     background: var(--primary); color: #04120a; display: grid; place-items: center;
-    font-size: 25px; font-weight: 400; line-height: 1; border: 2px solid var(--surface);
-    box-shadow: 0 5px 14px color-mix(in srgb, var(--primary) 45%, transparent);
+    font-size: 24px; font-weight: 400; line-height: 1; border: 0;
+    box-shadow: 0 3px 10px color-mix(in srgb, var(--primary) 40%, transparent);
   }
   .bnav-add span { margin-top: -1px; }
 
