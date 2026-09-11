@@ -4,25 +4,15 @@
 # (sync:false) are filled in the Render dashboard, never committed.
 # See DEPLOY.md for the full walkthrough.
 #
-# ── This file is currently set to Render's FREE plan, for testing ──
-# The free plan has NO persistent disk, so the SQLite database is wiped on
-# every deploy/restart and the service sleeps when idle (first visit after a
-# nap takes ~30s to wake). Great for trying it out; not for real data.
-#
-# To go to PRODUCTION later, switch to the paid Starter plan with a disk that
-# keeps your data. Change the two marked lines below and add this block back
-# under the service (indented like envVars):
-#     disk:
-#       name: data
-#       mountPath: /var/data
-#       sizeGB: 1
-# ...and add an env var  DB_PATH = /var/data/betbooks.db  so the database
-# lives on that disk. DEPLOY.md spells this out.
+# ── PRODUCTION: paid Starter plan with a persistent disk ──
+# The service runs on the paid Starter instance and mounts a 1 GB disk at
+# /var/data. The SQLite database lives on that disk (via DB_PATH), so it
+# survives every deploy and restart, and the service no longer sleeps.
 services:
   - type: web
     name: betbooks
     runtime: node
-    plan: free               # ← PRODUCTION: change to "starter" (and add the disk + DB_PATH)
+    plan: starter
     # --include=dev forces devDependencies (Vite, the build tool) to install
     # even though NODE_ENV=production, which otherwise skips them and the
     # client build fails with "vite: not found".
@@ -30,6 +20,11 @@ services:
     startCommand: npm start
     healthCheckPath: /api/health
     autoDeploy: true
+    # Persistent disk — keeps the SQLite database across deploys/restarts.
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: "20"
@@ -37,8 +32,9 @@ services:
         value: production
       - key: JWT_SECRET
         generateValue: true  # Render generates a strong secret once
-      # On free (no disk) the database uses the app's own data folder, which is
-      # wiped on redeploy. On the paid plan, set DB_PATH to the disk instead.
+      # The database file lives on the persistent disk mounted above.
+      - key: DB_PATH
+        value: /var/data/betbooks.db
       # Public URL — set to your onrender.com URL after the first deploy.
       - key: APP_URL
         sync: false
