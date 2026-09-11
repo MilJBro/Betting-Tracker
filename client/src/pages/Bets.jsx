@@ -11,6 +11,14 @@ import Icon from '../components/Icon.jsx';
 import { formatStake, formatOdds, formatDate } from '../format.js';
 import { betsToCsv, csvToBets, downloadCsv } from '../csv.js';
 
+// Common betting sports offered in the Add-bet form's sport field so there's
+// always a useful starter list. Kept in sync with the onboarding sport picks.
+const COMMON_SPORTS = [
+  'Football', 'Horse Racing', 'Greyhounds', 'Tennis', 'Basketball', 'Cricket',
+  'Golf', 'Boxing', 'MMA / UFC', 'Rugby', 'Darts', 'Snooker',
+  'American Football', 'Baseball', 'Ice Hockey', 'Motorsport', 'Esports',
+];
+
 function profitOf(b) {
   if (b.status === 'won') return (b.payout ?? b.stake * b.odds) - b.stake;
   if (b.status === 'lost') return -b.stake;
@@ -97,7 +105,10 @@ export default function Bets() {
   // seeded with your onboarding picks, de-duped (case-insensitive) and
   // sorted — so you only see sports you bet on.
   const sportSuggestions = useMemo(() => {
-    const seed = Array.isArray(settings?.profile?.sports) ? settings.profile.sports : [];
+    const picked = Array.isArray(settings?.profile?.sports) ? settings.profile.sports : [];
+    // A starter list so common sports (incl. horse racing) are always offered,
+    // even on a fresh account. Your own additions get merged in and persist.
+    const seed = [...COMMON_SPORTS, ...picked];
     const seen = new Set();
     const out = [];
     [...seed, ...bets.map((b) => b.sport)].forEach((s) => {
