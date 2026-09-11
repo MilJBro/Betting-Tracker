@@ -124,8 +124,9 @@ export default function Onboarding() {
       },
     };
     try {
-      await save(next);
-      // Seed the account's first (default) tracker with the name and bankroll.
+      // Seed the first (default) tracker with the name and bankroll BEFORE
+      // marking onboarding done — that flip mounts the tracker bar, which then
+      // loads the already-renamed tracker instead of the stale default.
       const bk = skip ? 0 : (Number(prefs.bankroll) || 0);
       const trackerName = skip ? '' : prefs.trackerName.trim();
       if (bk > 0 || trackerName) {
@@ -138,6 +139,7 @@ export default function Onboarding() {
           await api.put(`/trackers/${first.id}`, body).catch(() => {});
         }
       }
+      await save(next);
       // Always land on the Welcome dashboard once onboarding is done — even if
       // the questionnaire was retaken from another page.
       navigate('/', { replace: true });
