@@ -78,6 +78,7 @@ export default function Onboarding() {
     bankroll: settings?.bankroll?.starting || '',
     // Optional: only set if they already stake in units.
     unitSize: settings?.staking && settings.staking.mode !== 'currency' ? (settings.staking.unitSize ?? '') : '',
+    trackerName: '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -124,12 +125,18 @@ export default function Onboarding() {
     };
     try {
       await save(next);
-      // Bankroll is per-tracker — seed the account's first (default) tracker.
+      // Seed the account's first (default) tracker with the name and bankroll.
       const bk = skip ? 0 : (Number(prefs.bankroll) || 0);
-      if (bk > 0) {
+      const trackerName = skip ? '' : prefs.trackerName.trim();
+      if (bk > 0 || trackerName) {
         const d = await api.get('/trackers').catch(() => null);
         const first = d?.trackers?.[0];
-        if (first) await api.put(`/trackers/${first.id}`, { bankroll_start: bk }).catch(() => {});
+        if (first) {
+          const body = {};
+          if (bk > 0) body.bankroll_start = bk;
+          if (trackerName) body.name = trackerName;
+          await api.put(`/trackers/${first.id}`, body).catch(() => {});
+        }
       }
       // Always land on the Welcome dashboard once onboarding is done — even if
       // the questionnaire was retaken from another page.
@@ -195,6 +202,13 @@ export default function Onboarding() {
 
           {s.type === 'prefs' && (
             <div className="grid-2">
+              <div className="field" style={{ gridColumn: '1 / -1' }}>
+                <label>Tracker name <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
+                <input value={prefs.trackerName} placeholder="e.g. My bets, Football tips" maxLength={60} onChange={(e) => setPrefs({ ...prefs, trackerName: e.target.value })} />
+                <div className="muted" style={{ fontSize: 12, marginTop: 5 }}>
+                  Name your first tracker. You can add more later — one per tipster or strategy.
+                </div>
+              </div>
               <div className="field">
                 <label>Currency</label>
                 <select value={prefs.currency} onChange={(e) => setPrefs({ ...prefs, currency: e.target.value })}>
