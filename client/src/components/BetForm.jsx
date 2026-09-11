@@ -2,6 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { currencySymbol, money, formatOdds, parseOdds } from '../format.js';
 
 const STATUS_OPTIONS = ['pending', 'won', 'lost', 'void', 'cashout'];
+// Each-way place-terms fractions (the place part pays at this fraction of odds).
+const EW_FRACTIONS = ['1/5', '1/4', '1/3', '1/2', '1/6'];
+const fractionValue = (frac) => {
+  const [a, b] = String(frac || '1/5').split('/').map(Number);
+  return b > 0 ? a / b : 0.2;
+};
 // Common unit stakes offered as a quick-pick when the user stakes in units.
 const UNIT_STEPS = [0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 5, 10];
 
@@ -20,6 +26,9 @@ const blank = () => ({
   notes: '',
   tags: [],
   legs: [],
+  each_way: false,
+  ew_fraction: '1/5',
+  ew_places: '',
 });
 
 // Combined decimal odds for an accumulator = product of the legs' odds.
@@ -80,11 +89,21 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
       if (defaults?.bookmaker) base.bookmaker = defaults.bookmaker;
     }
     const f = { ...base, ...(initial || {}) };
-    // Show a saved bet's odds back in the user's chosen format for editing.
-    if (initial) f.odds = Number(initial.odds) > 0 ? formatOdds(initial.odds, oddsFormat) : '';
-    if (usesUnits && initial) {
-      f.stake = initial.stake ? toUnits(initial.stake) : '';
-      f.payout = initial.payout != null && initial.payout !== '' ? toUnits(initial.payout) : f.payout;
+    if (initial) {
+      // Show a saved bet's odds back in the user's chosen format for editing.
+      f.odds = Number(initial.odds) > 0 ? formatOdds(initial.odds, oddsFormat) : '';
+      f.each_way = !!initial.each_way;
+      f.ew_fraction = initial.ew_fraction || '1/5';
+      f.ew_places = initial.ew_places != null && initial.ew_places !== '' ? String(initial.ew_places) : '';
+      // The stake box shows the per-part stake; each-way stores the doubled total.
+      const totalMoney = Number(initial.stake) || 0;
+      const perPartMoney = f.each_way ? totalMoney / 2 : totalMoney;
+      if (usesUnits) {
+        f.stake = initial.stake ? toUnits(perPartMoney) : '';
+        f.payout = initial.payout != null && initial.payout !== '' ? toUnits(initial.payout) : f.payout;
+      } else {
+        f.stake = initial.stake ? String(Math.round(perPartMoney * 100) / 100) : '';
+      }
     }
     return f;
   });
@@ -111,6 +130,12 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
   // The slip layout follows the chosen sport.
   const layout = sportLayout(form.sport);
   const versus = layout === 'versus';
+  // Each-way (Win + Place) applies to racing and other field sports (e.g. golf).
+  const ewEligible = layout === 'racing' || layout === 'field';
+  const eachWay = !!form.each_way && ewEligible;
+  const statusOptions = eachWay
+    ? ['pending', 'won', 'placed', 'lost', 'void', 'cashout']
+    : STATUS_OPTIONS;
 
   // Sport is a dropdown; "Other…" reveals a free-text box for anything not
   // in the list. Match the saved sport to a list option case-insensitively.
@@ -137,6 +162,14 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
     return `1u = ${money(unitSize, currency)}`;
   };
 
+  // The note under the each-way controls: total outlay (both parts) and terms.
+  const ewHint = () => {
+    const p = Number(form.stake);
+    if (!(p > 0)) return 'Stakes a Win part and a Place part — total outlay is 2× your stake.';
+    const perPartMoney = usesUnits ? p * unitSize : p;
+    return `Total outlay ${money(perPartMoney * 2, currency)} — ${money(perPartMoney, currency)} win + ${money(perPartMoney, currency)} place. Place pays at ${form.ew_fraction} of the odds.`;
+  };
+
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
   // Once the user edits the payout themselves, stop auto-filling it.
@@ -150,16 +183,33 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
 
   const accaOdds = useMemo(() => combinedOdds(legs, oddsFormat), [legs, oddsFormat]);
 
-  // Auto-fill the payout (potential return = stake × odds) as the user types,
-  // until they edit the payout box themselves. Stake and payout share the same
-  // unit (money or units), so the odds is a plain multiplier for both.
+  // Auto-fill the payout (return) as the user types, until they edit the payout
+  // box themselves. Stake and payout share the same unit (money or units), so
+  // odds is a plain multiplier. For an each-way bet the stake box holds the
+  // per-part stake and the return depends on the outcome:
+  //   won    → Win part (stake × odds) + Place part (stake × place odds)
+  //   placed → Place part only            void/pending → the full-win figure
   useEffect(() => {
     if (payoutTouched) return;
     const d = kind === 'acca' ? accaOdds : parseOdds(form.odds, oddsFormat);
-    const st = Number(form.stake);
-    const next = d > 0 && st > 0 ? String(Math.round(st * d * 100) / 100) : '';
+    const p = Number(form.stake); // per-part stake (or plain stake when not each-way)
+    let next = '';
+    if (d > 0 && p > 0) {
+      if (eachWay && kind === 'single') {
+        const placeMult = 1 + (d - 1) * fractionValue(form.ew_fraction);
+        const winReturn = p * d;
+        const placeReturn = p * placeMult;
+        const ret =
+          form.status === 'placed' ? placeReturn
+          : form.status === 'lost' ? 0
+          : winReturn + placeReturn; // won, and the potential return otherwise
+        next = String(Math.round(ret * 100) / 100);
+      } else {
+        next = String(Math.round(p * d * 100) / 100);
+      }
+    }
     setForm((f) => (f.payout === next ? f : { ...f, payout: next }));
-  }, [form.stake, form.odds, kind, accaOdds, oddsFormat, payoutTouched]);
+  }, [form.stake, form.odds, form.status, form.ew_fraction, eachWay, kind, accaOdds, oddsFormat, payoutTouched]);
 
   const setLeg = (i, k, v) => setLegs((ls) => ls.map((l, j) => (j === i ? { ...l, [k]: v } : l)));
   const addLeg = () => setLegs((ls) => [...ls, { selection: '', odds: '' }]);
@@ -170,11 +220,19 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
     setSaving(true);
     try {
       const payload = { ...form };
-      if (usesUnits) {
-        payload.stake = form.stake === '' ? '' : Number(form.stake) * unitSize;
-        payload.payout =
-          form.payout === '' || form.payout == null ? form.payout : Number(form.payout) * unitSize;
+      // Each-way stakes a Win and a Place part, so the total outlay is 2× the
+      // per-part stake shown in the box. Payout already covers both parts.
+      const isEW = eachWay && kind === 'single';
+      const scale = usesUnits ? unitSize : 1;
+      if (form.stake !== '' && form.stake != null) {
+        payload.stake = Number(form.stake) * (isEW ? 2 : 1) * scale;
       }
+      if (form.payout !== '' && form.payout != null) {
+        payload.payout = Number(form.payout) * scale;
+      }
+      payload.each_way = isEW;
+      payload.ew_fraction = isEW ? form.ew_fraction : null;
+      payload.ew_places = isEW && form.ew_places !== '' ? Number(form.ew_places) : null;
       if (kind === 'acca') {
         const cleaned = legs
           .map((l) => ({ selection: l.selection.trim(), odds: parseOdds(l.odds, oddsFormat) }))
@@ -312,6 +370,37 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                   />
                 </div>
               )}
+              {ewEligible && (
+                <div className="field">
+                  <label className="row" style={{ gap: 8, alignItems: 'center', cursor: 'pointer', marginBottom: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={form.each_way}
+                      onChange={(e) => set('each_way', e.target.checked)}
+                      aria-label="Each-way"
+                      style={{ width: 'auto', margin: 0 }}
+                    />
+                    <span>Each-way <span className="muted" style={{ fontWeight: 400 }}>(Win + Place)</span></span>
+                  </label>
+                  {eachWay && (
+                    <>
+                      <div className="grid-2" style={{ marginTop: 10 }}>
+                        <div className="field" style={{ margin: 0 }}>
+                          <label>Place terms</label>
+                          <select value={form.ew_fraction} onChange={(e) => set('ew_fraction', e.target.value)} aria-label="Place terms fraction">
+                            {EW_FRACTIONS.map((fr) => <option key={fr} value={fr}>{fr} odds</option>)}
+                          </select>
+                        </div>
+                        <div className="field" style={{ margin: 0 }}>
+                          <label>Places <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
+                          <input type="number" min="1" step="1" value={form.ew_places} onChange={(e) => set('ew_places', e.target.value)} aria-label="Number of places" placeholder="e.g. 4" />
+                        </div>
+                      </div>
+                      <div className="muted" style={{ fontSize: 11, marginTop: 6 }}>{ewHint()}</div>
+                    </>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             <div className="field">
@@ -374,7 +463,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
           <div className="grid-2">
             {show('stake') && (
               <div className="field">
-                <label>Stake{unitLabel}</label>
+                <label>Stake{unitLabel}{eachWay ? <span className="muted" style={{ fontWeight: 400 }}> · per part</span> : ''}</label>
                 {unitSize > 0 ? (
                   <>
                     <div className="row" style={{ gap: 8 }}>
@@ -434,8 +523,8 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
             {show('status') && (
               <div className="field">
                 <label>Status</label>
-                <select value={form.status} onChange={(e) => set('status', e.target.value)}>
-                  {STATUS_OPTIONS.map((s) => (
+                <select value={form.status} onChange={(e) => set('status', e.target.value)} aria-label="Status">
+                  {statusOptions.map((s) => (
                     <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>
                   ))}
                 </select>

@@ -164,6 +164,7 @@ tr:last-child td { border-bottom: none; }
 .badge.lost { background: color-mix(in srgb, var(--loss) 20%, transparent); color: var(--loss); }
 .badge.pending { background: color-mix(in srgb, var(--pending) 20%, transparent); color: var(--pending); }
 .badge.void, .badge.cashout { background: var(--surface-2); color: var(--muted); }
+.badge.placed { background: color-mix(in srgb, var(--pending) 22%, transparent); color: var(--pending); }
 
 /* ---- Grids & sections ---- */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }

@@ -22,11 +22,12 @@ const COMMON_SPORTS = [
 function profitOf(b) {
   if (b.status === 'won') return (b.payout ?? b.stake * b.odds) - b.stake;
   if (b.status === 'lost') return -b.stake;
+  if (b.status === 'placed') return (b.payout ?? 0) - b.stake; // each-way place part
   if (b.status === 'void' || b.status === 'cashout') return (b.payout ?? b.stake) - b.stake;
   return null;
 }
 
-const SETTLED = ['won', 'lost', 'void', 'cashout'];
+const SETTLED = ['won', 'lost', 'void', 'cashout', 'placed'];
 const SORTS = [
   { key: 'date', label: 'Date' },
   { key: 'stake', label: 'Stake' },
@@ -329,7 +330,7 @@ export default function Bets() {
       {/* Status chips + search + filter toggle */}
       <div className="stack" style={{ marginBottom: 14 }}>
         <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
-          {['all', 'pending', 'won', 'lost', 'void', 'cashout'].map((f) => (
+          {['all', 'pending', 'won', 'placed', 'lost', 'void', 'cashout'].map((f) => (
             <button
               key={f}
               className={status === f ? 'btn-accent btn-sm' : 'btn-ghost btn-sm'}

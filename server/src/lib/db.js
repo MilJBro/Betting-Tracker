@@ -93,6 +93,11 @@ ensureColumn('bets', 'tracker_id', 'TEXT');
 ensureColumn('shares', 'tracker_id', 'TEXT');
 // Accumulators: the individual legs (JSON array of {selection, odds}).
 ensureColumn('bets', 'legs', 'TEXT');
+// Each-way bets (racing, golf…): a Win part + a Place part. `stake` holds the
+// total outlay (both parts); ew_fraction is the place-terms fraction ("1/5").
+ensureColumn('bets', 'each_way', 'INTEGER NOT NULL DEFAULT 0');
+ensureColumn('bets', 'ew_fraction', 'TEXT');
+ensureColumn('bets', 'ew_places', 'INTEGER');
 
 // --- One-off data migration: give every user a default tracker and adopt any
 // bets that predate trackers. Idempotent — safe to run on every boot.
