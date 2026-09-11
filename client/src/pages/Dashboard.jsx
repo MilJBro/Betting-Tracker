@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { useTracker } from '../context/TrackerContext.jsx';
@@ -7,6 +7,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import StatCard from '../components/StatCard.jsx';
 import ProfitChart from '../components/ProfitChart.jsx';
 import SettleControls from '../components/SettleControls.jsx';
+import PendingReminder from '../components/PendingReminder.jsx';
 import Spinner from '../components/Spinner.jsx';
 import { settlePayout } from '../settle.js';
 import { formatStake, formatOdds, formatDate } from '../format.js';
@@ -15,6 +16,7 @@ export default function Dashboard() {
   const { settings } = useSettings();
   const { active, activeId } = useTracker();
   const toast = useToast();
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [bets, setBets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -118,6 +120,8 @@ export default function Dashboard() {
         </div>
         <Link to="/bets?new=1" state={{ returnTo: '/' }} className="btn-primary" style={{ display: 'inline-block' }}>+ Add bet</Link>
       </div>
+
+      <PendingReminder bets={bets} onReview={() => navigate('/bets')} reviewLabel="Show open bets" />
 
       {enabledCards.length === 0 ? (
         <div className="card empty">No stat cards enabled — turn some on in Customise.</div>
