@@ -37,7 +37,7 @@ function splitEvent(ev) {
   return { home: (parts[0] || '').trim(), away: (parts.length > 1 ? parts.slice(1).join(' v ') : '').trim() };
 }
 
-export default function BetForm({ initial, isEdit, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], teams = [], defaultDate, onSetUnitSize, onSave, onClose }) {
+export default function BetForm({ initial, isEdit, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], teams = [], defaultDate, onSetUnitSize, onSave, onClose }) {
   const unitSize = Number(staking?.unitSize) || 0;
   const [editUnit, setEditUnit] = useState(false);
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
@@ -181,7 +181,16 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
             {show('sport') && (
               <div className="field">
                 <label>Sport / Category</label>
-                <input value={form.sport} onChange={(e) => set('sport', e.target.value)} aria-label="Sport or category" />
+                <input
+                  list="sport-options"
+                  value={form.sport}
+                  onChange={(e) => set('sport', e.target.value)}
+                  aria-label="Sport or category"
+                  autoComplete="off"
+                />
+                <datalist id="sport-options">
+                  {sports.map((s) => <option key={s} value={s} />)}
+                </datalist>
               </div>
             )}
           </div>

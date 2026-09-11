@@ -93,6 +93,23 @@ export default function Bets() {
     () => [...new Set(bets.map((b) => b.bookmaker).filter(Boolean))].sort(),
     [bets]
   );
+  // Sport suggestions for the Add-bet form: sports you've actually used,
+  // seeded with your onboarding picks, de-duped (case-insensitive) and
+  // sorted — so you only see sports you bet on.
+  const sportSuggestions = useMemo(() => {
+    const seed = Array.isArray(settings?.profile?.sports) ? settings.profile.sports : [];
+    const seen = new Set();
+    const out = [];
+    [...seed, ...bets.map((b) => b.sport)].forEach((s) => {
+      const v = (s || '').trim();
+      if (!v) return;
+      const k = v.toLowerCase();
+      if (seen.has(k)) return;
+      seen.add(k);
+      out.push(v);
+    });
+    return out.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  }, [bets, settings]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -460,6 +477,7 @@ export default function Bets() {
           oddsFormat={oddsFormat}
           defaults={settings?.defaults}
           bookmakers={bookieOptions}
+          sports={sportSuggestions}
           teams={Array.isArray(settings?.teams) ? settings.teams : []}
           defaultDate={lastDate}
           onSetUnitSize={(v) => updateSettings({ staking: { ...settings.staking, unitSize: v } })}
