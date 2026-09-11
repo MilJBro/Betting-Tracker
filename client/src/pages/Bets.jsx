@@ -176,6 +176,33 @@ export default function Bets() {
     setSearch(''); setSport(''); setBookie(''); setFrom(''); setTo('');
   }
 
+  // Bulk-settle selection (pending bets only, within the current filtered view).
+  const [selected, setSelected] = useState(() => new Set());
+  const pendingInView = filtered.filter((b) => b.status === 'pending');
+  const allSelected = pendingInView.length > 0 && pendingInView.every((b) => selected.has(b.id));
+  const selectedCount = pendingInView.filter((b) => selected.has(b.id)).length;
+  function toggleOne(id) {
+    setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+  function toggleAll() {
+    setSelected((s) => {
+      const n = new Set(s);
+      const on = pendingInView.length > 0 && pendingInView.every((b) => s.has(b.id));
+      pendingInView.forEach((b) => (on ? n.delete(b.id) : n.add(b.id)));
+      return n;
+    });
+  }
+  async function bulkSettle(status) {
+    const targets = bets.filter((b) => selected.has(b.id) && b.status === 'pending');
+    if (!targets.length) return;
+    try {
+      await Promise.all(targets.map((b) => api.put(`/bets/${b.id}`, { ...b, status, payout: settlePayout(b, status) })));
+      await load();
+      setSelected(new Set());
+      toast(`Marked ${targets.length} bet${targets.length !== 1 ? 's' : ''} ${status}`, 'success');
+    } catch (e) { toast(e.message, 'error'); }
+  }
+
   async function save(form) {
     const editingNow = editing;
     try {
@@ -423,6 +450,18 @@ export default function Bets() {
         <div className="stat"><div className="label">ROI</div><div className={`value ${summary.roi > 0 ? 'pos' : summary.roi < 0 ? 'neg' : ''}`}>{summary.roi}%</div></div>
       </div>
 
+      {selectedCount > 0 && (
+        <div className="bulk-bar">
+          <span className="bulk-count">{selectedCount} selected</span>
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+            <button className="btn-ghost btn-sm settle-win" onClick={() => bulkSettle('won')}>Mark won</button>
+            <button className="btn-ghost btn-sm settle-loss" onClick={() => bulkSettle('lost')}>Mark lost</button>
+            <button className="btn-ghost btn-sm" onClick={() => bulkSettle('void')}>Void</button>
+            <button className="btn-ghost btn-sm" onClick={() => setSelected(new Set())}>Clear</button>
+          </div>
+        </div>
+      )}
+
       <div className="card">
         {filtered.length === 0 ? (
           <div className="empty">
@@ -436,6 +475,15 @@ export default function Bets() {
             <table>
               <thead>
                 <tr>
+                  <th style={{ width: 28 }}>
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleAll}
+                      disabled={pendingInView.length === 0}
+                      aria-label="Select all pending bets"
+                    />
+                  </th>
                   <th style={{ cursor: 'pointer' }} onClick={() => toggleSort('date')}>Date{sortArrow('date')}</th>
                   {col('sport') && <th>Sport</th>}
                   {col('selection') && <th>Selection</th>}
@@ -452,7 +500,17 @@ export default function Bets() {
                 {filtered.map((b) => {
                   const p = profitOf(b);
                   return (
-                    <tr key={b.id}>
+                    <tr key={b.id} className={selected.has(b.id) ? 'row-selected' : ''}>
+                      <td>
+                        {b.status === 'pending' ? (
+                          <input
+                            type="checkbox"
+                            checked={selected.has(b.id)}
+                            onChange={() => toggleOne(b.id)}
+                            aria-label={`Select bet ${b.selection || b.event || ''}`}
+                          />
+                        ) : null}
+                      </td>
                       <td>{formatDate(b.placed_at)}</td>
                       {col('sport') && <td>{b.sport || '—'}</td>}
                       {col('selection') && (
