@@ -243,8 +243,14 @@ export default function Onboarding() {
           )}
 
           <div className="row spread" style={{ marginTop: 20 }}>
-            <button className="btn-ghost btn-sm" onClick={() => (step === 0 ? finish(true) : setStep(step - 1))} disabled={saving}>
-              {step === 0 ? 'Skip' : '← Back'}
+            {/* Skipping the questions is fine, but everyone still sets their
+                preferences — so "Skip" jumps to the final preferences step. */}
+            <button
+              className="btn-ghost btn-sm"
+              onClick={() => (step === 0 ? setStep(STEPS.length - 1) : setStep(step - 1))}
+              disabled={saving}
+            >
+              {step === 0 ? 'Skip questions' : '← Back'}
             </button>
             {isLast ? (
               <button className="btn-primary" onClick={() => finish(false)} disabled={saving}>
