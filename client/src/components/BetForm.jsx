@@ -335,12 +335,12 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
   return (
     <div className="modal-overlay" onMouseDown={onClose}>
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="row spread" style={{ marginBottom: 18 }}>
+        <div className="row spread" style={{ marginBottom: 12 }}>
           <h2 style={{ margin: 0, fontSize: 20 }}>{isEdit ? 'Edit bet' : 'Add a bet'}</h2>
           <button className="btn-ghost btn-sm" type="button" onClick={onClose}>✕</button>
         </div>
-        <form onSubmit={submit}>
-          <div className="grid-2">
+        <form onSubmit={submit} className="betform">
+          <div className="grid-2 betgrid">
             <div className="field">
               <label>Date</label>
               <input type="date" value={form.placed_at} onChange={(e) => set('placed_at', e.target.value)} />
@@ -388,7 +388,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
             <>
               {show('event') && (
                 layout === 'racing' ? (
-                  <div className="grid-2">
+                  <div className="grid-2 betgrid">
                     <div className="field">
                       <label>Course / track</label>
                       <AutocompleteInput value={course} onChange={setCourse} options={suggestions.courses} ariaLabel="Course or track" placeholder="e.g. Ascot" />
