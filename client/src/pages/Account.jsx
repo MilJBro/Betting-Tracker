@@ -177,8 +177,8 @@ export default function Account() {
         }}
       >
         <span>
-          <strong style={{ display: 'block' }}>Style &amp; customisation</strong>
-          <span className="muted" style={{ fontSize: 13 }}>Theme, dashboard stats, currency, odds format and sharing.</span>
+          <strong style={{ display: 'block' }}>Customisation</strong>
+          <span className="muted" style={{ fontSize: 13 }}>Dashboard stats, currency, odds format and sharing.</span>
         </span>
         <span className="muted" style={{ fontSize: 20 }}>→</span>
       </button>

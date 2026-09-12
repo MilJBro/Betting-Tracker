@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { applyTheme } from '../context/SettingsContext.jsx';
+import { DEFAULT_THEME } from '../themes.js';
 import ProfitChart from '../components/ProfitChart.jsx';
 import Icon from '../components/Icon.jsx';
 import { formatStake, formatOdds, formatDate } from '../format.js';
@@ -16,7 +17,7 @@ export default function Share() {
       .get(`/share/public/${publicId}`)
       .then((d) => {
         setProfile(d.profile);
-        applyTheme(d.profile.theme);
+        applyTheme(DEFAULT_THEME);
       })
       .catch((e) => setError(e.message));
   }, [publicId]);
@@ -83,7 +84,7 @@ export default function Share() {
       {reveal.profit && stats.timeline.length > 0 && (
         <div className="card" style={{ marginBottom: 24 }}>
           <h3 className="section-title">Profit over time</h3>
-          <ProfitChart timeline={stats.timeline} primary={profile.theme.primary} />
+          <ProfitChart timeline={stats.timeline} primary={DEFAULT_THEME.primary} />
         </div>
       )}
 

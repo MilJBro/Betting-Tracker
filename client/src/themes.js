@@ -47,6 +47,18 @@ export const THEME_STYLES = {
   },
 };
 
+// The single locked-in design the whole app uses for now. Theme switching is
+// disabled until we revisit it, so every account renders this look.
+export const DEFAULT_THEME = {
+  mode: 'dark',
+  primary: '#22c55e',
+  accent: '#3b82f6',
+  background: '#0b1120',
+  surface: '#111a2e',
+  font: 'system',
+  style: 'soft',
+};
+
 export const THEME_PRESETS = [
   {
     key: 'midnight',

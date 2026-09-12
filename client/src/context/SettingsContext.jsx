@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { api } from '../api.js';
 import { useAuth } from './AuthContext.jsx';
-import { THEME_STYLES } from '../themes.js';
+import { THEME_STYLES, DEFAULT_THEME } from '../themes.js';
 
 const SettingsContext = createContext(null);
 
@@ -52,17 +52,20 @@ export function SettingsProvider({ children }) {
       return;
     }
     api.get('/settings').then((d) => {
-      setSettings(d.settings);
-      applyTheme(d.settings.theme);
+      // Theme switching is disabled for now — pin every account to the one
+      // locked-in design regardless of what's stored.
+      setSettings({ ...d.settings, theme: DEFAULT_THEME });
+      applyTheme(DEFAULT_THEME);
     });
   }, [user]);
 
-  // Optimistic local update + persist.
+  // Optimistic local update + persist. Theme stays locked to the default.
   const save = useCallback(async (next) => {
-    setSettings(next);
-    applyTheme(next.theme);
-    const d = await api.put('/settings', { settings: next });
-    setSettings(d.settings);
+    const pinned = { ...next, theme: DEFAULT_THEME };
+    setSettings(pinned);
+    applyTheme(DEFAULT_THEME);
+    const d = await api.put('/settings', { settings: pinned });
+    setSettings({ ...d.settings, theme: DEFAULT_THEME });
     return d.settings;
   }, []);
 
