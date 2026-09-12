@@ -9,6 +9,7 @@ import BetForm from '../components/BetForm.jsx';
 import SettleControls from '../components/SettleControls.jsx';
 import PendingReminder from '../components/PendingReminder.jsx';
 import { settlePayout } from '../settle.js';
+import { getCached, setCached } from '../dataCache.js';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
 import { formatStake, formatOdds, formatDate } from '../format.js';
@@ -49,8 +50,8 @@ export default function Bets() {
   // Where to return when the Add-bet form is closed (set when opened from
   // another tab's "+"), so closing takes you back where you were.
   const returnToRef = useRef(null);
-  const [bets, setBets] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [bets, setBets] = useState(() => getCached('bets:' + activeId)?.bets ?? []);
+  const [loading, setLoading] = useState(() => !getCached('bets:' + activeId));
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(null);
   const [prefill, setPrefill] = useState(null);
@@ -75,10 +76,17 @@ export default function Bets() {
   const load = () =>
     api
       .get('/bets' + (activeId ? `?tracker=${activeId}` : ''))
-      .then((d) => { setBets(d.bets); setError(''); })
+      .then((d) => { setBets(d.bets); setError(''); setCached('bets:' + activeId, { bets: d.bets }); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  useEffect(() => { if (activeId) load(); }, [activeId]);
+  // Show cached bets instantly (no spinner) and refresh in the background;
+  // only show the spinner when there's nothing cached for this tracker yet.
+  useEffect(() => {
+    if (!activeId) return;
+    const cached = getCached('bets:' + activeId);
+    if (cached) { setBets(cached.bets); setLoading(false); } else setLoading(true);
+    load();
+  }, [activeId]);
 
   // The mobile "+" button links here with ?new=1 to open the form directly.
   useEffect(() => {

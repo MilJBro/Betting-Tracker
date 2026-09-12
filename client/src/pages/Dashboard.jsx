@@ -10,6 +10,7 @@ import SettleControls from '../components/SettleControls.jsx';
 import PendingReminder from '../components/PendingReminder.jsx';
 import Spinner from '../components/Spinner.jsx';
 import { settlePayout } from '../settle.js';
+import { getCached, setCached } from '../dataCache.js';
 import { formatStake, formatOdds, formatDate } from '../format.js';
 
 export default function Dashboard() {
@@ -17,18 +18,28 @@ export default function Dashboard() {
   const { active, activeId } = useTracker();
   const toast = useToast();
   const navigate = useNavigate();
-  const [stats, setStats] = useState(null);
-  const [bets, setBets] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(() => getCached('dash:' + activeId)?.stats ?? null);
+  const [bets, setBets] = useState(() => getCached('dash:' + activeId)?.bets ?? []);
+  const [loading, setLoading] = useState(() => !getCached('dash:' + activeId));
 
   const load = useCallback(() => {
     const q = activeId ? `?tracker=${activeId}` : '';
     return Promise.all([
-      api.get('/bets/stats' + q).then((d) => setStats(d.stats)),
-      api.get('/bets' + q).then((d) => setBets(d.bets)),
-    ]);
+      api.get('/bets/stats' + q).then((d) => d.stats),
+      api.get('/bets' + q).then((d) => d.bets),
+    ]).then(([s, b]) => {
+      setStats(s);
+      setBets(b);
+      setCached('dash:' + activeId, { stats: s, bets: b });
+    });
   }, [activeId]);
-  useEffect(() => { if (!activeId) return; setLoading(true); load().finally(() => setLoading(false)); }, [activeId, load]);
+  useEffect(() => {
+    if (!activeId) return;
+    const cached = getCached('dash:' + activeId);
+    if (cached) { setStats(cached.stats); setBets(cached.bets); setLoading(false); }
+    else setLoading(true);
+    load().finally(() => setLoading(false));
+  }, [activeId, load]);
 
   async function settle(bet, status) {
     try {

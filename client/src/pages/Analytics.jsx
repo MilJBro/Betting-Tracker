@@ -8,6 +8,7 @@ import { useSettings } from '../context/SettingsContext.jsx';
 import { useTracker } from '../context/TrackerContext.jsx';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
+import { getCached, setCached } from '../dataCache.js';
 import { formatStake, units, currencySymbol } from '../format.js';
 
 function Bars({ rows, currency, staking }) {
@@ -54,10 +55,11 @@ function buildHighlights(a, fmt) {
 export default function Analytics() {
   const { settings } = useSettings();
   const { activeId } = useTracker();
-  const [a, setA] = useState(null);
-  const [meta, setMeta] = useState({ pro: false, options: { sports: [], tipsters: [], bookmakers: [] } });
   const [filters, setFilters] = useState(BLANK_FILTERS);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = 'analytics:' + activeId + ':' + JSON.stringify(filters);
+  const [a, setA] = useState(() => getCached(cacheKey)?.a ?? null);
+  const [meta, setMeta] = useState(() => getCached(cacheKey)?.meta ?? { pro: false, options: { sports: [], tipsters: [], bookmakers: [] } });
+  const [loading, setLoading] = useState(() => !getCached(cacheKey));
   const currency = settings?.currency || 'GBP';
   const staking = settings?.staking;
   const unitSize = Number(staking?.unitSize) || 0;
@@ -67,13 +69,22 @@ export default function Analytics() {
     if (activeId) q.set('tracker', activeId);
     Object.entries(filters).forEach(([k, v]) => { if (v) q.set(k, v); });
     const qs = q.toString();
+    const key = 'analytics:' + activeId + ':' + JSON.stringify(filters);
     return api.get('/bets/analytics' + (qs ? `?${qs}` : '')).then((d) => {
+      const meta = { pro: d.pro, options: d.options };
       setA(d.analytics);
-      setMeta({ pro: d.pro, options: d.options });
+      setMeta(meta);
+      setCached(key, { a: d.analytics, meta });
     });
   }, [filters, activeId]);
 
-  useEffect(() => { if (!activeId) return; load().finally(() => setLoading(false)); }, [load, activeId]);
+  useEffect(() => {
+    if (!activeId) return;
+    const cached = getCached(cacheKey);
+    if (cached) { setA(cached.a); setMeta(cached.meta); setLoading(false); }
+    else setLoading(true);
+    load().finally(() => setLoading(false));
+  }, [load, activeId, cacheKey]);
 
   if (loading) return <div className="main"><Spinner /></div>;
 
