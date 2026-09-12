@@ -95,6 +95,8 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6
 .betform .seg-group .seg { padding: 7px; font-size: 13px; }
 /* Date + Sport stay side-by-side even on mobile (both are short fields). */
 .betform .betgrid { grid-template-columns: 1fr 1fr; gap: 10px; }
+/* Selection (needs room) paired with the short Odds field. */
+.betform .sel-odds { grid-template-columns: 1.7fr 1fr; gap: 10px; }
 
 .card {
   background: var(--surface);

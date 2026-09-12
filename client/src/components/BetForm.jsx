@@ -414,26 +414,28 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                   </div>
                 )
               )}
-              {show('selection') && (
-                <div className="field">
-                  <label>{layout === 'racing' ? 'Horse / runner' : versus ? 'Selection' : 'Your selection'}</label>
-                  <AutocompleteInput value={form.selection} onChange={(v) => set('selection', v)} options={suggestions.selections} ariaLabel="Selection" placeholder={layout === 'racing' ? 'e.g. Constitution Hill' : undefined} />
-                </div>
-              )}
-              {show('odds') && (
-                <div className="field">
-                  <label>Odds</label>
-                  <input
-                    type={oddsFormat === 'decimal' ? 'number' : 'text'}
-                    {...(oddsFormat === 'decimal' ? { step: '0.01', min: '0' } : {})}
-                    inputMode={oddsFormat === 'decimal' ? 'decimal' : 'text'}
-                    value={form.odds}
-                    onChange={(e) => set('odds', e.target.value)}
-                    aria-label="Odds"
-                    autoComplete="off"
-                  />
-                </div>
-              )}
+              <div className="grid-2 sel-odds">
+                {show('selection') && (
+                  <div className="field">
+                    <label>{layout === 'racing' ? 'Horse / runner' : versus ? 'Selection' : 'Your selection'}</label>
+                    <AutocompleteInput value={form.selection} onChange={(v) => set('selection', v)} options={suggestions.selections} ariaLabel="Selection" placeholder={layout === 'racing' ? 'e.g. Constitution Hill' : undefined} />
+                  </div>
+                )}
+                {show('odds') && (
+                  <div className="field">
+                    <label>Odds</label>
+                    <input
+                      type={oddsFormat === 'decimal' ? 'number' : 'text'}
+                      {...(oddsFormat === 'decimal' ? { step: '0.01', min: '0' } : {})}
+                      inputMode={oddsFormat === 'decimal' ? 'decimal' : 'text'}
+                      value={form.odds}
+                      onChange={(e) => set('odds', e.target.value)}
+                      aria-label="Odds"
+                      autoComplete="off"
+                    />
+                  </div>
+                )}
+              </div>
               {ewEligible && (
                 <div className="field">
                   <label className="row" style={{ gap: 8, alignItems: 'center', cursor: 'pointer', marginBottom: 0 }}>
@@ -525,8 +527,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
             </div>
           )}
 
-          <div className="grid-2">
-            {show('stake') && (
+          {show('stake') && (
               <div className="field">
                 <label>Stake{unitLabel}{eachWay ? <span className="muted" style={{ fontWeight: 400 }}> · per part</span> : ''}</label>
                 {unitSize > 0 ? (
@@ -585,43 +586,43 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                 )}
               </div>
             )}
-            {show('status') && (
-              <div className="field">
-                <label>Status</label>
-                <select value={form.status} onChange={(e) => set('status', e.target.value)} aria-label="Status">
-                  {statusOptions.map((s) => (
-                    <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-
-          {show('payout') && (
-            <div className="field">
-              <label>Payout / Return{unitLabel}</label>
-              {usesUnits ? (
-                <input
-                  type="number" step="0.01" min="0" value={form.payout ?? ''}
-                  onChange={(e) => { set('payout', e.target.value); setPayoutTouched(e.target.value !== ''); }}
-                  aria-label="Payout or return"
-                />
-              ) : (
-                <div className="row" style={{ gap: 8, alignItems: 'center' }}>
-                  <span className="muted" style={{ fontWeight: 700 }}>{currencySymbol(currency)}</span>
-                  <input
-                    type="number" step="0.01" min="0" value={form.payout ?? ''}
-                    onChange={(e) => { set('payout', e.target.value); setPayoutTouched(e.target.value !== ''); }}
-                    aria-label="Payout or return"
-                    style={{ flex: 1 }}
-                  />
+            <div className="grid-2 betgrid">
+              {show('status') && (
+                <div className="field">
+                  <label>Status</label>
+                  <select value={form.status} onChange={(e) => set('status', e.target.value)} aria-label="Status">
+                    {statusOptions.map((s) => (
+                      <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>
+                    ))}
+                  </select>
                 </div>
               )}
-              {payoutHint() && (
-                <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>{payoutHint()}</div>
+              {show('payout') && (
+                <div className="field">
+                  <label>Return{unitLabel}</label>
+                  {usesUnits ? (
+                    <input
+                      type="number" step="0.01" min="0" value={form.payout ?? ''}
+                      onChange={(e) => { set('payout', e.target.value); setPayoutTouched(e.target.value !== ''); }}
+                      aria-label="Payout or return"
+                    />
+                  ) : (
+                    <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+                      <span className="muted" style={{ fontWeight: 700 }}>{currencySymbol(currency)}</span>
+                      <input
+                        type="number" step="0.01" min="0" value={form.payout ?? ''}
+                        onChange={(e) => { set('payout', e.target.value); setPayoutTouched(e.target.value !== ''); }}
+                        aria-label="Payout or return"
+                        style={{ flex: 1 }}
+                      />
+                    </div>
+                  )}
+                  {payoutHint() && (
+                    <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>{payoutHint()}</div>
+                  )}
+                </div>
               )}
             </div>
-          )}
 
           {show('tags') && (
             <div className="field">
