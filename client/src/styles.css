@@ -27,6 +27,10 @@
 * { box-sizing: border-box; }
 
 html, body { margin: 0; }
+/* Clip any stray horizontal overflow and stop iOS rubber-band overscroll, so
+   the page doesn't wobble side-to-side or bounce/scroll when it needn't. */
+html { overflow-x: clip; }
+html, body { overscroll-behavior: none; }
 body {
   font-family: var(--font);
   background: var(--bg);
@@ -34,6 +38,8 @@ body {
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "tnum" 1;
   transition: background 0.3s, color 0.3s;
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 h1, h2, h3 { font-family: var(--font-head); letter-spacing: var(--head-spacing); text-transform: var(--head-transform); text-wrap: balance; }
