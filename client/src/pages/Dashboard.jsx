@@ -163,7 +163,7 @@ export default function Dashboard() {
             <ProfitChart
               timeline={balanceTimeline}
               primary={settings.theme.primary}
-              height={200}
+              height={150}
               dataKey="balance"
               baseline={bankrollStart}
               tooltipLabel="Balance"
@@ -201,7 +201,7 @@ export default function Dashboard() {
       {w.profitChart && stats.timeline.length >= 2 && (
         <div className="card" style={{ marginBottom: 24 }}>
           <h3 className="section-title">Profit over time</h3>
-          <ProfitChart timeline={stats.timeline} primary={settings.theme.primary} />
+          <ProfitChart timeline={stats.timeline} primary={settings.theme.primary} height={130} />
         </div>
       )}
 

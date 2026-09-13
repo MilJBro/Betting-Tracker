@@ -393,10 +393,15 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 
 @media (max-width: 820px) {
   .sidebar { display: none; }
-  .main { padding: 16px 14px calc(88px + env(safe-area-inset-bottom)); }
+  .main { padding: 14px 14px calc(84px + env(safe-area-inset-bottom)); }
   .grid-2 { grid-template-columns: 1fr; }
-  .stat-grid { grid-template-columns: 1fr 1fr; gap: 11px; }
+  .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
   .page-head h1 { font-size: 23px; }
+  /* Compact the home overview so it fits one screen without scrolling. */
+  .main .card { padding: 15px; }
+  .stat { padding: 13px 14px; }
+  .stat .value { font-size: 22px; margin-top: 4px; }
+  .stat .sub { margin-top: 3px; }
 
   .bottom-nav {
     display: grid; grid-template-columns: repeat(5, 1fr); align-items: center;
