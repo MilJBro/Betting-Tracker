@@ -97,7 +97,7 @@ app.use((err, _req, res, _next) => {
 // starts. It runs inside the server process, so it always hits the exact same
 // database the app uses — no path guessing. REMEMBER to remove the env var
 // afterwards, or every restart will wipe again. It logs what it did.
-if (process.env.WIPE_ON_BOOT === 'all') {
+if (String(process.env.WIPE_ON_BOOT || '').trim().replace(/^["']|["']$/g, '').toLowerCase() === 'all') {
   try {
     db.pragma('foreign_keys = ON');
     const before = db.prepare('SELECT COUNT(*) AS n FROM users').get().n;
