@@ -565,7 +565,15 @@ export default function Bets() {
             {filtered.map((b) => {
               const p = profitOf(b);
               const extra = [col('bookmaker') && b.bookmaker, col('tipster') && b.tipster].filter(Boolean).join(' · ');
-              const meta = [formatDate(b.placed_at), col('sport') && b.sport].filter(Boolean).join(' · ');
+              // Keep the card tidy: title by the game/event or sport (not the full
+              // selection list), with the date and bet type on a single sub-line.
+              const isMulti = b.bet_type === 'Accumulator' || b.bet_type === 'Bet builder';
+              const title = (b.event && b.event.trim()) || (col('sport') && b.sport) || b.bet_type || 'Bet';
+              const sub = [
+                formatDate(b.placed_at),
+                col('sport') && b.sport && b.sport !== title ? b.sport : null,
+                isMulti ? b.bet_type : null,
+              ].filter(Boolean).join(' · ');
               return (
                 <div key={b.id} className={'bet-card' + (selected.has(b.id) ? ' row-selected' : '')}>
                   <div className="row spread" style={{ gap: 10, alignItems: 'flex-start' }}>
@@ -575,15 +583,13 @@ export default function Bets() {
                           type="checkbox"
                           checked={selected.has(b.id)}
                           onChange={() => toggleOne(b.id)}
-                          aria-label={`Select bet ${b.selection || b.event || ''}`}
+                          aria-label={`Select bet ${title}`}
                           style={{ width: 'auto', margin: '3px 0 0' }}
                         />
                       )}
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontWeight: 700 }}>{b.selection || b.event || b.sport || 'Bet'}</div>
-                        <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
-                          {meta}{b.event && b.selection ? ` · ${b.event}` : ''}
-                        </div>
+                        <div className="bet-card-title">{title}</div>
+                        <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{sub}</div>
                       </div>
                     </div>
                     {col('status') && <span className={`badge ${b.status}`}>{b.status}</span>}

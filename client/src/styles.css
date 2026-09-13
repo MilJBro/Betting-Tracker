@@ -311,6 +311,7 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 .bet-card { display: flex; flex-direction: column; gap: 9px; padding: 14px 2px; border-bottom: 1px solid var(--border); }
 .bet-card:last-child { border-bottom: none; }
 .bet-card.row-selected { background: color-mix(in srgb, var(--primary) 9%, transparent); border-radius: var(--radius-sm); padding-left: 10px; padding-right: 10px; }
+.bet-card-title { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bet-card-figs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .bcf-label { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; }
 .bcf-val { display: block; font-size: 15px; font-weight: 700; margin-top: 2px; }
