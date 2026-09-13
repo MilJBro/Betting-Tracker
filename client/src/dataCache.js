@@ -7,3 +7,16 @@ const cache = new Map();
 export const getCached = (key) => cache.get(key);
 export const setCached = (key, value) => { cache.set(key, value); };
 export const clearCache = () => cache.clear();
+
+// A tiny pub/sub so a change made from a global overlay (e.g. adding a bet
+// without leaving the current tab) can tell whatever page is on screen to
+// reload. invalidateData() drops the cached data and notifies subscribers.
+const listeners = new Set();
+export const subscribeInvalidate = (fn) => {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+};
+export const invalidateData = () => {
+  cache.clear();
+  listeners.forEach((fn) => { try { fn(); } catch {} });
+};
