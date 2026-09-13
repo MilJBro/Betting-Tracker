@@ -308,16 +308,17 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 
 /* Bets list: table on desktop, stacked cards on mobile (no sideways scroll). */
 .bets-cards { display: none; }
-.bet-card { display: flex; flex-direction: column; gap: 9px; padding: 14px 2px; border-bottom: 1px solid var(--border); }
+.bet-card { display: flex; flex-direction: column; gap: 8px; padding: 10px 2px; border-bottom: 1px solid var(--border); }
 .bet-card:last-child { border-bottom: none; }
 .bet-card.row-selected { background: color-mix(in srgb, var(--primary) 9%, transparent); border-radius: var(--radius-sm); padding-left: 10px; padding-right: 10px; }
-.bet-card-title { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bet-card-tap { display: flex; flex-direction: column; gap: 9px; cursor: pointer; }
-.boost-tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.02em; background: color-mix(in srgb, var(--primary) 18%, transparent); color: var(--primary); vertical-align: 1px; }
-.bet-card-figs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.bcf-label { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; }
-.bcf-val { display: block; font-size: 15px; font-weight: 700; margin-top: 2px; }
-.bet-card-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 10px; }
+.bet-card-title { font-weight: 700; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bet-card-tap { display: flex; flex-direction: column; gap: 7px; cursor: pointer; }
+.boost-tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 6px; font-size: 10px; font-weight: 800; letter-spacing: 0.02em; background: color-mix(in srgb, var(--primary) 18%, transparent); color: var(--primary); vertical-align: 1px; }
+.bet-card-figs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.bcf-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; }
+.bcf-val { display: block; font-size: 13.5px; font-weight: 700; margin-top: 1px; }
+.bet-card-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 8px; }
+.bet-card-actions .btn-sm { padding: 4px 10px; }
 
 /* On-slip "Edit fields" panel: pick which fields show when adding a bet. */
 .field-editor { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px; }
