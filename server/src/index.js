@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
 
 import { config } from './lib/config.js';
-import { db } from './lib/db.js';
+import './lib/db.js';
 import authRoutes from './routes/auth.js';
 import betRoutes from './routes/bets.js';
 import scanRoutes from './routes/scan.js';
@@ -91,23 +91,6 @@ app.use((err, _req, res, _next) => {
   console.error(err);
   res.status(500).json({ error: 'Something went wrong' });
 });
-
-// One-time maintenance hatch: set WIPE_ON_BOOT=all in the environment to delete
-// every account (and, via cascade, all their data) the next time the server
-// starts. It runs inside the server process, so it always hits the exact same
-// database the app uses — no path guessing. REMEMBER to remove the env var
-// afterwards, or every restart will wipe again. It logs what it did.
-if (String(process.env.WIPE_ON_BOOT || '').trim().replace(/^["']|["']$/g, '').toLowerCase() === 'all') {
-  try {
-    db.pragma('foreign_keys = ON');
-    const before = db.prepare('SELECT COUNT(*) AS n FROM users').get().n;
-    db.prepare('DELETE FROM users').run(); // cascades to settings/bets/trackers/shares
-    const after = db.prepare('SELECT COUNT(*) AS n FROM users').get().n;
-    console.warn(`[WIPE_ON_BOOT] Deleted ${before} account(s); now ${after}. REMOVE the WIPE_ON_BOOT env var now to avoid wiping again on the next restart.`);
-  } catch (e) {
-    console.error('[WIPE_ON_BOOT] failed:', e);
-  }
-}
 
 app.listen(config.port, () => {
   console.log(`Betbooks API running on http://localhost:${config.port}`);
