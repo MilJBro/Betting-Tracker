@@ -68,11 +68,15 @@ function sanitise(body) {
   const eachWay = !!body.each_way;
   const ewFraction = eachWay ? (String(body.ew_fraction || '').trim() || '1/5') : null;
   const ewPlaces = eachWay && body.ew_places !== '' && body.ew_places != null ? Math.max(0, Math.round(num(body.ew_places))) : null;
+  // Winnings boost fraction (e.g. 0.25). Clamp to a sane 0–5 (0–500%).
+  const boost = Math.min(5, Math.max(0, num(body.boost)));
 
   let payout = body.payout === '' || body.payout == null ? null : num(body.payout);
-  // Auto-fill payout for a plain (non-each-way) won bet if not supplied.
+  // Auto-fill payout for a plain (non-each-way) won bet if not supplied, adding
+  // any winnings boost to the profit part (stake back unchanged).
   if (!eachWay && status === 'won' && (payout == null || payout === 0)) {
-    payout = Number((num(body.stake) * odds).toFixed(2));
+    const stakeN = num(body.stake);
+    payout = Number((stakeN + (stakeN * odds - stakeN) * (1 + boost)).toFixed(2));
   }
   if (status === 'lost') payout = 0;
   return {
@@ -93,6 +97,7 @@ function sanitise(body) {
     each_way: eachWay ? 1 : 0,
     ew_fraction: ewFraction,
     ew_places: ewPlaces,
+    boost,
   };
 }
 
@@ -152,9 +157,9 @@ router.post('/', (req, res) => {
   const trackerId = resolveTrackerId(req.userId, (req.body || {}).tracker_id || req.query.tracker);
   db.prepare(
     `INSERT INTO bets (id, user_id, tracker_id, placed_at, sport, event, selection, bet_type,
-       bookmaker, tipster, stake, odds, status, payout, notes, tags, legs, each_way, ew_fraction, ew_places, created_at, updated_at)
+       bookmaker, tipster, stake, odds, status, payout, notes, tags, legs, each_way, ew_fraction, ew_places, boost, created_at, updated_at)
      VALUES (@id, @user_id, @tracker_id, @placed_at, @sport, @event, @selection, @bet_type,
-       @bookmaker, @tipster, @stake, @odds, @status, @payout, @notes, @tags, @legs, @each_way, @ew_fraction, @ew_places, @created_at, @updated_at)`
+       @bookmaker, @tipster, @stake, @odds, @status, @payout, @notes, @tags, @legs, @each_way, @ew_fraction, @ew_places, @boost, @created_at, @updated_at)`
   ).run({ id, user_id: req.userId, tracker_id: trackerId, ...b, created_at: now, updated_at: now });
   const row = db.prepare('SELECT * FROM bets WHERE id = ?').get(id);
   res.status(201).json({ bet: rowToBet(row) });
@@ -174,9 +179,9 @@ router.post('/import', requirePro, (req, res) => {
   const now = new Date().toISOString();
   const stmt = db.prepare(
     `INSERT INTO bets (id, user_id, tracker_id, placed_at, sport, event, selection, bet_type,
-       bookmaker, tipster, stake, odds, status, payout, notes, tags, legs, each_way, ew_fraction, ew_places, created_at, updated_at)
+       bookmaker, tipster, stake, odds, status, payout, notes, tags, legs, each_way, ew_fraction, ew_places, boost, created_at, updated_at)
      VALUES (@id, @user_id, @tracker_id, @placed_at, @sport, @event, @selection, @bet_type,
-       @bookmaker, @tipster, @stake, @odds, @status, @payout, @notes, @tags, @legs, @each_way, @ew_fraction, @ew_places, @created_at, @updated_at)`
+       @bookmaker, @tipster, @stake, @odds, @status, @payout, @notes, @tags, @legs, @each_way, @ew_fraction, @ew_places, @boost, @created_at, @updated_at)`
   );
   const insertAll = db.transaction((rows) => {
     for (const raw of rows) {
@@ -199,7 +204,7 @@ router.put('/:id', (req, res) => {
        selection=@selection, bet_type=@bet_type, bookmaker=@bookmaker,
        tipster=@tipster, stake=@stake, odds=@odds, status=@status, payout=@payout,
        notes=@notes, tags=@tags, legs=@legs, each_way=@each_way, ew_fraction=@ew_fraction,
-       ew_places=@ew_places, updated_at=@updated_at WHERE id=@id AND user_id=@user_id`
+       ew_places=@ew_places, boost=@boost, updated_at=@updated_at WHERE id=@id AND user_id=@user_id`
   ).run({
     ...b,
     id: req.params.id,

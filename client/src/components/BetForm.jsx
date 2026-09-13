@@ -31,7 +31,16 @@ const blank = () => ({
   each_way: false,
   ew_fraction: '1/5',
   ew_places: '',
+  boost: 0, // winnings boost fraction (e.g. 0.25 = +25% on the profit)
 });
+
+// Winnings-boost options offered near the Return field (e.g. bet365's 25% / 50%
+// bet builder boost). Stored as a fraction of the profit to add.
+const BOOSTS = [
+  { v: 0, label: 'None' },
+  { v: 0.25, label: '+25%' },
+  { v: 0.5, label: '+50%' },
+];
 
 // Combined decimal odds for an accumulator = product of the legs' odds.
 // Legs hold odds in the user's chosen format, so parse each to decimal first.
@@ -117,6 +126,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
       f.each_way = !!initial.each_way;
       f.ew_fraction = initial.ew_fraction || '1/5';
       f.ew_places = initial.ew_places != null && initial.ew_places !== '' ? String(initial.ew_places) : '';
+      f.boost = Number(initial.boost) || 0;
       // The stake box shows the per-part stake; each-way stores the doubled total.
       const totalMoney = Number(initial.stake) || 0;
       const perPartMoney = f.each_way ? totalMoney / 2 : totalMoney;
@@ -289,11 +299,14 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
           : winReturn + placeReturn; // won, and the potential return otherwise
         next = String(Math.round(ret * 100) / 100);
       } else {
-        next = String(Math.round(p * d * 100) / 100);
+        // A winnings boost adds to the profit part only (stake back unchanged).
+        const boost = Number(form.boost) || 0;
+        const ret = p + (p * d - p) * (1 + boost);
+        next = String(Math.round(ret * 100) / 100);
       }
     }
     setForm((f) => (f.payout === next ? f : { ...f, payout: next }));
-  }, [form.stake, form.odds, form.status, form.ew_fraction, eachWay, kind, accaOdds, oddsFormat, payoutTouched]);
+  }, [form.stake, form.odds, form.status, form.ew_fraction, form.boost, eachWay, kind, accaOdds, oddsFormat, payoutTouched]);
 
   const setLeg = (i, k, v) => setLegs((ls) => ls.map((l, j) => (j === i ? { ...l, [k]: v } : l)));
   const addLeg = () => setLegs((ls) => [...ls, { selection: '', odds: '' }]);
@@ -317,6 +330,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
       payload.each_way = isEW;
       payload.ew_fraction = isEW ? form.ew_fraction : null;
       payload.ew_places = isEW && form.ew_places !== '' ? Number(form.ew_places) : null;
+      payload.boost = Number(form.boost) || 0; // winnings boost applied to the return
       const eventFor = () =>
         layout === 'racing' ? composeRace()
         : versus ? composeEvent()
@@ -781,6 +795,29 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                 </div>
               )}
             </div>
+
+          {show('payout') && (
+            <div className="field">
+              <label>Winnings boost <span className="muted" style={{ fontWeight: 400 }}>(offer, optional)</span></label>
+              <div className="seg-group">
+                {BOOSTS.map((b) => (
+                  <button
+                    key={b.v}
+                    type="button"
+                    className={(Number(form.boost) || 0) === b.v ? 'seg on' : 'seg'}
+                    onClick={() => { set('boost', b.v); setPayoutTouched(false); }}
+                  >
+                    {b.label}
+                  </button>
+                ))}
+              </div>
+              {(Number(form.boost) || 0) > 0 && (
+                <div className="muted" style={{ fontSize: 11, marginTop: 6 }}>
+                  +{Math.round((Number(form.boost) || 0) * 100)}% added to your winnings — the Return above includes it.
+                </div>
+              )}
+            </div>
+          )}
 
           {show('tags') && (
             <div className="field">
