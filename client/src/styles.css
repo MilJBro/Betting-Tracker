@@ -317,6 +317,9 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 .bet-card-figs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .bcf-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; }
 .bcf-val { display: block; font-size: 13.5px; font-weight: 700; margin-top: 1px; }
+.bet-card-top { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; flex: none; }
+.bet-card-btns { display: flex; gap: 6px; }
+.bet-card-btns .btn-sm { padding: 4px 10px; }
 .bet-card-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 8px; }
 .bet-card-actions .btn-sm { padding: 4px 10px; }
 

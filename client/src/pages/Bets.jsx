@@ -601,7 +601,13 @@ export default function Bets() {
                           </div>
                         </div>
                       </div>
-                      {col('status') && <span className={`badge ${b.status}`}>{b.status}</span>}
+                      <div className="bet-card-top">
+                        {col('status') && <span className={`badge ${b.status}`}>{b.status}</span>}
+                        <div className="bet-card-btns">
+                          <button className="btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); openEdit(b); }}>Edit</button>
+                          <button className="btn-danger btn-sm" onClick={(e) => { e.stopPropagation(); remove(b.id); }} aria-label="Delete bet">✕</button>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="bet-card-figs">
@@ -613,13 +619,11 @@ export default function Bets() {
                     {extra && <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>{extra}</div>}
                   </div>
 
-                  <div className="bet-card-actions">
-                    {b.status === 'pending' && <SettleControls bet={b} onSettle={(status) => settle(b, status)} />}
-                    <div className="row" style={{ gap: 6, marginLeft: 'auto' }}>
-                      <button className="btn-ghost btn-sm" onClick={() => openEdit(b)}>Edit</button>
-                      <button className="btn-danger btn-sm" onClick={() => remove(b.id)} aria-label="Delete bet">✕</button>
+                  {b.status === 'pending' && (
+                    <div className="bet-card-actions">
+                      <SettleControls bet={b} onSettle={(status) => settle(b, status)} />
                     </div>
-                  </div>
+                  )}
                 </div>
               );
             })}
