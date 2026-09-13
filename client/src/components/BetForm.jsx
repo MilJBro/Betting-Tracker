@@ -117,10 +117,13 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
     return f;
   });
 
-  // Single vs accumulator. Legs carry their own selection + odds.
+  // Single / accumulator / bet builder. Legs carry the selections; an acca also
+  // keeps per-leg odds, a builder is priced as one combined figure.
   const initialLegs = Array.isArray(initial?.legs) ? initial.legs : [];
   const [kind, setKind] = useState(
-    initialLegs.length >= 2 || initial?.bet_type === 'Accumulator' ? 'acca' : 'single'
+    initial?.bet_type === 'Bet builder' ? 'builder'
+    : initialLegs.length >= 2 || initial?.bet_type === 'Accumulator' ? 'acca'
+    : 'single'
   );
   const [legs, setLegs] = useState(() =>
     initialLegs.length
@@ -300,6 +303,10 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
       payload.each_way = isEW;
       payload.ew_fraction = isEW ? form.ew_fraction : null;
       payload.ew_places = isEW && form.ew_places !== '' ? Number(form.ew_places) : null;
+      const eventFor = () =>
+        layout === 'racing' ? composeRace()
+        : versus ? composeEvent()
+        : (form.event || '').trim();
       if (kind === 'acca') {
         const cleaned = legs
           .map((l) => ({ selection: l.selection.trim(), odds: parseOdds(l.odds, oddsFormat) }))
@@ -310,14 +317,21 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
         payload.odds = validOdds.length ? validOdds.reduce((p, l) => p * l.odds, 1) : '';
         payload.event = '';
         payload.selection = ''; // server builds a summary from the legs
+      } else if (kind === 'builder') {
+        // Multiple selections on one game, priced as a single combined figure.
+        const cleaned = legs
+          .map((l) => ({ selection: l.selection.trim(), odds: 0 }))
+          .filter((l) => l.selection);
+        payload.legs = cleaned;
+        payload.bet_type = 'Bet builder';
+        payload.odds = parseOdds(form.odds, oddsFormat);
+        payload.event = eventFor();
+        payload.selection = ''; // server builds a summary from the selections
       } else {
         payload.legs = [];
         payload.bet_type = 'Single';
         payload.odds = parseOdds(form.odds, oddsFormat);
-        payload.event =
-          layout === 'racing' ? composeRace()
-          : versus ? composeEvent()
-          : (form.event || '').trim();
+        payload.event = eventFor();
       }
       await onSave(payload);
       onClose();
@@ -375,45 +389,48 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
             )}
           </div>
 
-          {/* Bet kind: single or accumulator */}
+          {/* Bet kind: single, accumulator or bet builder */}
           <div className="field">
             <label>Bet type</label>
             <div className="seg-group">
               <button type="button" className={kind === 'single' ? 'seg on' : 'seg'} onClick={() => setKind('single')}>Single</button>
               <button type="button" className={kind === 'acca' ? 'seg on' : 'seg'} onClick={() => setKind('acca')}>Accumulator</button>
+              <button type="button" className={kind === 'builder' ? 'seg on' : 'seg'} onClick={() => setKind('builder')}>Bet builder</button>
             </div>
           </div>
 
-          {kind === 'single' ? (
+          {/* Event — a single and a bet builder are both on one game */}
+          {kind !== 'acca' && show('event') && (
+            layout === 'racing' ? (
+              <div className="grid-2 betgrid">
+                <div className="field">
+                  <label>Course / track</label>
+                  <AutocompleteInput value={course} onChange={setCourse} options={suggestions.courses} ariaLabel="Course or track" placeholder="e.g. Ascot" />
+                </div>
+                <div className="field">
+                  <label>Time <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
+                  <input type="time" value={raceTime} onChange={(e) => setRaceTime(e.target.value)} aria-label="Race time" />
+                </div>
+              </div>
+            ) : versus ? (
+              <div className="field">
+                <label>{kind === 'builder' ? 'Game' : 'Event'}</label>
+                <div className="team-vs">
+                  <AutocompleteInput value={home} onChange={setHome} options={suggestions.teams} ariaLabel="Home team" />
+                  <span className="vs">v</span>
+                  <AutocompleteInput value={away} onChange={setAway} options={suggestions.teams} ariaLabel="Away team" />
+                </div>
+              </div>
+            ) : (
+              <div className="field">
+                <label>{kind === 'builder' ? 'Game / event' : 'Event / tournament'} <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
+                <AutocompleteInput value={form.event} onChange={(v) => set('event', v)} options={suggestions.events} ariaLabel="Event or race" />
+              </div>
+            )
+          )}
+
+          {kind === 'single' && (
             <>
-              {show('event') && (
-                layout === 'racing' ? (
-                  <div className="grid-2 betgrid">
-                    <div className="field">
-                      <label>Course / track</label>
-                      <AutocompleteInput value={course} onChange={setCourse} options={suggestions.courses} ariaLabel="Course or track" placeholder="e.g. Ascot" />
-                    </div>
-                    <div className="field">
-                      <label>Time <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
-                      <input type="time" value={raceTime} onChange={(e) => setRaceTime(e.target.value)} aria-label="Race time" />
-                    </div>
-                  </div>
-                ) : versus ? (
-                  <div className="field">
-                    <label>Event</label>
-                    <div className="team-vs">
-                      <AutocompleteInput value={home} onChange={setHome} options={suggestions.teams} ariaLabel="Home team" />
-                      <span className="vs">v</span>
-                      <AutocompleteInput value={away} onChange={setAway} options={suggestions.teams} ariaLabel="Away team" />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="field">
-                    <label>Event / tournament <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
-                    <AutocompleteInput value={form.event} onChange={(v) => set('event', v)} options={suggestions.events} ariaLabel="Event or race" />
-                  </div>
-                )
-              )}
               <div className="grid-2 sel-odds">
                 {show('selection') && (
                   <div className="field">
@@ -468,7 +485,52 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                 </div>
               )}
             </>
-          ) : (
+          )}
+
+          {kind === 'builder' && (
+            <>
+              <div className="field">
+                <label>Selections <span className="muted" style={{ fontWeight: 400 }}>(same game)</span></label>
+                <div className="legs">
+                  {legs.map((l, i) => (
+                    <div className="leg-row builder-leg" key={i}>
+                      <AutocompleteInput
+                        value={l.selection}
+                        onChange={(v) => setLeg(i, 'selection', v)}
+                        options={suggestions.selections}
+                        ariaLabel={`Selection ${i + 1}`}
+                        placeholder="e.g. Player to score"
+                      />
+                      <button
+                        type="button" className="btn-ghost btn-sm leg-x"
+                        onClick={() => removeLeg(i)} disabled={legs.length <= 1} title="Remove"
+                      >✕</button>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  <button type="button" className="btn-ghost btn-sm" onClick={addLeg}>+ Add selection</button>
+                </div>
+              </div>
+              {show('odds') && (
+                <div className="field">
+                  <label>Combined odds</label>
+                  <input
+                    type={oddsFormat === 'decimal' ? 'number' : 'text'}
+                    {...(oddsFormat === 'decimal' ? { step: '0.01', min: '0' } : {})}
+                    inputMode={oddsFormat === 'decimal' ? 'decimal' : 'text'}
+                    value={form.odds}
+                    onChange={(e) => set('odds', e.target.value)}
+                    aria-label="Combined odds"
+                    autoComplete="off"
+                  />
+                  <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>The single price the bookmaker gives for the whole bet builder.</div>
+                </div>
+              )}
+            </>
+          )}
+
+          {kind === 'acca' && (
             <div className="field">
               <label>Selections</label>
               <div className="legs">
