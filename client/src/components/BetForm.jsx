@@ -798,7 +798,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
 
           {show('payout') && (
             <div className="field">
-              <label>Winnings boost <span className="muted" style={{ fontWeight: 400 }}>(offer, optional)</span></label>
+              <label>Winnings boost</label>
               <div className="seg-group">
                 {BOOSTS.map((b) => (
                   <button
