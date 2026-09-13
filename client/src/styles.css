@@ -459,6 +459,15 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 }
 .chip-btn.sel { background: var(--primary); border-color: var(--primary); color: #04120a; }
 
+/* On touch devices iOS Safari zooms in whenever you focus a form control whose
+   font-size is under 16px. Bump every field to 16px there so tapping a box on
+   the add-bet form (any bet type) never zooms the page. Desktop keeps the
+   compact sizes above. The selectors match .betform's specificity so they win. */
+@media (pointer: coarse) {
+  input, select, textarea,
+  .betform input, .betform select, .betform textarea { font-size: 16px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
