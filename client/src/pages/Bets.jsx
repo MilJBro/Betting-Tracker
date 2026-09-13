@@ -172,30 +172,46 @@ export default function Bets() {
     });
   }, [bets, status, search, sport, bookie, from, to, sortBy, sortDir]);
 
-  // Group the (already sorted/filtered) bets by day, keeping day order as they
-  // appear, with a per-day count and net profit for the group header.
+  // Two-level grouping of the (already sorted/filtered) bets: by month, and
+  // within each month by day. Each level carries its bet count and net profit.
   const grouped = useMemo(() => {
-    const map = new Map();
+    const sumProfit = (list) => list.reduce((s, b) => s + (profitOf(b) || 0), 0);
+    const months = new Map();
     for (const b of filtered) {
-      const day = b.placed_at || '—';
-      if (!map.has(day)) map.set(day, []);
-      map.get(day).push(b);
+      const date = b.placed_at || '';
+      const monthKey = /^\d{4}-\d{2}/.test(date) ? date.slice(0, 7) : '—';
+      const dayKey = date || '—';
+      if (!months.has(monthKey)) months.set(monthKey, new Map());
+      const days = months.get(monthKey);
+      if (!days.has(dayKey)) days.set(dayKey, []);
+      days.get(dayKey).push(b);
     }
-    return [...map.entries()].map(([day, list]) => ({
-      day,
-      bets: list,
-      count: list.length,
-      profit: list.reduce((s, b) => s + (profitOf(b) || 0), 0),
-    }));
+    return [...months.entries()].map(([month, days]) => {
+      const dayGroups = [...days.entries()].map(([day, list]) => ({
+        day, bets: list, count: list.length, profit: sumProfit(list),
+      }));
+      const all = dayGroups.flatMap((d) => d.bets);
+      return { month, days: dayGroups, count: all.length, profit: sumProfit(all) };
+    });
   }, [filtered]);
 
-  // Collapsed day groups (by day key), so a long history can be folded up.
+  // Collapsed months and days, so a long history folds up. Months are the
+  // primary grouping; days can be drilled into within an open month.
+  const [collapsedMonths, setCollapsedMonths] = useState(() => new Set());
   const [collapsedDays, setCollapsedDays] = useState(() => new Set());
-  const toggleDay = (day) => setCollapsedDays((s) => {
+  const toggleIn = (setter) => (key) => setter((s) => {
     const n = new Set(s);
-    n.has(day) ? n.delete(day) : n.add(day);
+    n.has(key) ? n.delete(key) : n.add(key);
     return n;
   });
+  const toggleMonth = toggleIn(setCollapsedMonths);
+  const toggleDay = toggleIn(setCollapsedDays);
+
+  const formatMonth = (key) => {
+    if (!/^\d{4}-\d{2}$/.test(key)) return key;
+    const [y, m] = key.split('-').map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  };
 
   // Live totals for whatever is currently filtered.
   const summary = useMemo(() => {
@@ -456,9 +472,10 @@ export default function Bets() {
     );
   };
 
-  // A day-group header showing the date, bet count and net profit for the day.
-  const dayHeaderText = (g) => `${formatDate(g.day)} · ${g.count} bet${g.count !== 1 ? 's' : ''}`;
-  const dayProfitClass = (g) => (g.profit > 0 ? 'pos' : g.profit < 0 ? 'neg' : 'muted');
+  // Group-header helpers (used for both month and day headers).
+  const countLabel = (n) => `${n} bet${n !== 1 ? 's' : ''}`;
+  const profitClass = (v) => (v > 0 ? 'pos' : v < 0 ? 'neg' : 'muted');
+  const signedProfit = (v) => formatStake(v, currency, staking, { signed: true });
 
   return (
     <div className="main">
@@ -652,19 +669,34 @@ export default function Bets() {
                 </tr>
               </thead>
               <tbody>
-                {grouped.map((g) => {
-                  const collapsed = collapsedDays.has(g.day);
+                {grouped.map((mo) => {
+                  const moCollapsed = collapsedMonths.has(mo.month);
                   return (
-                    <Fragment key={g.day}>
-                      <tr className="day-group-row" onClick={() => toggleDay(g.day)}>
+                    <Fragment key={mo.month}>
+                      <tr className="month-group-row" onClick={() => toggleMonth(mo.month)}>
                         <td colSpan={20}>
                           <div className="day-head-inner">
-                            <span>{dayHeaderText(g)}</span>
-                            <span className={dayProfitClass(g)}>{formatStake(g.profit, currency, staking, { signed: true })}</span>
+                            <span>{formatMonth(mo.month)} · {countLabel(mo.count)}</span>
+                            <span className={profitClass(mo.profit)}>{signedProfit(mo.profit)}</span>
                           </div>
                         </td>
                       </tr>
-                      {!collapsed && g.bets.map(renderRow)}
+                      {!moCollapsed && mo.days.map((g) => {
+                        const dCollapsed = collapsedDays.has(g.day);
+                        return (
+                          <Fragment key={g.day}>
+                            <tr className="day-group-row" onClick={() => toggleDay(g.day)}>
+                              <td colSpan={20}>
+                                <div className="day-head-inner">
+                                  <span>{formatDate(g.day)} · {countLabel(g.count)}</span>
+                                  <span className={profitClass(g.profit)}>{signedProfit(g.profit)}</span>
+                                </div>
+                              </td>
+                            </tr>
+                            {!dCollapsed && g.bets.map(renderRow)}
+                          </Fragment>
+                        );
+                      })}
                     </Fragment>
                   );
                 })}
@@ -672,20 +704,34 @@ export default function Bets() {
             </table>
           </div>
 
-          {/* Mobile: stacked cards grouped by day so a long history stays tidy. */}
+          {/* Mobile: cards grouped by month, then by day, so a long history stays tidy. */}
           <div className="bets-cards">
-            {grouped.map((g) => {
-              const collapsed = collapsedDays.has(g.day);
+            {grouped.map((mo) => {
+              const moCollapsed = collapsedMonths.has(mo.month);
               return (
-                <div key={g.day} className="day-group">
-                  <button type="button" className="day-head" onClick={() => toggleDay(g.day)}>
+                <div key={mo.month} className="month-group">
+                  <button type="button" className="month-head" onClick={() => toggleMonth(mo.month)}>
                     <span className="day-head-l">
-                      <span className="day-chevron" aria-hidden>{collapsed ? '▸' : '▾'}</span>
-                      {dayHeaderText(g)}
+                      <span className="day-chevron" aria-hidden>{moCollapsed ? '▸' : '▾'}</span>
+                      {formatMonth(mo.month)} <span className="muted" style={{ fontWeight: 600 }}>· {countLabel(mo.count)}</span>
                     </span>
-                    <span className={dayProfitClass(g)} style={{ fontWeight: 700 }}>{formatStake(g.profit, currency, staking, { signed: true })}</span>
+                    <span className={profitClass(mo.profit)} style={{ fontWeight: 800 }}>{signedProfit(mo.profit)}</span>
                   </button>
-                  {!collapsed && g.bets.map(renderCard)}
+                  {!moCollapsed && mo.days.map((g) => {
+                    const dCollapsed = collapsedDays.has(g.day);
+                    return (
+                      <div key={g.day} className="day-group">
+                        <button type="button" className="day-head day-sub" onClick={() => toggleDay(g.day)}>
+                          <span className="day-head-l">
+                            <span className="day-chevron" aria-hidden>{dCollapsed ? '▸' : '▾'}</span>
+                            {formatDate(g.day)} <span className="muted" style={{ fontWeight: 500 }}>· {countLabel(g.count)}</span>
+                          </span>
+                          <span className={profitClass(g.profit)} style={{ fontWeight: 700 }}>{signedProfit(g.profit)}</span>
+                        </button>
+                        {!dCollapsed && g.bets.map(renderCard)}
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}

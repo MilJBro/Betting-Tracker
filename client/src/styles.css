@@ -309,17 +309,23 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 /* Bets list: table on desktop, stacked cards on mobile (no sideways scroll). */
 .bets-cards { display: none; }
 
-/* Day grouping — headers with the day's count and net P/L; tap to collapse. */
-.day-group { display: flex; flex-direction: column; }
-.day-head {
+/* Month + day grouping — collapsible headers with count and net P/L. */
+.month-group, .day-group { display: flex; flex-direction: column; }
+.month-head, .day-head {
   display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
   text-align: left; background: transparent; border: 0; cursor: pointer; color: var(--text);
-  font-weight: 700; font-size: 13px; padding: 12px 2px 8px; border-bottom: 1px solid var(--border);
 }
-.day-group:first-child .day-head { padding-top: 4px; }
+.month-head {
+  font-weight: 800; font-size: 15px; padding: 14px 2px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.month-group:first-child .month-head { padding-top: 4px; }
+.day-head { font-weight: 700; font-size: 12.5px; padding: 9px 2px 6px 14px; }
+.day-head.day-sub .day-chevron { font-size: 9px; }
 .day-head-l { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .day-chevron { color: var(--muted); font-size: 10px; width: 10px; flex: none; }
-.day-group-row td { background: var(--surface-2); cursor: pointer; padding: 8px 12px; }
+.month-group-row td { background: color-mix(in srgb, var(--primary) 8%, var(--surface-2)); cursor: pointer; padding: 9px 12px; font-weight: 800; }
+.day-group-row td { background: var(--surface-2); cursor: pointer; padding: 7px 12px 7px 22px; }
 .day-head-inner { display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: 13px; }
 .bet-card { display: flex; flex-direction: column; gap: 8px; padding: 10px 2px; border-bottom: 1px solid var(--border); }
 .bet-card:last-child { border-bottom: none; }
