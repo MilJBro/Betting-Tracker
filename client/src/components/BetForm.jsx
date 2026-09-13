@@ -507,24 +507,25 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                     </div>
                   ))}
                 </div>
-                <div style={{ marginTop: 10 }}>
+                <div className="row spread" style={{ marginTop: 6, alignItems: 'center', gap: 10 }}>
                   <button type="button" className="btn-ghost btn-sm" onClick={addLeg}>+ Add selection</button>
+                  {show('odds') && (
+                    <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+                      <span className="muted" style={{ fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>Combined odds</span>
+                      <input
+                        type={oddsFormat === 'decimal' ? 'number' : 'text'}
+                        {...(oddsFormat === 'decimal' ? { step: '0.01', min: '0' } : {})}
+                        inputMode={oddsFormat === 'decimal' ? 'decimal' : 'text'}
+                        value={form.odds}
+                        onChange={(e) => set('odds', e.target.value)}
+                        aria-label="Combined odds"
+                        autoComplete="off"
+                        style={{ width: 84 }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
-              {show('odds') && (
-                <div className="field">
-                  <label>Combined odds</label>
-                  <input
-                    type={oddsFormat === 'decimal' ? 'number' : 'text'}
-                    {...(oddsFormat === 'decimal' ? { step: '0.01', min: '0' } : {})}
-                    inputMode={oddsFormat === 'decimal' ? 'decimal' : 'text'}
-                    value={form.odds}
-                    onChange={(e) => set('odds', e.target.value)}
-                    aria-label="Combined odds"
-                    autoComplete="off"
-                  />
-                </div>
-              )}
             </>
           )}
 
