@@ -593,7 +593,12 @@ export default function Bets() {
                         )}
                         <div style={{ minWidth: 0 }}>
                           <div className="bet-card-title">{title}</div>
-                          <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{sub}</div>
+                          <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                            {sub}
+                            {Number(b.boost) > 0 && (
+                              <span className="boost-tag">+{Math.round(Number(b.boost) * 100)}% boost</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       {col('status') && <span className={`badge ${b.status}`}>{b.status}</span>}

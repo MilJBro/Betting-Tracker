@@ -313,6 +313,7 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 .bet-card.row-selected { background: color-mix(in srgb, var(--primary) 9%, transparent); border-radius: var(--radius-sm); padding-left: 10px; padding-right: 10px; }
 .bet-card-title { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bet-card-tap { display: flex; flex-direction: column; gap: 9px; cursor: pointer; }
+.boost-tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.02em; background: color-mix(in srgb, var(--primary) 18%, transparent); color: var(--primary); vertical-align: 1px; }
 .bet-card-figs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .bcf-label { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; }
 .bcf-val { display: block; font-size: 15px; font-weight: 700; margin-top: 2px; }
