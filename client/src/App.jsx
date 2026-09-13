@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import BrandMark from './components/BrandMark.jsx';
 import { useAuth } from './context/AuthContext.jsx';
@@ -86,6 +87,16 @@ function BottomNav() {
 
 function ShellInner() {
   const { settings } = useSettings();
+  const showApp = !!settings && !(settings.profile && !settings.profile.onboarded);
+
+  // Lock the document to the viewport only while the app shell is on screen, so
+  // just the content area scrolls (kills the small iOS toolbar scroll/snap).
+  // Public/long pages (login, onboarding, landing, legal) keep normal scrolling.
+  useEffect(() => {
+    if (!showApp) return;
+    document.body.classList.add('app-view');
+    return () => document.body.classList.remove('app-view');
+  }, [showApp]);
 
   // Wait for settings, then send brand-new accounts through the questionnaire.
   if (!settings) return <div className="auth-wrap"><div className="spinner" /></div>;
