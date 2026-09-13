@@ -487,7 +487,8 @@ export default function Bets() {
             {activeFilters && <button className="btn-ghost btn-sm" onClick={clearFilters} style={{ marginTop: 8 }}>Clear filters</button>}
           </div>
         ) : (
-          <div className="table-wrap">
+          <>
+          <div className="table-wrap bets-table">
             <table>
               <thead>
                 <tr>
@@ -558,6 +559,56 @@ export default function Bets() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile: stacked cards so a bet reads top-to-bottom, no sideways scroll. */}
+          <div className="bets-cards">
+            {filtered.map((b) => {
+              const p = profitOf(b);
+              const extra = [col('bookmaker') && b.bookmaker, col('tipster') && b.tipster].filter(Boolean).join(' · ');
+              const meta = [formatDate(b.placed_at), col('sport') && b.sport].filter(Boolean).join(' · ');
+              return (
+                <div key={b.id} className={'bet-card' + (selected.has(b.id) ? ' row-selected' : '')}>
+                  <div className="row spread" style={{ gap: 10, alignItems: 'flex-start' }}>
+                    <div className="row" style={{ gap: 8, alignItems: 'flex-start', minWidth: 0 }}>
+                      {b.status === 'pending' && (
+                        <input
+                          type="checkbox"
+                          checked={selected.has(b.id)}
+                          onChange={() => toggleOne(b.id)}
+                          aria-label={`Select bet ${b.selection || b.event || ''}`}
+                          style={{ width: 'auto', margin: '3px 0 0' }}
+                        />
+                      )}
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 700 }}>{b.selection || b.event || b.sport || 'Bet'}</div>
+                        <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                          {meta}{b.event && b.selection ? ` · ${b.event}` : ''}
+                        </div>
+                      </div>
+                    </div>
+                    {col('status') && <span className={`badge ${b.status}`}>{b.status}</span>}
+                  </div>
+
+                  <div className="bet-card-figs">
+                    {col('stake') && <div><span className="bcf-label">Stake</span><span className="bcf-val">{formatStake(b.stake, currency, staking)}</span></div>}
+                    {col('odds') && <div><span className="bcf-label">Odds</span><span className="bcf-val">{formatOdds(b.odds, oddsFormat)}</span></div>}
+                    <div><span className="bcf-label">Profit</span><span className={`bcf-val ${p > 0 ? 'pos' : p < 0 ? 'neg' : 'muted'}`}>{p == null ? '—' : formatStake(p, currency, staking, { signed: true })}</span></div>
+                  </div>
+
+                  {extra && <div className="muted" style={{ fontSize: 12 }}>{extra}</div>}
+
+                  <div className="bet-card-actions">
+                    {b.status === 'pending' && <SettleControls bet={b} onSettle={(status) => settle(b, status)} />}
+                    <div className="row" style={{ gap: 6, marginLeft: 'auto' }}>
+                      <button className="btn-ghost btn-sm" onClick={() => openEdit(b)}>Edit</button>
+                      <button className="btn-danger btn-sm" onClick={() => remove(b.id)} aria-label="Delete bet">✕</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          </>
         )}
       </div>
       </>
