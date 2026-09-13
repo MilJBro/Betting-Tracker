@@ -308,6 +308,19 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 
 /* Bets list: table on desktop, stacked cards on mobile (no sideways scroll). */
 .bets-cards { display: none; }
+
+/* Day grouping — headers with the day's count and net P/L; tap to collapse. */
+.day-group { display: flex; flex-direction: column; }
+.day-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+  text-align: left; background: transparent; border: 0; cursor: pointer; color: var(--text);
+  font-weight: 700; font-size: 13px; padding: 12px 2px 8px; border-bottom: 1px solid var(--border);
+}
+.day-group:first-child .day-head { padding-top: 4px; }
+.day-head-l { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.day-chevron { color: var(--muted); font-size: 10px; width: 10px; flex: none; }
+.day-group-row td { background: var(--surface-2); cursor: pointer; padding: 8px 12px; }
+.day-head-inner { display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: 13px; }
 .bet-card { display: flex; flex-direction: column; gap: 8px; padding: 10px 2px; border-bottom: 1px solid var(--border); }
 .bet-card:last-child { border-bottom: none; }
 .bet-card.row-selected { background: color-mix(in srgb, var(--primary) 9%, transparent); border-radius: var(--radius-sm); padding-left: 10px; padding-right: 10px; }

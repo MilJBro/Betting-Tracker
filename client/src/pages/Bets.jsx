@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../api.js';
 import { usePlan } from '../usePlan.js';
@@ -172,6 +172,31 @@ export default function Bets() {
     });
   }, [bets, status, search, sport, bookie, from, to, sortBy, sortDir]);
 
+  // Group the (already sorted/filtered) bets by day, keeping day order as they
+  // appear, with a per-day count and net profit for the group header.
+  const grouped = useMemo(() => {
+    const map = new Map();
+    for (const b of filtered) {
+      const day = b.placed_at || '—';
+      if (!map.has(day)) map.set(day, []);
+      map.get(day).push(b);
+    }
+    return [...map.entries()].map(([day, list]) => ({
+      day,
+      bets: list,
+      count: list.length,
+      profit: list.reduce((s, b) => s + (profitOf(b) || 0), 0),
+    }));
+  }, [filtered]);
+
+  // Collapsed day groups (by day key), so a long history can be folded up.
+  const [collapsedDays, setCollapsedDays] = useState(() => new Set());
+  const toggleDay = (day) => setCollapsedDays((s) => {
+    const n = new Set(s);
+    n.has(day) ? n.delete(day) : n.add(day);
+    return n;
+  });
+
   // Live totals for whatever is currently filtered.
   const summary = useMemo(() => {
     const settled = filtered.filter((b) => SETTLED.includes(b.status));
@@ -323,6 +348,117 @@ export default function Bets() {
     else { setSortBy(key); setSortDir(key === 'date' ? 'desc' : 'desc'); }
   }
   const sortArrow = (key) => (sortBy === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '');
+
+  // Desktop table row for one bet.
+  const renderRow = (b) => {
+    const p = profitOf(b);
+    return (
+      <tr key={b.id} className={selected.has(b.id) ? 'row-selected' : ''}>
+        <td>
+          {b.status === 'pending' ? (
+            <input
+              type="checkbox"
+              checked={selected.has(b.id)}
+              onChange={() => toggleOne(b.id)}
+              aria-label={`Select bet ${b.selection || b.event || ''}`}
+            />
+          ) : null}
+        </td>
+        <td>{formatDate(b.placed_at)}</td>
+        {col('sport') && <td>{b.sport || '—'}</td>}
+        {col('selection') && (
+          <td>
+            <div style={{ fontWeight: 600 }}>{b.selection || b.event || '—'}</div>
+            {b.event && b.selection && <div className="muted" style={{ fontSize: 12 }}>{b.event}</div>}
+          </td>
+        )}
+        {col('bookmaker') && <td>{b.bookmaker || '—'}</td>}
+        {col('tipster') && <td>{b.tipster || '—'}</td>}
+        {col('stake') && <td>{formatStake(b.stake, currency, staking)}</td>}
+        {col('odds') && <td>{formatOdds(b.odds, oddsFormat)}</td>}
+        {col('status') && <td><span className={`badge ${b.status}`}>{b.status}</span></td>}
+        <td className={p > 0 ? 'pos' : p < 0 ? 'neg' : 'muted'}>
+          {p == null ? '—' : formatStake(p, currency, staking, { signed: true })}
+        </td>
+        <td>
+          <div className="row" style={{ flexWrap: 'nowrap' }}>
+            {b.status === 'pending' && (
+              <SettleControls bet={b} onSettle={(s) => settle(b, s)} />
+            )}
+            <button className="btn-ghost btn-sm" onClick={() => openEdit(b)}>Edit</button>
+            <button className="btn-danger btn-sm" onClick={() => remove(b.id)}>✕</button>
+          </div>
+        </td>
+      </tr>
+    );
+  };
+
+  // Mobile stacked card for one bet.
+  const renderCard = (b) => {
+    const p = profitOf(b);
+    const extra = [col('bookmaker') && b.bookmaker, col('tipster') && b.tipster].filter(Boolean).join(' · ');
+    const isMulti = b.bet_type === 'Accumulator' || b.bet_type === 'Bet builder';
+    const title = (b.event && b.event.trim()) || (col('sport') && b.sport) || b.bet_type || 'Bet';
+    // The day header already shows the date, so the card sub-line drops it.
+    const sub = [
+      col('sport') && b.sport && b.sport !== title ? b.sport : null,
+      isMulti ? b.bet_type : null,
+    ].filter(Boolean).join(' · ');
+    return (
+      <div key={b.id} className={'bet-card' + (selected.has(b.id) ? ' row-selected' : '')}>
+        <div className="bet-card-tap" onClick={() => setPreview(b)}>
+          <div className="row spread" style={{ gap: 10, alignItems: 'flex-start' }}>
+            <div className="row" style={{ gap: 8, alignItems: 'flex-start', minWidth: 0 }}>
+              {b.status === 'pending' && (
+                <input
+                  type="checkbox"
+                  checked={selected.has(b.id)}
+                  onChange={() => toggleOne(b.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label={`Select bet ${title}`}
+                  style={{ width: 'auto', margin: '3px 0 0' }}
+                />
+              )}
+              <div style={{ minWidth: 0 }}>
+                <div className="bet-card-title">{title}</div>
+                <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                  {sub}
+                  {Number(b.boost) > 0 && (
+                    <span className="boost-tag">+{Math.round(Number(b.boost) * 100)}% boost</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="bet-card-top">
+              {col('status') && <span className={`badge ${b.status}`}>{b.status}</span>}
+              <div className="bet-card-btns">
+                <button className="btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); openEdit(b); }}>Edit</button>
+                <button className="btn-danger btn-sm" onClick={(e) => { e.stopPropagation(); remove(b.id); }} aria-label="Delete bet">✕</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="bet-card-figs">
+            {col('stake') && <div><span className="bcf-label">Stake</span><span className="bcf-val">{formatStake(b.stake, currency, staking)}</span></div>}
+            {col('odds') && <div><span className="bcf-label">Odds</span><span className="bcf-val">{formatOdds(b.odds, oddsFormat)}</span></div>}
+            <div><span className="bcf-label">Profit</span><span className={`bcf-val ${p > 0 ? 'pos' : p < 0 ? 'neg' : 'muted'}`}>{p == null ? '—' : formatStake(p, currency, staking, { signed: true })}</span></div>
+          </div>
+
+          {extra && <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>{extra}</div>}
+        </div>
+
+        {b.status === 'pending' && (
+          <div className="bet-card-actions">
+            <SettleControls bet={b} onSettle={(s) => settle(b, s)} />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // A day-group header showing the date, bet count and net profit for the day.
+  const dayHeaderText = (g) => `${formatDate(g.day)} · ${g.count} bet${g.count !== 1 ? 's' : ''}`;
+  const dayProfitClass = (g) => (g.profit > 0 ? 'pos' : g.profit < 0 ? 'neg' : 'muted');
 
   return (
     <div className="main">
@@ -516,114 +652,40 @@ export default function Bets() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((b) => {
-                  const p = profitOf(b);
+                {grouped.map((g) => {
+                  const collapsed = collapsedDays.has(g.day);
                   return (
-                    <tr key={b.id} className={selected.has(b.id) ? 'row-selected' : ''}>
-                      <td>
-                        {b.status === 'pending' ? (
-                          <input
-                            type="checkbox"
-                            checked={selected.has(b.id)}
-                            onChange={() => toggleOne(b.id)}
-                            aria-label={`Select bet ${b.selection || b.event || ''}`}
-                          />
-                        ) : null}
-                      </td>
-                      <td>{formatDate(b.placed_at)}</td>
-                      {col('sport') && <td>{b.sport || '—'}</td>}
-                      {col('selection') && (
-                        <td>
-                          <div style={{ fontWeight: 600 }}>{b.selection || b.event || '—'}</div>
-                          {b.event && b.selection && <div className="muted" style={{ fontSize: 12 }}>{b.event}</div>}
+                    <Fragment key={g.day}>
+                      <tr className="day-group-row" onClick={() => toggleDay(g.day)}>
+                        <td colSpan={20}>
+                          <div className="day-head-inner">
+                            <span>{dayHeaderText(g)}</span>
+                            <span className={dayProfitClass(g)}>{formatStake(g.profit, currency, staking, { signed: true })}</span>
+                          </div>
                         </td>
-                      )}
-                      {col('bookmaker') && <td>{b.bookmaker || '—'}</td>}
-                      {col('tipster') && <td>{b.tipster || '—'}</td>}
-                      {col('stake') && <td>{formatStake(b.stake, currency, staking)}</td>}
-                      {col('odds') && <td>{formatOdds(b.odds, oddsFormat)}</td>}
-                      {col('status') && <td><span className={`badge ${b.status}`}>{b.status}</span></td>}
-                      <td className={p > 0 ? 'pos' : p < 0 ? 'neg' : 'muted'}>
-                        {p == null ? "—" : formatStake(p, currency, staking, { signed: true })}
-                      </td>
-                      <td>
-                        <div className="row" style={{ flexWrap: 'nowrap' }}>
-                          {b.status === 'pending' && (
-                            <SettleControls bet={b} onSettle={(status) => settle(b, status)} />
-                          )}
-                          <button className="btn-ghost btn-sm" onClick={() => openEdit(b)}>Edit</button>
-                          <button className="btn-danger btn-sm" onClick={() => remove(b.id)}>✕</button>
-                        </div>
-                      </td>
-                    </tr>
+                      </tr>
+                      {!collapsed && g.bets.map(renderRow)}
+                    </Fragment>
                   );
                 })}
               </tbody>
             </table>
           </div>
 
-          {/* Mobile: stacked cards so a bet reads top-to-bottom, no sideways scroll. */}
+          {/* Mobile: stacked cards grouped by day so a long history stays tidy. */}
           <div className="bets-cards">
-            {filtered.map((b) => {
-              const p = profitOf(b);
-              const extra = [col('bookmaker') && b.bookmaker, col('tipster') && b.tipster].filter(Boolean).join(' · ');
-              // Keep the card tidy: title by the game/event or sport (not the full
-              // selection list), with the date and bet type on a single sub-line.
-              const isMulti = b.bet_type === 'Accumulator' || b.bet_type === 'Bet builder';
-              const title = (b.event && b.event.trim()) || (col('sport') && b.sport) || b.bet_type || 'Bet';
-              const sub = [
-                formatDate(b.placed_at),
-                col('sport') && b.sport && b.sport !== title ? b.sport : null,
-                isMulti ? b.bet_type : null,
-              ].filter(Boolean).join(' · ');
+            {grouped.map((g) => {
+              const collapsed = collapsedDays.has(g.day);
               return (
-                <div key={b.id} className={'bet-card' + (selected.has(b.id) ? ' row-selected' : '')}>
-                  <div className="bet-card-tap" onClick={() => setPreview(b)}>
-                    <div className="row spread" style={{ gap: 10, alignItems: 'flex-start' }}>
-                      <div className="row" style={{ gap: 8, alignItems: 'flex-start', minWidth: 0 }}>
-                        {b.status === 'pending' && (
-                          <input
-                            type="checkbox"
-                            checked={selected.has(b.id)}
-                            onChange={() => toggleOne(b.id)}
-                            onClick={(e) => e.stopPropagation()}
-                            aria-label={`Select bet ${title}`}
-                            style={{ width: 'auto', margin: '3px 0 0' }}
-                          />
-                        )}
-                        <div style={{ minWidth: 0 }}>
-                          <div className="bet-card-title">{title}</div>
-                          <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
-                            {sub}
-                            {Number(b.boost) > 0 && (
-                              <span className="boost-tag">+{Math.round(Number(b.boost) * 100)}% boost</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bet-card-top">
-                        {col('status') && <span className={`badge ${b.status}`}>{b.status}</span>}
-                        <div className="bet-card-btns">
-                          <button className="btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); openEdit(b); }}>Edit</button>
-                          <button className="btn-danger btn-sm" onClick={(e) => { e.stopPropagation(); remove(b.id); }} aria-label="Delete bet">✕</button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bet-card-figs">
-                      {col('stake') && <div><span className="bcf-label">Stake</span><span className="bcf-val">{formatStake(b.stake, currency, staking)}</span></div>}
-                      {col('odds') && <div><span className="bcf-label">Odds</span><span className="bcf-val">{formatOdds(b.odds, oddsFormat)}</span></div>}
-                      <div><span className="bcf-label">Profit</span><span className={`bcf-val ${p > 0 ? 'pos' : p < 0 ? 'neg' : 'muted'}`}>{p == null ? '—' : formatStake(p, currency, staking, { signed: true })}</span></div>
-                    </div>
-
-                    {extra && <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>{extra}</div>}
-                  </div>
-
-                  {b.status === 'pending' && (
-                    <div className="bet-card-actions">
-                      <SettleControls bet={b} onSettle={(status) => settle(b, status)} />
-                    </div>
-                  )}
+                <div key={g.day} className="day-group">
+                  <button type="button" className="day-head" onClick={() => toggleDay(g.day)}>
+                    <span className="day-head-l">
+                      <span className="day-chevron" aria-hidden>{collapsed ? '▸' : '▾'}</span>
+                      {dayHeaderText(g)}
+                    </span>
+                    <span className={dayProfitClass(g)} style={{ fontWeight: 700 }}>{formatStake(g.profit, currency, staking, { signed: true })}</span>
+                  </button>
+                  {!collapsed && g.bets.map(renderCard)}
                 </div>
               );
             })}
