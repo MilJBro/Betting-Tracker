@@ -32,8 +32,13 @@ router.post('/checkout', async (req, res) => {
     });
     res.json({ clientSecret: session.client_secret });
   } catch (err) {
-    console.error('checkout error', err.message);
-    res.status(502).json({ error: 'Could not start checkout. Please try again.' });
+    console.error('checkout error', err.type, err.message);
+    // Surface Stripe's own request-validation message (safe, user-facing text)
+    // so misconfigurations are diagnosable; keep other errors generic.
+    const msg = err.type === 'StripeInvalidRequestError' && err.message
+      ? err.message
+      : 'Could not start checkout. Please try again.';
+    res.status(502).json({ error: msg });
   }
 });
 
