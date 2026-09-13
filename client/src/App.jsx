@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
-import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom';
 import BrandMark from './components/BrandMark.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 import { SettingsProvider, useSettings } from './context/SettingsContext.jsx';
 import { TrackerProvider } from './context/TrackerContext.jsx';
+import { AddBetProvider, useAddBet } from './context/AddBetContext.jsx';
 import TrackerBar from './components/TrackerBar.jsx';
 import Icon from './components/Icon.jsx';
 import Login from './pages/Login.jsx';
@@ -57,13 +58,12 @@ function Sidebar() {
 }
 
 function BottomNav() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { openAddBet } = useAddBet();
   const bnav = ({ isActive }) => 'bnav' + (isActive ? ' active' : '');
   const left = BOTTOM_NAV.slice(0, 2);
   const right = BOTTOM_NAV.slice(2);
-  // Remember which tab we opened Add-bet from, so closing it returns there.
-  const addBet = () => navigate('/bets?new=1', { state: { returnTo: location.pathname } });
+  // Open the Add-bet slip over the current tab — no navigating to My bets.
+  const addBet = () => openAddBet();
   return (
     <nav className="bottom-nav">
       {left.map((n) => (
@@ -104,22 +104,24 @@ function ShellInner() {
 
   return (
     <TrackerProvider>
-      <div className="app-shell">
-        <Sidebar />
-        <div className="content-col">
-          <TrackerBar />
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/bets" element={<Bets />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/customise" element={<Customise />} />
-            <Route path="/account" element={<Account />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+      <AddBetProvider>
+        <div className="app-shell">
+          <Sidebar />
+          <div className="content-col">
+            <TrackerBar />
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/bets" element={<Bets />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/customise" element={<Customise />} />
+              <Route path="/account" element={<Account />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
         </div>
-      </div>
-      {/* Mobile-only: bottom tab bar with a centred add button */}
-      <BottomNav />
+        {/* Mobile-only: bottom tab bar with a centred add button */}
+        <BottomNav />
+      </AddBetProvider>
     </TrackerProvider>
   );
 }

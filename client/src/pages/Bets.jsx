@@ -9,7 +9,7 @@ import BetForm from '../components/BetForm.jsx';
 import SettleControls from '../components/SettleControls.jsx';
 import PendingReminder from '../components/PendingReminder.jsx';
 import { settlePayout } from '../settle.js';
-import { getCached, setCached } from '../dataCache.js';
+import { getCached, setCached, subscribeInvalidate } from '../dataCache.js';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
 import { formatStake, formatOdds, formatDate } from '../format.js';
@@ -87,6 +87,11 @@ export default function Bets() {
     if (cached) { setBets(cached.bets); setLoading(false); } else setLoading(true);
     load();
   }, [activeId]);
+  // Refresh when a bet is added from the global Add-bet overlay (a ref keeps the
+  // subscribed callback pointing at the latest load without re-subscribing).
+  const loadRef = useRef(load);
+  loadRef.current = load;
+  useEffect(() => subscribeInvalidate(() => loadRef.current && loadRef.current()), []);
 
   // The mobile "+" button links here with ?new=1 to open the form directly.
   useEffect(() => {

@@ -8,7 +8,8 @@ import { useSettings } from '../context/SettingsContext.jsx';
 import { useTracker } from '../context/TrackerContext.jsx';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
-import { getCached, setCached } from '../dataCache.js';
+import { getCached, setCached, subscribeInvalidate } from '../dataCache.js';
+import { useAddBet } from '../context/AddBetContext.jsx';
 import { formatStake, units, currencySymbol } from '../format.js';
 
 function Bars({ rows, currency, staking }) {
@@ -55,6 +56,7 @@ function buildHighlights(a, fmt) {
 export default function Analytics() {
   const { settings } = useSettings();
   const { activeId } = useTracker();
+  const { openAddBet } = useAddBet();
   const [filters, setFilters] = useState(BLANK_FILTERS);
   const cacheKey = 'analytics:' + activeId + ':' + JSON.stringify(filters);
   const [a, setA] = useState(() => getCached(cacheKey)?.a ?? null);
@@ -85,6 +87,8 @@ export default function Analytics() {
     else setLoading(true);
     load().finally(() => setLoading(false));
   }, [load, activeId, cacheKey]);
+  // Refresh when a bet is added from the global Add-bet overlay.
+  useEffect(() => subscribeInvalidate(() => load()), [load]);
 
   if (loading) return <div className="main"><Spinner /></div>;
 
@@ -141,7 +145,7 @@ export default function Analytics() {
           <p>{anyFilter ? 'Try widening your filters.' : "Once you've settled a few bets, your trends and breakdowns show up here."}</p>
           {anyFilter
             ? <button className="btn-ghost" onClick={() => setFilters(BLANK_FILTERS)} style={{ marginTop: 10 }}>Clear filters</button>
-            : <Link to="/bets?new=1" className="btn-primary" style={{ display: 'inline-block', marginTop: 10 }}>+ Add a bet</Link>}
+            : <button type="button" onClick={() => openAddBet()} className="btn-primary" style={{ display: 'inline-block', marginTop: 10 }}>+ Add a bet</button>}
         </div>
       </div>
     );
