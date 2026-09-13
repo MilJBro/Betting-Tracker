@@ -33,6 +33,9 @@ function profitOf(b) {
 }
 
 const SETTLED = ['won', 'lost', 'void', 'cashout', 'placed'];
+const STATUS_FILTERS = ['all', 'pending', 'won', 'placed', 'lost', 'void', 'cashout'];
+const titleCase = (s) => s[0].toUpperCase() + s.slice(1);
+const statusFilterLabel = (s) => (s === 'all' ? 'All bets' : titleCase(s));
 const SORTS = [
   { key: 'date', label: 'Date' },
   { key: 'stake', label: 'Stake' },
@@ -66,6 +69,7 @@ export default function Bets() {
 
   // Filtering / search / sort state
   const [status, setStatus] = useState('all');
+  const [statusMenu, setStatusMenu] = useState(false);
   const [search, setSearch] = useState('');
   const [sport, setSport] = useState('');
   const [bookie, setBookie] = useState('');
@@ -525,20 +529,36 @@ export default function Bets() {
         </div>
       ) : (
       <>
-      {/* Status chips + search + filter toggle */}
+      {/* Status dropdown + search + filter toggle */}
       <div className="stack" style={{ marginBottom: 14 }}>
-        <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
-          {['all', 'pending', 'won', 'placed', 'lost', 'void', 'cashout'].map((f) => (
-            <button
-              key={f}
-              className={status === f ? 'btn-accent btn-sm' : 'btn-ghost btn-sm'}
-              onClick={() => setStatus(f)}
-            >
-              {f[0].toUpperCase() + f.slice(1)}
-            </button>
-          ))}
-        </div>
         <div className="row" style={{ gap: 8 }}>
+          <div className="data-menu status-menu">
+            <button
+              className={`btn-sm status-toggle ${status !== 'all' ? 'btn-accent' : 'btn-ghost'}`}
+              onClick={() => setStatusMenu((v) => !v)}
+              aria-haspopup="true"
+              aria-expanded={statusMenu}
+            >
+              {statusFilterLabel(status)} <span aria-hidden="true">▾</span>
+            </button>
+            {statusMenu && (
+              <>
+                <div className="data-menu-backdrop" onClick={() => setStatusMenu(false)} />
+                <div className="data-menu-pop" role="menu">
+                  {STATUS_FILTERS.map((f) => (
+                    <button
+                      key={f}
+                      role="menuitem"
+                      className={status === f ? 'on' : ''}
+                      onClick={() => { setStatus(f); setStatusMenu(false); }}
+                    >
+                      {statusFilterLabel(f)}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
           <input
             type="search"
             value={search}
