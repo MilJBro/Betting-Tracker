@@ -579,6 +579,7 @@ export default function Bets() {
           onSaveTemplate={saveTemplate}
           defaultDate={lastDate}
           onSetUnitSize={(v) => updateSettings({ staking: { ...settings.staking, unitSize: v } })}
+          onToggleField={(k, v) => updateSettings({ fields: { ...settings.fields, [k]: v } })}
           onSave={save}
           onClose={() => {
             setShowForm(false);

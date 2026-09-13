@@ -75,7 +75,19 @@ function splitRace(ev) {
   return { course: s, time: '' };
 }
 
-export default function BetForm({ initial, isEdit, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], template, defaultDate, onSetUnitSize, onSaveTemplate, onSave, onClose }) {
+// Fields the user can show/hide from the slip's own "Edit fields" panel. Stake
+// and Status stay on (a bet needs them); Date and Sport are always shown too.
+const EDITABLE_FIELDS = [
+  { key: 'event', label: 'Event' },
+  { key: 'selection', label: 'Selection' },
+  { key: 'odds', label: 'Odds' },
+  { key: 'bookmaker', label: 'Bookmaker' },
+  { key: 'tipster', label: 'Tipster' },
+  { key: 'payout', label: 'Return' },
+  { key: 'tags', label: 'Tags' },
+];
+
+export default function BetForm({ initial, isEdit, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], template, defaultDate, onSetUnitSize, onSaveTemplate, onToggleField, onSave, onClose }) {
   const unitSize = Number(staking?.unitSize) || 0;
   const [editUnit, setEditUnit] = useState(false);
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
@@ -227,6 +239,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
   const [saving, setSaving] = useState(false);
   const [tplOpen, setTplOpen] = useState(false);
   const [tplName, setTplName] = useState('');
+  const [fieldsEditing, setFieldsEditing] = useState(false);
 
   function saveTemplate() {
     const name = tplName.trim();
@@ -383,8 +396,44 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="row spread" style={{ marginBottom: 12 }}>
           <h2 style={{ margin: 0, fontSize: 20 }}>{isEdit ? 'Edit bet' : 'Add a bet'}</h2>
-          <button className="btn-ghost btn-sm" type="button" onClick={onClose}>✕</button>
+          <div className="row" style={{ gap: 6 }}>
+            {onToggleField && (
+              <button
+                className={fieldsEditing ? 'btn-accent btn-sm' : 'btn-ghost btn-sm'}
+                type="button"
+                onClick={() => setFieldsEditing((v) => !v)}
+              >
+                {fieldsEditing ? 'Done' : 'Edit fields'}
+              </button>
+            )}
+            <button className="btn-ghost btn-sm" type="button" onClick={onClose} aria-label="Close">✕</button>
+          </div>
         </div>
+
+        {fieldsEditing && onToggleField && (
+          <div className="field-editor">
+            <div className="muted" style={{ fontSize: 12.5, marginBottom: 8 }}>
+              Tap to choose what shows when adding a bet — saved for next time.
+            </div>
+            <div className="ftog-row">
+              {EDITABLE_FIELDS.map(({ key, label }) => {
+                const on = fields[key] !== false;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className={on ? 'ftog on' : 'ftog'}
+                    aria-pressed={on}
+                    onClick={() => onToggleField(key, !on)}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <form onSubmit={submit} className="betform" onFocusCapture={onFieldFocus}>
           <div className="grid-2 betgrid">
             <div className="field">

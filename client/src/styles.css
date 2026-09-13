@@ -306,6 +306,19 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 .legal-body a { color: var(--primary); }
 .legal-foot { margin-top: 44px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; }
 
+/* On-slip "Edit fields" panel: pick which fields show when adding a bet. */
+.field-editor { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px; }
+.ftog-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.ftog {
+  padding: 7px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer;
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--border); opacity: 0.7; transition: all 0.12s;
+}
+.ftog.on {
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+  color: var(--primary); border-color: var(--primary); opacity: 1;
+}
+
 /* Accumulator legs editor */
 .legs { display: flex; flex-direction: column; gap: 8px; }
 .leg-row { display: flex; gap: 8px; align-items: center; }

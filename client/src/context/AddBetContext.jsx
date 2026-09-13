@@ -98,6 +98,7 @@ export function AddBetProvider({ children }) {
           onSaveTemplate={saveTemplate}
           defaultDate={lastDateRef.current}
           onSetUnitSize={(v) => updateSettings({ staking: { ...settings.staking, unitSize: v } })}
+          onToggleField={(k, v) => updateSettings({ fields: { ...settings.fields, [k]: v } })}
           onSave={save}
           onClose={close}
         />
