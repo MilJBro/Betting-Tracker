@@ -523,7 +523,6 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                     aria-label="Combined odds"
                     autoComplete="off"
                   />
-                  <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>The single price the bookmaker gives for the whole bet builder.</div>
                 </div>
               )}
             </>
