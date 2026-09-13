@@ -193,8 +193,8 @@ export default function Account() {
         <div className="stack" style={{ gap: 8 }}>
           <div className="row spread"><span className="muted">Username</span><strong>{user?.username || info?.username}</strong></div>
           <div className="row spread"><span className="muted">Email</span><strong>{user?.email || info?.email}</strong></div>
-          {info?.created_at && (
-            <div className="row spread"><span className="muted">Member since</span><strong>{formatDate(info.created_at)}</strong></div>
+          {(user?.created_at || info?.created_at) && (
+            <div className="row spread"><span className="muted">Member since</span><strong>{formatDate(user?.created_at || info?.created_at)}</strong></div>
           )}
         </div>
       </div>
