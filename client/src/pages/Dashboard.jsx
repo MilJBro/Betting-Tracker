@@ -154,12 +154,12 @@ export default function Dashboard() {
               </span>
             )}
           </div>
-          <div className="stat-grid" style={{ marginBottom: balanceTimeline.length ? 16 : 0 }}>
+          <div className="stat-grid" style={{ marginBottom: balanceTimeline.length >= 2 ? 16 : 0 }}>
             <div className="stat"><div className="label">Starting</div><div className="value">{formatStake(bankrollStart, currency, staking)}</div></div>
             <div className="stat"><div className="label">Balance</div><div className={`value ${balance > bankrollStart ? 'pos' : balance < bankrollStart ? 'neg' : ''}`}>{formatStake(balance, currency, staking)}</div></div>
             <div className="stat"><div className="label">Profit</div><div className={`value ${stats.netProfit > 0 ? 'pos' : stats.netProfit < 0 ? 'neg' : ''}`}>{formatStake(stats.netProfit, currency, staking, { signed: true })}</div></div>
           </div>
-          {balanceTimeline.length > 0 && (
+          {balanceTimeline.length >= 2 && (
             <ProfitChart
               timeline={balanceTimeline}
               primary={settings.theme.primary}
@@ -198,7 +198,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {w.profitChart && (
+      {w.profitChart && stats.timeline.length >= 2 && (
         <div className="card" style={{ marginBottom: 24 }}>
           <h3 className="section-title">Profit over time</h3>
           <ProfitChart timeline={stats.timeline} primary={settings.theme.primary} />
