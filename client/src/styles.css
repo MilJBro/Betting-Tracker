@@ -398,6 +398,21 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 
 @media (max-width: 820px) {
   .sidebar { display: none; }
+
+  /* Lock the page so the whole document can't scroll — only the content area
+     scrolls. This removes the small iOS scroll/snap caused by the dynamic
+     toolbar resizing the viewport (and the jump when returning to the app):
+     the outer page is pinned to the visible viewport and never moves. Scoped to
+     the signed-in app (body.app-view) so long public pages still scroll. */
+  body.app-view { height: 100%; overflow: hidden; }
+  .app-shell { height: 100vh; height: 100dvh; overflow: hidden; }
+  .content-col { height: 100%; min-height: 0; }
+  .tracker-bar { position: static; flex: 0 0 auto; }
+  .main {
+    flex: 1 1 auto; min-height: 0;
+    overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  }
+
   .main { padding: 14px 14px calc(84px + env(safe-area-inset-bottom)); }
   .grid-2 { grid-template-columns: 1fr; }
   .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
