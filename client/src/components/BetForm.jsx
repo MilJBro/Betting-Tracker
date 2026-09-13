@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { currencySymbol, money, formatOdds, parseOdds } from '../format.js';
-import AutocompleteInput from './AutocompleteInput.jsx';
 
 const STATUS_OPTIONS = ['pending', 'won', 'lost', 'void', 'cashout'];
 // Each-way place-terms fractions (the place part pays at this fraction of odds).
@@ -176,10 +175,6 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
   // in the list. Match the saved sport to a list option case-insensitively.
   const sportOption = sports.find((s) => s.toLowerCase() === (form.sport || '').trim().toLowerCase()) || '';
   const [otherSport, setOtherSport] = useState(() => !!(form.sport || '').trim() && !sportOption);
-
-  // Suggestions from previous bets are intentionally disabled — the fields are
-  // plain text inputs with no remembered-value dropdown.
-  const suggestions = { teams: [], selections: [], courses: [], events: [] };
 
   // Which preset unit the current stake matches, so the quick-pick shows the
   // chosen unit instead of snapping back to the placeholder. '' when custom.
@@ -489,7 +484,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
               <div className="grid-2 betgrid">
                 <div className="field">
                   <label>Course / track</label>
-                  <AutocompleteInput value={course} onChange={setCourse} options={suggestions.courses} ariaLabel="Course or track" />
+                  <input value={course} onChange={(e) => setCourse(e.target.value)} aria-label="Course or track" autoComplete="off" />
                 </div>
                 <div className="field">
                   <label>Time <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
@@ -500,15 +495,15 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
               <div className="field">
                 <label>{kind === 'builder' ? 'Game' : 'Event'}</label>
                 <div className="team-vs">
-                  <AutocompleteInput value={home} onChange={setHome} options={suggestions.teams} ariaLabel="Home team" />
+                  <input value={home} onChange={(e) => setHome(e.target.value)} aria-label="Home team" autoComplete="off" />
                   <span className="vs">v</span>
-                  <AutocompleteInput value={away} onChange={setAway} options={suggestions.teams} ariaLabel="Away team" />
+                  <input value={away} onChange={(e) => setAway(e.target.value)} aria-label="Away team" autoComplete="off" />
                 </div>
               </div>
             ) : (
               <div className="field">
                 <label>{kind === 'builder' ? 'Game / event' : 'Event / tournament'} <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
-                <AutocompleteInput value={form.event} onChange={(v) => set('event', v)} options={suggestions.events} ariaLabel="Event or race" />
+                <input value={form.event} onChange={(e) => set('event', e.target.value)} aria-label="Event or race" autoComplete="off" />
               </div>
             )
           )}
@@ -519,7 +514,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                 {show('selection') && (
                   <div className="field">
                     <label>{layout === 'racing' ? 'Horse / runner' : versus ? 'Selection' : 'Your selection'}</label>
-                    <AutocompleteInput value={form.selection} onChange={(v) => set('selection', v)} options={suggestions.selections} ariaLabel="Selection" />
+                    <input value={form.selection} onChange={(e) => set('selection', e.target.value)} aria-label="Selection" autoComplete="off" />
                   </div>
                 )}
                 {show('odds') && (
@@ -578,11 +573,12 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                 <div className="legs">
                   {legs.map((l, i) => (
                     <div className="leg-row builder-leg" key={i}>
-                      <AutocompleteInput
+                      <input
+                        className="leg-sel"
                         value={l.selection}
-                        onChange={(v) => setLeg(i, 'selection', v)}
-                        options={suggestions.selections}
-                        ariaLabel={`Selection ${i + 1}`}
+                        onChange={(e) => setLeg(i, 'selection', e.target.value)}
+                        aria-label={`Selection ${i + 1}`}
+                        autoComplete="off"
                       />
                       <button
                         type="button" className="btn-ghost btn-sm leg-x"
@@ -619,11 +615,12 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
               <div className="legs">
                 {legs.map((l, i) => (
                   <div className="leg-row" key={i}>
-                    <AutocompleteInput
+                    <input
+                      className="leg-sel"
                       value={l.selection}
-                      onChange={(v) => setLeg(i, 'selection', v)}
-                      options={suggestions.selections}
-                      ariaLabel={`Selection ${i + 1}`}
+                      onChange={(e) => setLeg(i, 'selection', e.target.value)}
+                      aria-label={`Selection ${i + 1}`}
+                      autoComplete="off"
                     />
                     <input
                       type={oddsFormat === 'decimal' ? 'number' : 'text'}
