@@ -6,6 +6,7 @@ import { useSettings } from '../context/SettingsContext.jsx';
 import { usePlan } from '../usePlan.js';
 import { getCached, setCached } from '../dataCache.js';
 import { formatDate } from '../format.js';
+import CheckoutModal from '../components/CheckoutModal.jsx';
 
 const PRO_FEATURE_LABELS = [
   'Multiple trackers (one per tipster or strategy)',
@@ -31,6 +32,7 @@ export default function Account() {
   const [info, setInfo] = useState(() => getCached('accountInfo') ?? null);
   const [planMsg, setPlanMsg] = useState('');
   const [planBusy, setPlanBusy] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
   const billing = ent?.billing;
   // Know the plan from the auth context immediately (user.plan) so the correct
   // Plan section renders on the first paint — the /plan fetch only refines the
@@ -59,16 +61,10 @@ export default function Account() {
     }
   }
 
-  // Real Stripe checkout (production) — redirect the browser to Stripe.
-  async function startCheckout() {
-    setPlanBusy(true); setPlanMsg('');
-    try {
-      const d = await api.post('/billing/checkout');
-      window.location.href = d.url;
-    } catch (err) {
-      setPlanMsg(err.message || 'Could not start checkout.');
-      setPlanBusy(false);
-    }
+  // Real Stripe checkout (production) — open the embedded payment form on-site.
+  function startCheckout() {
+    setPlanMsg('');
+    setShowCheckout(true);
   }
   async function openPortal() {
     setPlanBusy(true); setPlanMsg('');
@@ -353,6 +349,13 @@ export default function Account() {
         <Link to="/terms" style={{ color: 'inherit' }}>Terms</Link> ·{' '}
         <Link to="/privacy" style={{ color: 'inherit' }}>Privacy</Link>
       </p>
+
+      {showCheckout && (
+        <CheckoutModal
+          publishableKey={billing?.publishableKey}
+          onClose={() => setShowCheckout(false)}
+        />
+      )}
     </div>
   );
 }

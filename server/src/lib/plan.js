@@ -66,6 +66,9 @@ export function entitlements(userId) {
     billing: {
       enabled: config.billingEnabled,
       priceLabel: config.stripe.priceLabel || '',
+      // Public key so the client can load Stripe.js for the on-site checkout.
+      // Never expose the secret key here.
+      publishableKey: config.stripe.publishableKey || '',
     },
   };
 }
