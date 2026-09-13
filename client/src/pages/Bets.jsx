@@ -195,17 +195,19 @@ export default function Bets() {
     });
   }, [filtered]);
 
-  // Collapsed months and days, so a long history folds up. Months are the
-  // primary grouping; days can be drilled into within an open month.
-  const [collapsedMonths, setCollapsedMonths] = useState(() => new Set());
-  const [collapsedDays, setCollapsedDays] = useState(() => new Set());
+  // Months and days both start collapsed; we track only what the user has
+  // explicitly opened. Opening a month does not auto-open its days — they stay
+  // folded until tapped. State resets when leaving the tab (the page unmounts),
+  // so returning to My bets always shows everything collapsed again.
+  const [openMonths, setOpenMonths] = useState(() => new Set());
+  const [openDays, setOpenDays] = useState(() => new Set());
   const toggleIn = (setter) => (key) => setter((s) => {
     const n = new Set(s);
     n.has(key) ? n.delete(key) : n.add(key);
     return n;
   });
-  const toggleMonth = toggleIn(setCollapsedMonths);
-  const toggleDay = toggleIn(setCollapsedDays);
+  const toggleMonth = toggleIn(setOpenMonths);
+  const toggleDay = toggleIn(setOpenDays);
 
   const formatMonth = (key) => {
     if (!/^\d{4}-\d{2}$/.test(key)) return key;
@@ -670,7 +672,7 @@ export default function Bets() {
               </thead>
               <tbody>
                 {grouped.map((mo) => {
-                  const moCollapsed = collapsedMonths.has(mo.month);
+                  const moCollapsed = !openMonths.has(mo.month);
                   return (
                     <Fragment key={mo.month}>
                       <tr className="month-group-row" onClick={() => toggleMonth(mo.month)}>
@@ -682,7 +684,7 @@ export default function Bets() {
                         </td>
                       </tr>
                       {!moCollapsed && mo.days.map((g) => {
-                        const dCollapsed = collapsedDays.has(g.day);
+                        const dCollapsed = !openDays.has(g.day);
                         return (
                           <Fragment key={g.day}>
                             <tr className="day-group-row" onClick={() => toggleDay(g.day)}>
@@ -707,7 +709,7 @@ export default function Bets() {
           {/* Mobile: cards grouped by month, then by day, so a long history stays tidy. */}
           <div className="bets-cards">
             {grouped.map((mo) => {
-              const moCollapsed = collapsedMonths.has(mo.month);
+              const moCollapsed = !openMonths.has(mo.month);
               return (
                 <div key={mo.month} className="month-group">
                   <button type="button" className="month-head" onClick={() => toggleMonth(mo.month)}>
@@ -718,7 +720,7 @@ export default function Bets() {
                     <span className={profitClass(mo.profit)} style={{ fontWeight: 800 }}>{signedProfit(mo.profit)}</span>
                   </button>
                   {!moCollapsed && mo.days.map((g) => {
-                    const dCollapsed = collapsedDays.has(g.day);
+                    const dCollapsed = !openDays.has(g.day);
                     return (
                       <div key={g.day} className="day-group">
                         <button type="button" className="day-head day-sub" onClick={() => toggleDay(g.day)}>
