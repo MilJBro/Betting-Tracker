@@ -98,6 +98,8 @@ ensureColumn('bets', 'legs', 'TEXT');
 ensureColumn('bets', 'each_way', 'INTEGER NOT NULL DEFAULT 0');
 ensureColumn('bets', 'ew_fraction', 'TEXT');
 ensureColumn('bets', 'ew_places', 'INTEGER');
+// Winnings boost applied to the return (e.g. 0.25 for a bookmaker's +25% offer).
+ensureColumn('bets', 'boost', 'REAL NOT NULL DEFAULT 0');
 
 // --- One-off data migration: give every user a default tracker and adopt any
 // bets that predate trackers. Idempotent — safe to run on every boot.

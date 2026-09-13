@@ -11,6 +11,9 @@ function ewFraction(frac) {
 export function settlePayout(bet, status) {
   const stake = Number(bet.stake) || 0;
   const odds = Number(bet.odds) || 0;
+  const boost = Number(bet.boost) || 0; // winnings (profit) boost, e.g. 0.25 = +25%
+  // A winnings boost adds to the profit part only — stake back is unchanged.
+  const withBoost = (ret) => stake + Math.max(0, ret - stake) * (1 + boost);
   if (status === 'lost') return 0;
   if (status === 'void') return stake; // stake returned in full
   if (bet.each_way) {
@@ -18,10 +21,10 @@ export function settlePayout(bet, status) {
     const placeMult = 1 + (odds - 1) * ewFraction(bet.ew_fraction);
     const winReturn = perPart * odds;
     const placeReturn = perPart * placeMult;
-    if (status === 'placed') return round2(placeReturn);
-    if (status === 'won') return round2(winReturn + placeReturn);
+    if (status === 'placed') return round2(withBoost(placeReturn));
+    if (status === 'won') return round2(withBoost(winReturn + placeReturn));
   }
-  if (status === 'won') return round2(stake * odds);
+  if (status === 'won') return round2(withBoost(stake * odds));
   if (status === 'placed') return round2(stake); // non-each-way place ≈ stake back
   return '';
 }
