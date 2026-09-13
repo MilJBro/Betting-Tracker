@@ -499,7 +499,6 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                         onChange={(v) => setLeg(i, 'selection', v)}
                         options={suggestions.selections}
                         ariaLabel={`Selection ${i + 1}`}
-                        placeholder="e.g. Player to score"
                       />
                       <button
                         type="button" className="btn-ghost btn-sm leg-x"
