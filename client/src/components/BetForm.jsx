@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { currencySymbol, money, formatOdds, parseOdds } from '../format.js';
 import AutocompleteInput from './AutocompleteInput.jsx';
 
@@ -340,6 +340,37 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
     }
   }
 
+  // Keep the sheet fitted to the VISIBLE viewport (above the on-screen
+  // keyboard). iOS shrinks the visual viewport when the keyboard opens but not
+  // the layout viewport, so a vh-sized fixed sheet would hide its bottom (the
+  // Add button) behind the keyboard with no way to scroll to it. Sizing the
+  // overlay to visualViewport.height makes the sheet's own scroll reveal it.
+  const overlayRef = useRef(null);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const apply = () => {
+      const el = overlayRef.current;
+      if (!el) return;
+      el.style.height = `${vv.height}px`;
+      el.style.top = `${vv.offsetTop}px`;
+    };
+    apply();
+    vv.addEventListener('resize', apply);
+    vv.addEventListener('scroll', apply);
+    return () => {
+      vv.removeEventListener('resize', apply);
+      vv.removeEventListener('scroll', apply);
+    };
+  }, []);
+
+  // Bring the field you tap into view within the sheet once the keyboard is up.
+  const onFieldFocus = (e) => {
+    const t = e.target;
+    if (!t.matches || !t.matches('input, select, textarea')) return;
+    setTimeout(() => t.scrollIntoView({ block: 'center', behavior: 'smooth' }), 120);
+  };
+
   function addTag() {
     const t = tagInput.trim();
     if (t && !form.tags.includes(t)) set('tags', [...form.tags, t]);
@@ -347,13 +378,13 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
   }
 
   return (
-    <div className="modal-overlay" onMouseDown={onClose}>
+    <div className="modal-overlay" ref={overlayRef} onMouseDown={onClose}>
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="row spread" style={{ marginBottom: 12 }}>
           <h2 style={{ margin: 0, fontSize: 20 }}>{isEdit ? 'Edit bet' : 'Add a bet'}</h2>
           <button className="btn-ghost btn-sm" type="button" onClick={onClose}>✕</button>
         </div>
-        <form onSubmit={submit} className="betform">
+        <form onSubmit={submit} className="betform" onFocusCapture={onFieldFocus}>
           <div className="grid-2 betgrid">
             <div className="field">
               <label>Date</label>
