@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { currencySymbol, money, formatOdds, parseOdds } from '../format.js';
 import AutocompleteInput from './AutocompleteInput.jsx';
 
@@ -377,7 +378,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
     setTagInput('');
   }
 
-  return (
+  return createPortal(
     <div className="modal-overlay" ref={overlayRef} onMouseDown={onClose}>
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="row spread" style={{ marginBottom: 12 }}>
@@ -771,6 +772,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
