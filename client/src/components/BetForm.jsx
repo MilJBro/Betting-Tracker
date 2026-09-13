@@ -391,6 +391,22 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
     setTagInput('');
   }
 
+  // Wipe the slip back to a fresh blank bet (keeping the user's defaults), for
+  // when you've filled it out but need to start over.
+  function clearForm() {
+    const base = blank();
+    if (defaultDate) base.placed_at = defaultDate;
+    if (defaults?.stake !== '' && defaults?.stake != null) base.stake = String(defaults.stake);
+    if (defaults?.bookmaker) base.bookmaker = defaults.bookmaker;
+    setForm(base);
+    setLegs([{ selection: '', odds: '' }, { selection: '', odds: '' }]);
+    setKind('single');
+    setHome(''); setAway(''); setCourse(''); setRaceTime('');
+    setOtherSport(false);
+    setTagInput('');
+    setPayoutTouched(false);
+  }
+
   return createPortal(
     <div className="modal-overlay" ref={overlayRef} onMouseDown={onClose}>
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
@@ -813,11 +829,16 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
             </div>
           )}
 
-          <div className="row" style={{ justifyContent: 'flex-end', marginTop: 8 }}>
-            <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add bet'}
-            </button>
+          <div className="row spread" style={{ marginTop: 8 }}>
+            {!isEdit ? (
+              <button type="button" className="btn-ghost" onClick={clearForm}>Clear</button>
+            ) : <span />}
+            <div className="row" style={{ gap: 8 }}>
+              <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
+              <button type="submit" className="btn-primary" disabled={saving}>
+                {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add bet'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
