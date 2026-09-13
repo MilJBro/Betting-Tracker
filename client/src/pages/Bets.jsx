@@ -70,6 +70,7 @@ export default function Bets() {
   // Filtering / search / sort state
   const [status, setStatus] = useState('all');
   const [statusMenu, setStatusMenu] = useState(false);
+  const [sortMenu, setSortMenu] = useState(false);
   const [search, setSearch] = useState('');
   const [sport, setSport] = useState('');
   const [bookie, setBookie] = useState('');
@@ -552,6 +553,34 @@ export default function Bets() {
                       onClick={() => { setStatus(f); setStatusMenu(false); }}
                     >
                       {statusFilterLabel(f)}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="data-menu status-menu">
+            <button
+              className="btn-sm status-toggle btn-ghost"
+              onClick={() => setSortMenu((v) => !v)}
+              aria-haspopup="true"
+              aria-expanded={sortMenu}
+            >
+              Sort: {SORTS.find((s) => s.key === sortBy)?.label}{sortArrow(sortBy)} <span aria-hidden="true">▾</span>
+            </button>
+            {sortMenu && (
+              <>
+                <div className="data-menu-backdrop" onClick={() => setSortMenu(false)} />
+                <div className="data-menu-pop" role="menu">
+                  {SORTS.map((s) => (
+                    <button
+                      key={s.key}
+                      role="menuitem"
+                      className={sortBy === s.key ? 'on' : ''}
+                      onClick={() => toggleSort(s.key)}
+                    >
+                      {s.label}{sortArrow(s.key)}
                     </button>
                   ))}
                 </div>
