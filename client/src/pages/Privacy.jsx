@@ -63,7 +63,7 @@ export default function Privacy() {
 
       <h2>8. Your rights</h2>
       <p>
-        You can access and edit your data in the app at any time, and export your bets to CSV. You
+        You can access and edit your data in the app at any time, and export a copy of your data. You
         can ask us to delete your account and associated data. Depending on where you live, you may
         also have rights to object to or restrict certain processing, or to complain to your data
         protection regulator (in the UK, the ICO).

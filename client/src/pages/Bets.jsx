@@ -487,24 +487,9 @@ export default function Bets() {
           <p>{bets.length} bet{bets.length !== 1 ? 's' : ''} logged.</p>
         </div>
         <div className="row" style={{ gap: 8 }}>
-          <div className="data-menu">
-            <button className="btn-ghost" onClick={() => setDataMenu((v) => !v)} disabled={importing} aria-haspopup="true" aria-expanded={dataMenu}>
-              {importing ? 'Importing…' : 'Data'} <span aria-hidden="true">▾</span>
-            </button>
-            {dataMenu && (
-              <>
-                <div className="data-menu-backdrop" onClick={() => setDataMenu(false)} />
-                <div className="data-menu-pop" role="menu">
-                  <button role="menuitem" onClick={exportCsv}>
-                    Export CSV{!isPro && <span className="pro-pill">Pro</span>}
-                  </button>
-                  <button role="menuitem" onClick={() => { setDataMenu(false); csvRef.current?.click(); }}>
-                    Import CSV{!isPro && <span className="pro-pill">Pro</span>}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          {/* CSV import/export is parked for now — the Data button is hidden
+              until the feature ships. The handlers below stay in place so it's
+              a one-line change to bring it back. */}
           <button className="btn-primary" onClick={openNew}>+ Add bet</button>
         </div>
       </div>
