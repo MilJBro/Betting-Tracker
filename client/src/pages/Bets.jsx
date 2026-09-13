@@ -558,65 +558,7 @@ export default function Bets() {
               </>
             )}
           </div>
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search selection, event, bookie, notes…"
-          />
-          <button
-            className={showFilters || activeFilters ? 'btn-accent btn-sm' : 'btn-ghost btn-sm'}
-            onClick={() => setShowFilters((v) => !v)}
-            style={{ flex: 'none', whiteSpace: 'nowrap' }}
-          >
-            Filters{activeFilters ? ' •' : ''}
-          </button>
         </div>
-
-        {showFilters && (
-          <div className="card" style={{ padding: 14 }}>
-            <div className="grid-2">
-              <div className="field" style={{ margin: 0 }}>
-                <label>Sport / category</label>
-                <select value={sport} onChange={(e) => setSport(e.target.value)}>
-                  <option value="">All sports</option>
-                  {sportOptions.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div className="field" style={{ margin: 0 }}>
-                <label>Bookmaker</label>
-                <select value={bookie} onChange={(e) => setBookie(e.target.value)}>
-                  <option value="">All bookmakers</option>
-                  {bookieOptions.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div className="field" style={{ margin: 0 }}>
-                <label>From date</label>
-                <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-              </div>
-              <div className="field" style={{ margin: 0 }}>
-                <label>To date</label>
-                <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-              </div>
-              <div className="field" style={{ margin: 0 }}>
-                <label>Sort by</label>
-                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                  {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-                </select>
-              </div>
-              <div className="field" style={{ margin: 0 }}>
-                <label>Order</label>
-                <select value={sortDir} onChange={(e) => setSortDir(e.target.value)}>
-                  <option value="desc">High → low / Newest</option>
-                  <option value="asc">Low → high / Oldest</option>
-                </select>
-              </div>
-            </div>
-            {activeFilters && (
-              <button className="btn-ghost btn-sm" onClick={clearFilters} style={{ marginTop: 12 }}>Clear filters</button>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Live summary of the current slice */}
@@ -647,9 +589,9 @@ export default function Bets() {
         {filtered.length === 0 ? (
           <div className="empty">
             <div className="em"><Icon name="search" size={40} /></div>
-            <h3>No bets match</h3>
-            <p>Try a different search or clear your filters.</p>
-            {activeFilters && <button className="btn-ghost btn-sm" onClick={clearFilters} style={{ marginTop: 8 }}>Clear filters</button>}
+            <h3>No {status === 'all' ? '' : statusFilterLabel(status).toLowerCase() + ' '}bets</h3>
+            <p>{status === 'all' ? 'Add a bet to see it here.' : 'Nothing matches this status.'}</p>
+            {status !== 'all' && <button className="btn-ghost btn-sm" onClick={() => setStatus('all')} style={{ marginTop: 8 }}>Show all bets</button>}
           </div>
         ) : (
           <>
