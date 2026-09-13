@@ -21,7 +21,7 @@ import {
 
 const router = Router();
 
-const publicUser = (row) => ({ id: row.id, email: row.email, username: row.username, plan: row.plan || 'free' });
+const publicUser = (row) => ({ id: row.id, email: row.email, username: row.username, created_at: row.created_at, plan: row.plan || 'free' });
 const hashToken = (t) => createHash('sha256').update(t).digest('hex');
 
 router.post('/register', (req, res) => {
@@ -46,7 +46,7 @@ router.post('/register', (req, res) => {
   );
   ensureDefaultTracker(id); // every account starts with one tracker
 
-  const user = { id, email: normEmail, username: username.trim(), token_version: 0 };
+  const user = { id, email: normEmail, username: username.trim(), created_at: now, token_version: 0 };
   res.status(201).json({ token: signToken(user), user: publicUser(user) });
 });
 
