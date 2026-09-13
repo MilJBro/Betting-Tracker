@@ -6,6 +6,7 @@ import { useTracker } from '../context/TrackerContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import BetForm from '../components/BetForm.jsx';
+import BetPreview from '../components/BetPreview.jsx';
 import SettleControls from '../components/SettleControls.jsx';
 import PendingReminder from '../components/PendingReminder.jsx';
 import { settlePayout } from '../settle.js';
@@ -54,6 +55,7 @@ export default function Bets() {
   const [loading, setLoading] = useState(() => !getCached('bets:' + activeId));
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [prefill, setPrefill] = useState(null);
   const [template, setTemplate] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -576,32 +578,35 @@ export default function Bets() {
               ].filter(Boolean).join(' · ');
               return (
                 <div key={b.id} className={'bet-card' + (selected.has(b.id) ? ' row-selected' : '')}>
-                  <div className="row spread" style={{ gap: 10, alignItems: 'flex-start' }}>
-                    <div className="row" style={{ gap: 8, alignItems: 'flex-start', minWidth: 0 }}>
-                      {b.status === 'pending' && (
-                        <input
-                          type="checkbox"
-                          checked={selected.has(b.id)}
-                          onChange={() => toggleOne(b.id)}
-                          aria-label={`Select bet ${title}`}
-                          style={{ width: 'auto', margin: '3px 0 0' }}
-                        />
-                      )}
-                      <div style={{ minWidth: 0 }}>
-                        <div className="bet-card-title">{title}</div>
-                        <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{sub}</div>
+                  <div className="bet-card-tap" onClick={() => setPreview(b)}>
+                    <div className="row spread" style={{ gap: 10, alignItems: 'flex-start' }}>
+                      <div className="row" style={{ gap: 8, alignItems: 'flex-start', minWidth: 0 }}>
+                        {b.status === 'pending' && (
+                          <input
+                            type="checkbox"
+                            checked={selected.has(b.id)}
+                            onChange={() => toggleOne(b.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label={`Select bet ${title}`}
+                            style={{ width: 'auto', margin: '3px 0 0' }}
+                          />
+                        )}
+                        <div style={{ minWidth: 0 }}>
+                          <div className="bet-card-title">{title}</div>
+                          <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{sub}</div>
+                        </div>
                       </div>
+                      {col('status') && <span className={`badge ${b.status}`}>{b.status}</span>}
                     </div>
-                    {col('status') && <span className={`badge ${b.status}`}>{b.status}</span>}
-                  </div>
 
-                  <div className="bet-card-figs">
-                    {col('stake') && <div><span className="bcf-label">Stake</span><span className="bcf-val">{formatStake(b.stake, currency, staking)}</span></div>}
-                    {col('odds') && <div><span className="bcf-label">Odds</span><span className="bcf-val">{formatOdds(b.odds, oddsFormat)}</span></div>}
-                    <div><span className="bcf-label">Profit</span><span className={`bcf-val ${p > 0 ? 'pos' : p < 0 ? 'neg' : 'muted'}`}>{p == null ? '—' : formatStake(p, currency, staking, { signed: true })}</span></div>
-                  </div>
+                    <div className="bet-card-figs">
+                      {col('stake') && <div><span className="bcf-label">Stake</span><span className="bcf-val">{formatStake(b.stake, currency, staking)}</span></div>}
+                      {col('odds') && <div><span className="bcf-label">Odds</span><span className="bcf-val">{formatOdds(b.odds, oddsFormat)}</span></div>}
+                      <div><span className="bcf-label">Profit</span><span className={`bcf-val ${p > 0 ? 'pos' : p < 0 ? 'neg' : 'muted'}`}>{p == null ? '—' : formatStake(p, currency, staking, { signed: true })}</span></div>
+                    </div>
 
-                  {extra && <div className="muted" style={{ fontSize: 12 }}>{extra}</div>}
+                    {extra && <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>{extra}</div>}
+                  </div>
 
                   <div className="bet-card-actions">
                     {b.status === 'pending' && <SettleControls bet={b} onSettle={(status) => settle(b, status)} />}
@@ -618,6 +623,18 @@ export default function Bets() {
         )}
       </div>
       </>
+      )}
+
+      {preview && (
+        <BetPreview
+          bet={preview}
+          currency={currency}
+          staking={staking}
+          oddsFormat={oddsFormat}
+          profit={profitOf(preview)}
+          onEdit={() => { openEdit(preview); setPreview(null); }}
+          onClose={() => setPreview(null)}
+        />
       )}
 
       {showForm && (
