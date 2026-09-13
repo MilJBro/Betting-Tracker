@@ -325,7 +325,10 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
   border-bottom: 1px solid var(--border);
 }
 .month-group:first-child .month-head { padding-top: 4px; }
-.day-head { font-weight: 700; font-size: 12.5px; padding: 9px 2px 6px 14px; }
+.day-head { font-weight: 700; font-size: 13px; padding: 14px 4px 14px 14px; }
+/* A faint divider between consecutive day rows widens the gap between tap
+   targets so an adjacent date isn't hit by accident. */
+.day-group + .day-group { border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent); }
 .day-head.day-sub .day-chevron { font-size: 9px; }
 .day-head-l { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .day-chevron { color: var(--muted); font-size: 10px; width: 10px; flex: none; }
