@@ -107,7 +107,6 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
     const base = blank();
     // Pre-fill a brand-new bet (not an edit or a scan) with the user's defaults.
     if (!initial) {
-      if (defaultDate) base.placed_at = defaultDate; // keep the last date when adding several
       if (defaults?.stake !== '' && defaults?.stake != null) base.stake = String(defaults.stake);
       if (defaults?.bookmaker) base.bookmaker = defaults.bookmaker;
       // A quick-add template seeds the starting fields for a new bet.
@@ -177,36 +176,9 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
   const sportOption = sports.find((s) => s.toLowerCase() === (form.sport || '').trim().toLowerCase()) || '';
   const [otherSport, setOtherSport] = useState(() => !!(form.sport || '').trim() && !sportOption);
 
-  // Autocomplete suggestions drawn ONLY from bets in the same sport, so a
-  // football team never shows up on the horse-racing slip and vice versa.
-  // Teams come from head-to-head events, courses from racing events, and
-  // selections (players / runners / picks) from every bet in that sport.
-  const suggestions = useMemo(() => {
-    const key = (form.sport || '').trim().toLowerCase();
-    const teams = new Map(), selections = new Map(), courses = new Map(), events = new Map();
-    const push = (map, v) => {
-      const val = (v || '').trim();
-      if (!val) return;
-      const k = val.toLowerCase();
-      if (!map.has(k)) map.set(k, val);
-    };
-    if (key) {
-      for (const b of bets) {
-        if ((b.sport || '').trim().toLowerCase() !== key) continue;
-        const lay = sportLayout(b.sport);
-        if (lay === 'versus') {
-          String(b.event || '').split(/\s+v(?:s\.?|ersus)?\s+/i).map((s) => s.trim()).filter(Boolean).forEach((t) => push(teams, t));
-        } else if (lay === 'racing') {
-          push(courses, splitRace(b.event).course);
-        } else {
-          push(events, b.event);
-        }
-        push(selections, b.selection);
-      }
-    }
-    const sorted = (m) => [...m.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-    return { teams: sorted(teams), selections: sorted(selections), courses: sorted(courses), events: sorted(events) };
-  }, [bets, form.sport]);
+  // Suggestions from previous bets are intentionally disabled — the fields are
+  // plain text inputs with no remembered-value dropdown.
+  const suggestions = { teams: [], selections: [], courses: [], events: [] };
 
   // Which preset unit the current stake matches, so the quick-pick shows the
   // chosen unit instead of snapping back to the placeholder. '' when custom.
@@ -409,7 +381,6 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
   // when you've filled it out but need to start over.
   function clearForm() {
     const base = blank();
-    if (defaultDate) base.placed_at = defaultDate;
     if (defaults?.stake !== '' && defaults?.stake != null) base.stake = String(defaults.stake);
     if (defaults?.bookmaker) base.bookmaker = defaults.bookmaker;
     setForm(base);
@@ -681,14 +652,11 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
             <div className="field">
               <label>Bookmaker</label>
               <input
-                list="bookmaker-options"
                 value={form.bookmaker}
                 onChange={(e) => set('bookmaker', e.target.value)}
                 aria-label="Bookmaker"
+                autoComplete="off"
               />
-              <datalist id="bookmaker-options">
-                {bookmakers.map((b) => <option key={b} value={b} />)}
-              </datalist>
             </div>
           )}
 
