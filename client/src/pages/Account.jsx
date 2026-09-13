@@ -11,7 +11,6 @@ import CheckoutModal from '../components/CheckoutModal.jsx';
 const PRO_FEATURE_LABELS = [
   'Multiple trackers (one per tipster or strategy)',
   'Advanced analytics (date ranges, filters, bankroll growth)',
-  'CSV import & export',
   'Custom share page (no badge)',
 ];
 
