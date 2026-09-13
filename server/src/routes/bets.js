@@ -40,16 +40,26 @@ function sanitise(body) {
   };
   const status = STATUSES.includes(body.status) ? body.status : 'pending';
 
-  // Accumulator: derive combined odds (product of legs) and a selection summary.
+  // Multi-selection bets carry their picks in `legs`.
+  //  · Accumulator: selections from different games — combined odds are the
+  //    product of each leg's odds.
+  //  · Bet builder: selections within the SAME game, priced by the bookmaker as
+  //    one combined price, so we keep the odds the user entered.
   const legs = cleanLegs(body.legs);
-  const isAcca = legs.length >= 2;
+  const requestedType = (body.bet_type || '').trim();
+  const isBuilder = requestedType === 'Bet builder' && legs.length >= 2;
+  const isAcca = !isBuilder && legs.length >= 2;
   let odds = num(body.odds);
   let selection = (body.selection || '').trim();
-  let bet_type = (body.bet_type || '').trim();
+  let bet_type = requestedType;
   if (isAcca) {
     odds = Number(legs.reduce((p, l) => p * (l.odds || 1), 1).toFixed(3));
     if (!selection) selection = legs.map((l) => l.selection).filter(Boolean).join(' / ');
     bet_type = 'Accumulator';
+  } else if (isBuilder) {
+    // Odds stay as the single combined price the user entered.
+    if (!selection) selection = legs.map((l) => l.selection).filter(Boolean).join(' / ');
+    bet_type = 'Bet builder';
   }
 
   // Each-way: total outlay (Win + Place) is stored in `stake`. The client
