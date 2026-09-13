@@ -238,17 +238,10 @@ export default function Analytics() {
         </ResponsiveContainer>
       </div>
 
-      <div className="grid-2">
-        {/* By odds band */}
-        <div className="card">
-          <h3 className="section-title">By odds range</h3>
-          <Bars rows={a.byOddsBand.map((o) => ({ ...o, label: o.band }))} currency={currency} staking={staking} />
-        </div>
-        {/* By bookmaker */}
-        <div className="card">
-          <h3 className="section-title">By bookmaker</h3>
-          <Bars rows={a.byBookmaker.map((b) => ({ ...b, label: b.bookmaker }))} currency={currency} staking={staking} />
-        </div>
+      {/* By odds band */}
+      <div className="card">
+        <h3 className="section-title">By odds range</h3>
+        <Bars rows={a.byOddsBand.map((o) => ({ ...o, label: o.band }))} currency={currency} staking={staking} />
       </div>
 
       {/* By tipster — only when some bets name a tipster */}
