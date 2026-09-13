@@ -306,6 +306,16 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 .legal-body a { color: var(--primary); }
 .legal-foot { margin-top: 44px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; }
 
+/* Bets list: table on desktop, stacked cards on mobile (no sideways scroll). */
+.bets-cards { display: none; }
+.bet-card { display: flex; flex-direction: column; gap: 9px; padding: 14px 2px; border-bottom: 1px solid var(--border); }
+.bet-card:last-child { border-bottom: none; }
+.bet-card.row-selected { background: color-mix(in srgb, var(--primary) 9%, transparent); border-radius: var(--radius-sm); padding-left: 10px; padding-right: 10px; }
+.bet-card-figs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.bcf-label { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; }
+.bcf-val { display: block; font-size: 15px; font-weight: 700; margin-top: 2px; }
+.bet-card-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 10px; }
+
 /* On-slip "Edit fields" panel: pick which fields show when adding a bet. */
 .field-editor { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px; }
 .ftog-row { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -434,6 +444,9 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
   .grid-2 { grid-template-columns: 1fr; }
   .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
   .page-head h1 { font-size: 23px; }
+  /* Bets list becomes stacked cards on phones. */
+  .bets-table { display: none; }
+  .bets-cards { display: flex; flex-direction: column; }
   /* Compact the home overview so it fits one screen without scrolling. */
   .main .card { padding: 15px; }
   .stat { padding: 13px 14px; }
