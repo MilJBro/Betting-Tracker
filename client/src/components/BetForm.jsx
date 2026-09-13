@@ -107,6 +107,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
     const base = blank();
     // Pre-fill a brand-new bet (not an edit or a scan) with the user's defaults.
     if (!initial) {
+      if (defaultDate) base.placed_at = defaultDate; // keep the last date when adding several
       if (defaults?.stake !== '' && defaults?.stake != null) base.stake = String(defaults.stake);
       if (defaults?.bookmaker) base.bookmaker = defaults.bookmaker;
       // A quick-add template seeds the starting fields for a new bet.
@@ -381,6 +382,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
   // when you've filled it out but need to start over.
   function clearForm() {
     const base = blank();
+    if (defaultDate) base.placed_at = defaultDate;
     if (defaults?.stake !== '' && defaults?.stake != null) base.stake = String(defaults.stake);
     if (defaults?.bookmaker) base.bookmaker = defaults.bookmaker;
     setForm(base);
