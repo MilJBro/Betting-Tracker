@@ -63,6 +63,9 @@ export const config = {
   // fine with the free tier and the upgrade CTA is hidden.
   stripe: {
     secretKey: process.env.STRIPE_SECRET_KEY || '',
+    // Publishable key (pk_...) — safe to expose to the browser. Needed to load
+    // Stripe.js for the embedded, on-site checkout form.
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
     priceId: process.env.STRIPE_PRICE_ID || '',
     // Human-readable price for the upgrade button, e.g. "£3.99 / month".

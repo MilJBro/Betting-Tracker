@@ -11,23 +11,26 @@ function notConfigured(res) {
   return res.status(400).json({ error: 'Billing is not set up yet.' });
 }
 
-// Start a Stripe Checkout session for the Pro subscription; returns the URL to
-// redirect the browser to.
+// Start a Stripe Checkout session for the Pro subscription. Uses embedded UI
+// mode so the payment form renders inside our own page (Stripe.js mounts it in
+// an iframe) rather than redirecting away; returns the session client secret.
 router.post('/checkout', async (req, res) => {
   if (!billingEnabled) return notConfigured(res);
   if (isPro(req.userId)) return res.status(400).json({ error: 'You already have Pro.' });
   try {
     const customer = await ensureCustomer(req.userId);
     const session = await stripe.checkout.sessions.create({
+      ui_mode: 'embedded',
       mode: 'subscription',
       customer,
       line_items: [{ price: config.stripe.priceId, quantity: 1 }],
       client_reference_id: req.userId,
       allow_promotion_codes: true,
-      success_url: `${config.appUrl}/account?upgrade=success`,
-      cancel_url: `${config.appUrl}/account?upgrade=cancelled`,
+      // After payment Stripe returns the top window here; the Account page reads
+      // ?upgrade=success to show the confirmation and refresh the plan.
+      return_url: `${config.appUrl}/account?upgrade=success&session_id={CHECKOUT_SESSION_ID}`,
     });
-    res.json({ url: session.url });
+    res.json({ clientSecret: session.client_secret });
   } catch (err) {
     console.error('checkout error', err.message);
     res.status(502).json({ error: 'Could not start checkout. Please try again.' });
