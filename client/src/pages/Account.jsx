@@ -4,6 +4,7 @@ import { api, setToken, getToken } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { usePlan } from '../usePlan.js';
+import { getCached, setCached } from '../dataCache.js';
 import { formatDate } from '../format.js';
 
 const PRO_FEATURE_LABELS = [
@@ -27,10 +28,14 @@ export default function Account() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const signOut = () => { logout(); navigate('/'); };
-  const [info, setInfo] = useState(null);
+  const [info, setInfo] = useState(() => getCached('accountInfo') ?? null);
   const [planMsg, setPlanMsg] = useState('');
   const [planBusy, setPlanBusy] = useState(false);
   const billing = ent?.billing;
+  // Know the plan from the auth context immediately (user.plan) so the correct
+  // Plan section renders on the first paint — the /plan fetch only refines the
+  // billing details. This stops the upgrade CTA popping in and shoving the page.
+  const isPro = ent ? !!ent.pro : user?.plan === 'pro';
 
   // Returning from Stripe Checkout (?upgrade=success|cancelled).
   useEffect(() => {
@@ -96,7 +101,7 @@ export default function Account() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    api.get('/auth/me').then((d) => setInfo(d.user)).catch(() => {});
+    api.get('/auth/me').then((d) => { setInfo(d.user); setCached('accountInfo', d.user); }).catch(() => {});
   }, []);
 
   async function changePassword(e) {
@@ -198,10 +203,10 @@ export default function Account() {
       <div className="card" style={{ marginBottom: 18 }}>
         <div className="row spread" style={{ marginBottom: 4 }}>
           <h3 className="section-title" style={{ margin: 0 }}>Plan</h3>
-          <span className={`badge ${ent?.pro ? 'won' : ''}`} style={{ textTransform: 'none' }}>{ent?.pro ? 'Pro' : 'Free'}</span>
+          <span className={`badge ${isPro ? 'won' : ''}`} style={{ textTransform: 'none' }}>{isPro ? 'Pro' : 'Free'}</span>
         </div>
         {planMsg && <div className="muted" style={{ fontSize: 13, marginBottom: 8 }}>{planMsg}</div>}
-        {ent && !ent.pro && (
+        {!isPro && (
           <div style={{ marginTop: 12 }}>
             <div style={{ fontWeight: 700, marginBottom: 8 }}>
               Upgrade to Pro{billing?.priceLabel ? <span className="muted" style={{ fontWeight: 500 }}> · {billing.priceLabel}</span> : ''}
@@ -209,10 +214,10 @@ export default function Account() {
             <ul className="muted" style={{ margin: '0 0 12px', paddingLeft: 18, fontSize: 13, lineHeight: 1.7 }}>
               {PRO_FEATURE_LABELS.map((f) => <li key={f}>{f}</li>)}
             </ul>
-            <button className="btn-primary" onClick={doUpgrade} disabled={planBusy}>{planBusy ? 'Working…' : 'Upgrade to Pro'}</button>
+            <button className="btn-primary" onClick={doUpgrade} disabled={planBusy || !ent}>{planBusy ? 'Working…' : 'Upgrade to Pro'}</button>
           </div>
         )}
-        {ent && ent.pro && (
+        {isPro && (
           <>
             <p className="muted" style={{ marginTop: 10, fontSize: 13 }}>You have all Pro features. Thanks for supporting Betbooks.</p>
             {billing?.enabled ? (
