@@ -488,7 +488,6 @@ export default function Bets() {
       <div className="page-head">
         <div>
           <h1>My bets</h1>
-          <p>{bets.length} bet{bets.length !== 1 ? 's' : ''} logged.</p>
         </div>
         <div className="row" style={{ gap: 8 }}>
           {/* CSV import/export is parked for now — the Data button is hidden
@@ -621,6 +620,10 @@ export default function Bets() {
       </div>
 
       {/* Live summary of the current slice */}
+      <div className="row spread" style={{ marginBottom: 8, alignItems: 'baseline' }}>
+        <h3 className="section-title" style={{ margin: 0 }}>Overview</h3>
+        <span className="muted" style={{ fontSize: 13 }}>{bets.length} bet{bets.length !== 1 ? 's' : ''} logged</span>
+      </div>
       <div className="stat-grid" style={{ marginBottom: 16 }}>
         <div className="stat"><div className="label">Showing</div><div className="value">{summary.count}</div><div className="sub">of {bets.length} bets</div></div>
         <div className="stat"><div className="label">Staked</div><div className="value">{formatStake(summary.staked, currency, staking)}</div></div>
