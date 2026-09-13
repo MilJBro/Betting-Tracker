@@ -489,7 +489,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
               <div className="grid-2 betgrid">
                 <div className="field">
                   <label>Course / track</label>
-                  <AutocompleteInput value={course} onChange={setCourse} options={suggestions.courses} ariaLabel="Course or track" placeholder="e.g. Ascot" />
+                  <AutocompleteInput value={course} onChange={setCourse} options={suggestions.courses} ariaLabel="Course or track" />
                 </div>
                 <div className="field">
                   <label>Time <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
@@ -519,7 +519,7 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
                 {show('selection') && (
                   <div className="field">
                     <label>{layout === 'racing' ? 'Horse / runner' : versus ? 'Selection' : 'Your selection'}</label>
-                    <AutocompleteInput value={form.selection} onChange={(v) => set('selection', v)} options={suggestions.selections} ariaLabel="Selection" placeholder={layout === 'racing' ? 'e.g. Constitution Hill' : undefined} />
+                    <AutocompleteInput value={form.selection} onChange={(v) => set('selection', v)} options={suggestions.selections} ariaLabel="Selection" />
                   </div>
                 )}
                 {show('odds') && (
