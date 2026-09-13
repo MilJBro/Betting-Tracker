@@ -50,7 +50,7 @@ function Sidebar() {
       ))}
       <div className="nav-spacer" />
       <div className="nav-link" style={{ cursor: 'default', fontSize: 13 }}>{user?.username}</div>
-      <div className="nav-link" onClick={() => { logout(); navigate('/'); }}>↪ Log out</div>
+      <div className="nav-link" onClick={() => { logout(); navigate('/'); }}>Log out</div>
     </aside>
   );
 }

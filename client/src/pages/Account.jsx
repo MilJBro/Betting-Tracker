@@ -163,7 +163,7 @@ export default function Account() {
           <h1>Account</h1>
           <p>Manage your login and your data.</p>
         </div>
-        <button className="btn-ghost" onClick={signOut}>↪ Log out</button>
+        <button className="btn-ghost" onClick={signOut}>Log out</button>
       </div>
 
       <button
