@@ -64,6 +64,7 @@ export default function TrackerBar() {
     } catch (e) {
       if (e.status === 402 || e.data?.upgrade) {
         setManage(false);
+        setDrawer(false);
         toast('Multiple trackers is a Pro feature', 'info');
         navigate('/account');
       } else { toast(e.message, 'error'); }
@@ -128,7 +129,7 @@ export default function TrackerBar() {
               <button
                 className="drawer-item drawer-new"
                 type="button"
-                onClick={() => { setDrawer(false); openManage('new'); }}
+                onClick={() => openManage('new')}
               >
                 <span className="di-ic di-ic-add" aria-hidden="true">+</span>
                 <span className="di-name">New tracker</span>
@@ -136,7 +137,7 @@ export default function TrackerBar() {
             </div>
 
             <div className="drawer-foot">
-              <button className="drawer-link" type="button" onClick={() => { setDrawer(false); openManage('edit'); }}>
+              <button className="drawer-link" type="button" onClick={() => openManage('edit')}>
                 <Icon name="edit" size={18} /> Manage tracker
               </button>
               <button className="drawer-link" type="button" onClick={goSettings}>
@@ -151,7 +152,7 @@ export default function TrackerBar() {
       )}
 
       {manage && (
-        <div className="modal-overlay" onMouseDown={() => !busy && setManage(false)}>
+        <div className="modal-overlay" style={{ zIndex: 70 }} onMouseDown={() => !busy && setManage(false)}>
           <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="row spread" style={{ marginBottom: 18 }}>
               <h2 style={{ margin: 0, fontSize: 20 }}>{manageMode === 'new' ? 'New tracker' : 'Manage tracker'}</h2>
