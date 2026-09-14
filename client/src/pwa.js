@@ -17,6 +17,14 @@ if (typeof window !== 'undefined') {
     deferredPrompt = null;
     notify();
   });
+  // iOS Safari (and the installed app) can restore the page from the back/
+  // forward cache as a frozen, blank shell when it's reopened after being
+  // suspended for a while — showing a white screen until it's force-quit.
+  // When the page is restored from that cache (event.persisted), reload it so
+  // the app boots fresh instead of sitting blank.
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) window.location.reload();
+  });
 }
 
 // Register the (no-op) service worker so browsers consider the app installable.
