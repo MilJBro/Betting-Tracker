@@ -97,7 +97,16 @@ export default function TrackerBar() {
               <Logo />
               <button className="btn-ghost btn-sm" type="button" onClick={() => setDrawer(false)} aria-label="Close menu">✕</button>
             </div>
-            <div className="drawer-label">Your trackers</div>
+            <div className="drawer-label-row">
+              <span className="drawer-label">Your trackers</span>
+              <button
+                className="drawer-add"
+                type="button"
+                onClick={() => { setDrawer(false); openManage(); }}
+                aria-label="Add a new tracker"
+                title="Add a new tracker"
+              >+</button>
+            </div>
             <div className="drawer-list">
               {trackers.map((t) => (
                 <button
