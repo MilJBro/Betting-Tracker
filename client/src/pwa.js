@@ -17,28 +17,12 @@ if (typeof window !== 'undefined') {
     deferredPrompt = null;
     notify();
   });
-  // iOS Safari (and the installed app) can restore the page from the back/
-  // forward cache as a frozen, blank shell when it's reopened after being
-  // suspended — showing a white screen, or a mis-sized layout with a gap under
-  // the bottom nav — until it's force-quit. Reload on that restore so the app
-  // boots fresh instead.
+  // iOS can restore the page from the back/forward cache as a frozen, blank
+  // shell when it's reopened after being suspended, showing a white screen
+  // until it's force-quit. When the page is restored from that cache
+  // (event.persisted), reload it so the app boots fresh instead of blank.
   window.addEventListener('pageshow', (e) => {
     if (e.persisted) window.location.reload();
-  });
-
-  // pageshow/persisted doesn't fire reliably when the *installed* app is
-  // resumed on iOS, so also watch visibility. When the standalone app comes
-  // back to the foreground after being backgrounded for more than a moment,
-  // force a fresh load — this is what manually swiping the app away and
-  // reopening does, and it clears the white-screen and bottom-gap glitches
-  // that iOS leaves behind on resume. Guarded to the installed app so a
-  // browser tab is never disrupted.
-  let hiddenAt = 0;
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
-    if (isStandalone() && hiddenAt && Date.now() - hiddenAt > 400) {
-      window.location.reload();
-    }
   });
 }
 
