@@ -69,6 +69,7 @@ export function entitlements(userId) {
       // Public key so the client can load Stripe.js for the on-site checkout.
       // Never expose the secret key here.
       publishableKey: config.stripe.publishableKey || '',
+      trialDays: config.stripe.trialDays || 0,
     },
   };
 }

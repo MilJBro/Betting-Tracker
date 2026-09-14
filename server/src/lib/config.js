@@ -70,6 +70,12 @@ export const config = {
     priceId: process.env.STRIPE_PRICE_ID || '',
     // Human-readable price for the upgrade button, e.g. "£3.99 / month".
     priceLabel: process.env.STRIPE_PRICE_LABEL || '',
+    // Free-trial length in days before the first charge. Defaults to 7; set
+    // STRIPE_TRIAL_DAYS=0 to disable the trial (charge immediately).
+    trialDays:
+      process.env.STRIPE_TRIAL_DAYS !== undefined && process.env.STRIPE_TRIAL_DAYS !== ''
+        ? Math.max(0, Math.floor(Number(process.env.STRIPE_TRIAL_DAYS) || 0))
+        : 7,
   },
   dataDir,
 };
