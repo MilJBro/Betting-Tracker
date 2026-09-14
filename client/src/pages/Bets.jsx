@@ -34,6 +34,8 @@ function profitOf(b) {
 
 const SETTLED = ['won', 'lost', 'void', 'cashout', 'placed'];
 const STATUS_FILTERS = ['all', 'pending', 'won', 'placed', 'lost', 'void', 'cashout'];
+// How many day rows to show in an opened month before a "Show more" toggle.
+const DAY_PREVIEW = 8;
 const titleCase = (s) => s[0].toUpperCase() + s.slice(1);
 const statusFilterLabel = (s) => (s === 'all' ? 'All bets' : titleCase(s));
 const SORTS = [
@@ -213,6 +215,9 @@ export default function Bets() {
   });
   const toggleMonth = toggleIn(setOpenMonths);
   const toggleDay = toggleIn(setOpenDays);
+  // Months with more than DAY_PREVIEW days show a short preview until expanded.
+  const [showAllDays, setShowAllDays] = useState(() => new Set());
+  const toggleShowAllDays = toggleIn(setShowAllDays);
 
   const formatMonth = (key) => {
     if (!/^\d{4}-\d{2}$/.test(key)) return key;
@@ -662,22 +667,36 @@ export default function Bets() {
                           </div>
                         </td>
                       </tr>
-                      {!moCollapsed && mo.days.map((g) => {
-                        const dCollapsed = !openDays.has(g.day);
+                      {!moCollapsed && (() => {
+                        const showAll = showAllDays.has(mo.month);
+                        const visibleDays = showAll ? mo.days : mo.days.slice(0, DAY_PREVIEW);
+                        const hidden = mo.days.length - visibleDays.length;
                         return (
-                          <Fragment key={g.day}>
-                            <tr className="day-group-row" onClick={() => toggleDay(g.day)}>
-                              <td colSpan={20}>
-                                <div className="day-head-inner">
-                                  <span>{formatDate(g.day)} · {countLabel(g.count)}</span>
-                                  <span className={profitClass(g.profit)}>{signedProfit(g.profit)}</span>
-                                </div>
-                              </td>
-                            </tr>
-                            {!dCollapsed && g.bets.map(renderRow)}
-                          </Fragment>
+                          <>
+                            {visibleDays.map((g) => {
+                              const dCollapsed = !openDays.has(g.day);
+                              return (
+                                <Fragment key={g.day}>
+                                  <tr className="day-group-row" onClick={() => toggleDay(g.day)}>
+                                    <td colSpan={20}>
+                                      <div className="day-head-inner">
+                                        <span>{formatDate(g.day)} · {countLabel(g.count)}</span>
+                                        <span className={profitClass(g.profit)}>{signedProfit(g.profit)}</span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                  {!dCollapsed && g.bets.map(renderRow)}
+                                </Fragment>
+                              );
+                            })}
+                            {mo.days.length > DAY_PREVIEW && (
+                              <tr className="day-more-row" onClick={() => toggleShowAllDays(mo.month)}>
+                                <td colSpan={20}>{showAll ? 'Show fewer days' : `Show ${hidden} more day${hidden !== 1 ? 's' : ''}`}</td>
+                              </tr>
+                            )}
+                          </>
                         );
-                      })}
+                      })()}
                     </Fragment>
                   );
                 })}
@@ -698,21 +717,35 @@ export default function Bets() {
                     </span>
                     <span className={profitClass(mo.profit)} style={{ fontWeight: 800 }}>{signedProfit(mo.profit)}</span>
                   </button>
-                  {!moCollapsed && mo.days.map((g) => {
-                    const dCollapsed = !openDays.has(g.day);
+                  {!moCollapsed && (() => {
+                    const showAll = showAllDays.has(mo.month);
+                    const visibleDays = showAll ? mo.days : mo.days.slice(0, DAY_PREVIEW);
+                    const hidden = mo.days.length - visibleDays.length;
                     return (
-                      <div key={g.day} className="day-group">
-                        <button type="button" className="day-head day-sub" onClick={() => toggleDay(g.day)}>
-                          <span className="day-head-l">
-                            <span className="day-chevron" aria-hidden>{dCollapsed ? '▸' : '▾'}</span>
-                            {formatDate(g.day)} <span className="muted" style={{ fontWeight: 500 }}>· {countLabel(g.count)}</span>
-                          </span>
-                          <span className={profitClass(g.profit)} style={{ fontWeight: 700 }}>{signedProfit(g.profit)}</span>
-                        </button>
-                        {!dCollapsed && g.bets.map(renderCard)}
-                      </div>
+                      <>
+                        {visibleDays.map((g) => {
+                          const dCollapsed = !openDays.has(g.day);
+                          return (
+                            <div key={g.day} className="day-group">
+                              <button type="button" className="day-head day-sub" onClick={() => toggleDay(g.day)}>
+                                <span className="day-head-l">
+                                  <span className="day-chevron" aria-hidden>{dCollapsed ? '▸' : '▾'}</span>
+                                  {formatDate(g.day)} <span className="muted" style={{ fontWeight: 500 }}>· {countLabel(g.count)}</span>
+                                </span>
+                                <span className={profitClass(g.profit)} style={{ fontWeight: 700 }}>{signedProfit(g.profit)}</span>
+                              </button>
+                              {!dCollapsed && g.bets.map(renderCard)}
+                            </div>
+                          );
+                        })}
+                        {mo.days.length > DAY_PREVIEW && (
+                          <button type="button" className="day-more" onClick={() => toggleShowAllDays(mo.month)}>
+                            {showAll ? 'Show fewer days' : `Show ${hidden} more day${hidden !== 1 ? 's' : ''}`}
+                          </button>
+                        )}
+                      </>
                     );
-                  })}
+                  })()}
                 </div>
               );
             })}
