@@ -97,16 +97,7 @@ export default function TrackerBar() {
               <Logo />
               <button className="btn-ghost btn-sm" type="button" onClick={() => setDrawer(false)} aria-label="Close menu">✕</button>
             </div>
-            <div className="drawer-label-row">
-              <span className="drawer-label">Your trackers</span>
-              <button
-                className="drawer-add"
-                type="button"
-                onClick={() => { setDrawer(false); openManage(); }}
-                aria-label="Add a new tracker"
-                title="Add a new tracker"
-              >+</button>
-            </div>
+            <div className="drawer-label">Your trackers</div>
             <div className="drawer-list">
               {trackers.map((t) => (
                 <button
@@ -119,6 +110,14 @@ export default function TrackerBar() {
                   {t.id === activeId && <span className="di-check" aria-hidden="true">✓</span>}
                 </button>
               ))}
+              <button
+                className="drawer-item drawer-new"
+                type="button"
+                onClick={() => { setDrawer(false); openManage(); }}
+              >
+                <span className="di-ic di-ic-add" aria-hidden="true">+</span>
+                <span className="di-name">New tracker</span>
+              </button>
             </div>
             <button className="btn-ghost drawer-manage" onClick={() => { setDrawer(false); openManage(); }}>Manage trackers</button>
           </aside>
