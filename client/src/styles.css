@@ -308,6 +308,17 @@ tr:last-child td { border-bottom: none; }
 .seg-group .seg { flex: 1; padding: 9px; border-radius: calc(var(--radius-sm) - 3px); background: transparent; color: var(--muted); font-weight: 700; font-size: 13.5px; }
 .seg-group .seg.on { background: var(--primary); color: #04120a; }
 
+/* Compact, collapsible filter bar (Stats page). */
+.filter-bar { margin-bottom: 16px; }
+.filter-toggle {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: var(--radius-sm);
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text); font-weight: 700; font-size: 13.5px;
+}
+.filter-toggle svg:last-child { transition: transform 0.15s ease; color: var(--muted); }
+.filter-toggle.on svg:last-child { transform: rotate(180deg); }
+
 /* Event = Home v Away */
 .team-vs { display: flex; align-items: center; gap: 10px; }
 .team-vs input { flex: 1; min-width: 0; }
