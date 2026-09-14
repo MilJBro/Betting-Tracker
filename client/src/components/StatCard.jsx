@@ -1,4 +1,4 @@
-import { money, formatStake } from '../format.js';
+import { money, formatStake, units } from '../format.js';
 
 // Metadata for every possible stat card the user can enable.
 export const STAT_META = {
@@ -19,17 +19,27 @@ export default function StatCard({ statKey, stats, currency, staking }) {
   let value = '—';
   let cls = '';
   let sub = '';
+  let subCls = '';
+
+  // Show a unit equivalent under money tiles when a unit size is set and the
+  // display is in currency (in units/both mode the value already shows units).
+  const unitSize = Number(staking?.unitSize) || 0;
+  const showUnits = (staking?.mode || 'currency') === 'currency' && unitSize > 0;
 
   switch (meta.kind) {
     case 'money-signed': {
       const v = stats[statKey] ?? 0;
       value = formatStake(v, currency, staking, { signed: true });
       cls = v > 0 ? 'pos' : v < 0 ? 'neg' : '';
+      if (showUnits) { sub = units(v / unitSize, { signed: true }); subCls = cls; }
       break;
     }
-    case 'money':
-      value = formatStake(stats[statKey] ?? 0, currency, staking);
+    case 'money': {
+      const v = stats[statKey] ?? 0;
+      value = formatStake(v, currency, staking);
+      if (showUnits) sub = units(v / unitSize);
       break;
+    }
     case 'percent': {
       const v = stats[statKey] ?? 0;
       value = `${v}%`;
@@ -58,7 +68,7 @@ export default function StatCard({ statKey, stats, currency, staking }) {
     <div className="stat">
       <div className="label">{meta.label}</div>
       <div className={`value ${cls}`}>{value}</div>
-      {sub && <div className="sub">{sub}</div>}
+      {sub && <div className={`sub ${subCls}`}>{sub}</div>}
     </div>
   );
 }
