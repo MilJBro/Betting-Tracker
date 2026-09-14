@@ -107,7 +107,11 @@ export default function TrackerBar() {
       </div>
 
       {drawer && (
-        <div className="drawer-overlay" onMouseDown={() => setDrawer(false)}>
+        <div
+          className="drawer-overlay"
+          style={{ display: manage ? 'none' : 'flex' }}
+          onMouseDown={() => setDrawer(false)}
+        >
           <aside className="drawer" onMouseDown={(e) => e.stopPropagation()}>
             <div className="drawer-head">
               <Logo />
