@@ -670,7 +670,6 @@ export default function Bets() {
                       {!moCollapsed && (() => {
                         const showAll = showAllDays.has(mo.month);
                         const visibleDays = showAll ? mo.days : mo.days.slice(0, DAY_PREVIEW);
-                        const hidden = mo.days.length - visibleDays.length;
                         return (
                           <>
                             {visibleDays.map((g) => {
@@ -691,7 +690,7 @@ export default function Bets() {
                             })}
                             {mo.days.length > DAY_PREVIEW && (
                               <tr className="day-more-row" onClick={() => toggleShowAllDays(mo.month)}>
-                                <td colSpan={20}>{showAll ? 'Show fewer days' : `Show ${hidden} more day${hidden !== 1 ? 's' : ''}`}</td>
+                                <td colSpan={20}>{showAll ? 'Show less' : 'Show more'}</td>
                               </tr>
                             )}
                           </>
@@ -720,7 +719,6 @@ export default function Bets() {
                   {!moCollapsed && (() => {
                     const showAll = showAllDays.has(mo.month);
                     const visibleDays = showAll ? mo.days : mo.days.slice(0, DAY_PREVIEW);
-                    const hidden = mo.days.length - visibleDays.length;
                     return (
                       <>
                         {visibleDays.map((g) => {
@@ -740,7 +738,7 @@ export default function Bets() {
                         })}
                         {mo.days.length > DAY_PREVIEW && (
                           <button type="button" className="day-more" onClick={() => toggleShowAllDays(mo.month)}>
-                            {showAll ? 'Show fewer days' : `Show ${hidden} more day${hidden !== 1 ? 's' : ''}`}
+                            {showAll ? 'Show less' : 'Show more'}
                           </button>
                         )}
                       </>
