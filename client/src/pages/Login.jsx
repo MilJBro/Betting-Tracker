@@ -95,6 +95,7 @@ export default function Login() {
           <a href="https://www.begambleaware.org/" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>BeGambleAware</a>
         </p>
         <p className="muted" style={{ textAlign: 'center', fontSize: 12, marginTop: 6 }}>
+          <Link to="/blog" style={{ color: 'inherit' }}>Guides</Link> ·{' '}
           <Link to="/terms" style={{ color: 'inherit' }}>Terms</Link> ·{' '}
           <Link to="/privacy" style={{ color: 'inherit' }}>Privacy</Link>
         </p>
