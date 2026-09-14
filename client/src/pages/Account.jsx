@@ -7,6 +7,7 @@ import { usePlan } from '../usePlan.js';
 import { getCached, setCached } from '../dataCache.js';
 import { formatDate } from '../format.js';
 import CheckoutModal from '../components/CheckoutModal.jsx';
+import InstallAppCard from '../components/InstallAppCard.jsx';
 
 const PRO_FEATURE_LABELS = [
   'Multiple trackers (one per tipster or strategy)',
@@ -223,6 +224,8 @@ export default function Account() {
           </>
         )}
       </div>
+
+      <InstallAppCard isPro={isPro} onUpgrade={doUpgrade} />
 
       {profile && (
         <div className="card" style={{ marginBottom: 18 }}>
