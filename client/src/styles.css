@@ -616,6 +616,8 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
     background: color-mix(in srgb, var(--surface) 94%, transparent);
     backdrop-filter: blur(14px); border-top: 1px solid var(--border);
+    /* Flat in the browser (Safari keeps its own toolbar above the home bar).
+       The installed app clears the home indicator via the standalone rule below. */
     padding: 8px;
   }
   .bnav {
@@ -687,4 +689,12 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+/* Installed / Add-to-Home-Screen app only. Here the web view extends to the
+   physical bottom edge, so the bottom nav needs the home-indicator inset to
+   sit just above it (with the same 8px base) rather than under it. The browser
+   keeps its flat 8px, since Safari's own toolbar already sits above the bar. */
+@media (display-mode: standalone) {
+  .bottom-nav { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
 }
