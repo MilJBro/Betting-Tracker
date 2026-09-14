@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../api.js';
+import PasswordInput from './PasswordInput.jsx';
 
 // The login / sign-up / forgot-password card. Reused on the landing page and
 // anywhere else auth is needed.
@@ -79,7 +80,13 @@ export default function AuthPanel({ initialMode = 'login', mode: modeProp, onMod
         {mode !== 'forgot' && (
           <div className="field">
             <label>Password</label>
-            <input type="password" value={form.password} onChange={(e) => set('password', e.target.value)} placeholder={mode === 'register' ? 'At least 8 characters' : '••••••••'} required />
+            <PasswordInput
+              value={form.password}
+              onChange={(e) => set('password', e.target.value)}
+              placeholder={mode === 'register' ? 'At least 8 characters' : '••••••••'}
+              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+              required
+            />
           </div>
         )}
         <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: 6 }} disabled={busy}>

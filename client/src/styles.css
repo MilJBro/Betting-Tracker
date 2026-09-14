@@ -209,6 +209,11 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6
 .input-prefix { position: relative; }
 .input-prefix-sym { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-weight: 700; pointer-events: none; }
 .input-prefix input { width: 100%; padding-left: 26px; }
+/* Password field with a show/hide eye toggle. */
+.pw-wrap { position: relative; }
+.pw-wrap input { width: 100%; padding-right: 44px; }
+.pw-toggle { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; display: grid; place-items: center; background: transparent; border: 0; color: var(--muted); cursor: pointer; border-radius: 8px; }
+.pw-toggle:hover { color: var(--text); background: var(--surface-2); }
 @media (max-width: 860px) {
   .tracker-bar { padding: 10px 14px; }
   .tb-menu { display: inline-flex; }
