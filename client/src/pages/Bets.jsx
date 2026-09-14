@@ -13,7 +13,7 @@ import { settlePayout } from '../settle.js';
 import { getCached, setCached, subscribeInvalidate } from '../dataCache.js';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
-import { formatStake, formatOdds, formatDate } from '../format.js';
+import { formatStake, formatOdds, formatDate, units } from '../format.js';
 import { betsToCsv, csvToBets, downloadCsv } from '../csv.js';
 
 // Common betting sports offered in the Add-bet form's sport field so there's
@@ -599,8 +599,15 @@ export default function Bets() {
       <div className="card bets-summary">
         <div className="bs-hero">
           <span className="bs-label">Net profit{status !== 'all' ? ` · ${statusFilterLabel(status)}` : ''}</span>
-          <span className={`bs-profit ${summary.profit > 0 ? 'pos' : summary.profit < 0 ? 'neg' : ''}`}>
-            {formatStake(summary.profit, currency, staking, { signed: true })}
+          <span className="bs-figures">
+            <span className={`bs-profit ${summary.profit > 0 ? 'pos' : summary.profit < 0 ? 'neg' : ''}`}>
+              {formatStake(summary.profit, currency, staking, { signed: true })}
+            </span>
+            {(staking?.mode || 'currency') === 'currency' && Number(staking?.unitSize) > 0 && (
+              <span className={`bs-units ${summary.profit > 0 ? 'pos' : summary.profit < 0 ? 'neg' : 'muted'}`}>
+                {units(summary.profit / Number(staking.unitSize), { signed: true })}
+              </span>
+            )}
           </span>
         </div>
         <div className="bs-stats">
