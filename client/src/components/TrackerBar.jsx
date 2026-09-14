@@ -79,8 +79,8 @@ export default function TrackerBar() {
       <div className="field"><label>Name</label><input value={name} onChange={(e) => setName(e.target.value)} /></div>
       <div className="field">
         <label>Starting bankroll</label>
-        <div className="row" style={{ gap: 8 }}>
-          <span className="muted" style={{ fontWeight: 700 }}>{sym}</span>
+        <div className="input-prefix">
+          <span className="input-prefix-sym">{sym}</span>
           <input type="number" min="0" step="0.01" value={bankroll} onChange={(e) => setBankroll(e.target.value)} />
         </div>
       </div>
@@ -103,8 +103,8 @@ export default function TrackerBar() {
       </div>
       <div className="field">
         <label>Starting bankroll <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
-        <div className="row" style={{ gap: 8, alignItems: 'center' }}>
-          <span className="muted" style={{ fontWeight: 700 }}>{sym}</span>
+        <div className="input-prefix">
+          <span className="input-prefix-sym">{sym}</span>
           <input type="number" min="0" step="0.01" value={newBankroll} placeholder="e.g. 500" onChange={(e) => setNewBankroll(e.target.value)} />
         </div>
       </div>

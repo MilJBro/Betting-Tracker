@@ -204,6 +204,11 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6
 .drawer-back-chev { font-size: 22px; line-height: 1; }
 .drawer-title { margin: 2px 4px 14px; font-size: 20px; font-weight: 800; }
 .drawer-form { display: block; }
+/* Currency symbol inset inside the input, so the box aligns flush-left with
+   the other fields instead of being pushed right by an adjacent symbol. */
+.input-prefix { position: relative; }
+.input-prefix-sym { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-weight: 700; pointer-events: none; }
+.input-prefix input { width: 100%; padding-left: 26px; }
 @media (max-width: 860px) {
   .tracker-bar { padding: 10px 14px; }
   .tb-menu { display: inline-flex; }
