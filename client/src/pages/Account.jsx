@@ -206,12 +206,21 @@ export default function Account() {
         {!isPro && (
           <div style={{ marginTop: 12 }}>
             <div style={{ fontWeight: 700, marginBottom: 8 }}>
-              Upgrade to Pro{billing?.priceLabel ? <span className="muted" style={{ fontWeight: 500 }}> · {billing.priceLabel}</span> : ''}
+              {billing?.trialDays > 0
+                ? <>Try Pro free for {billing.trialDays} days{billing?.priceLabel ? <span className="muted" style={{ fontWeight: 500 }}> · then {billing.priceLabel}</span> : ''}</>
+                : <>Upgrade to Pro{billing?.priceLabel ? <span className="muted" style={{ fontWeight: 500 }}> · {billing.priceLabel}</span> : ''}</>}
             </div>
             <ul className="muted" style={{ margin: '0 0 12px', paddingLeft: 18, fontSize: 13, lineHeight: 1.7 }}>
               {PRO_FEATURE_LABELS.map((f) => <li key={f}>{f}</li>)}
             </ul>
-            <button className="btn-primary" onClick={doUpgrade} disabled={planBusy || !ent}>{planBusy ? 'Working…' : 'Upgrade to Pro'}</button>
+            <button className="btn-primary" onClick={doUpgrade} disabled={planBusy || !ent}>
+              {planBusy ? 'Working…' : billing?.trialDays > 0 ? `Start ${billing.trialDays}-day free trial` : 'Upgrade to Pro'}
+            </button>
+            {billing?.trialDays > 0 && (
+              <p className="muted" style={{ fontSize: 12, marginTop: 8, marginBottom: 0 }}>
+                No charge for {billing.trialDays} days. Cancel anytime before then and you won’t be billed.
+              </p>
+            )}
           </div>
         )}
         {isPro && (

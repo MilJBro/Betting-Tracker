@@ -28,6 +28,11 @@ router.post('/checkout', async (req, res) => {
       line_items: [{ price: config.stripe.priceId, quantity: 1 }],
       client_reference_id: req.userId,
       allow_promotion_codes: true,
+      // Free trial before the first charge (card still collected up front, then
+      // billed automatically when the trial ends unless they cancel).
+      ...(config.stripe.trialDays > 0
+        ? { subscription_data: { trial_period_days: config.stripe.trialDays } }
+        : {}),
       // After payment Stripe returns the top window here; the Account page reads
       // ?upgrade=success to show the confirmation and refresh the plan.
       return_url: `${config.appUrl}/account?upgrade=success&session_id={CHECKOUT_SESSION_ID}`,
