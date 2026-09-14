@@ -68,6 +68,19 @@ const PATHS = {
       <circle cx="12" cy="13" r="3.4" />
     </>
   ),
+  edit: (
+    <>
+      <path d="M4 20h4L18 10l-4-4L4 16z" />
+      <path d="M13 7l4 4" />
+    </>
+  ),
+  logout: (
+    <>
+      <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />
+      <path d="M10 17l-5-5 5-5" />
+      <path d="M5 12h11" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 20, className, style }) {
