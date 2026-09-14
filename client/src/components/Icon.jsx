@@ -81,6 +81,19 @@ const PATHS = {
       <path d="M5 12h11" />
     </>
   ),
+  eye: (
+    <>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  'eye-off': (
+    <>
+      <path d="M3 3l18 18" />
+      <path d="M10.6 5.1A10.7 10.7 0 0 1 12 5c6.5 0 10 7 10 7a17.2 17.2 0 0 1-3.4 4M6.2 6.2A17.2 17.2 0 0 0 2 12s3.5 7 10 7a10.7 10.7 0 0 0 3.9-.7" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 20, className, style }) {

@@ -8,6 +8,7 @@ import { getCached, setCached } from '../dataCache.js';
 import { formatDate } from '../format.js';
 import CheckoutModal from '../components/CheckoutModal.jsx';
 import InstallAppCard from '../components/InstallAppCard.jsx';
+import PasswordInput from '../components/PasswordInput.jsx';
 
 const PRO_FEATURE_LABELS = [
   'Multiple trackers (one per tipster or strategy)',
@@ -262,16 +263,16 @@ export default function Account() {
         <form onSubmit={changePassword}>
           <div className="field">
             <label>Current password</label>
-            <input type="password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} required />
+            <PasswordInput value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} autoComplete="current-password" ariaLabel="Current password" required />
           </div>
           <div className="grid-2">
             <div className="field">
               <label>New password</label>
-              <input type="password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} placeholder="At least 8 characters" required />
+              <PasswordInput value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} placeholder="At least 8 characters" autoComplete="new-password" ariaLabel="New password" required />
             </div>
             <div className="field">
               <label>Confirm new password</label>
-              <input type="password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} required />
+              <PasswordInput value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} autoComplete="new-password" ariaLabel="Confirm new password" required />
             </div>
           </div>
           <button type="submit" className="btn-primary" disabled={pwBusy}>{pwBusy ? 'Updating…' : 'Update password'}</button>
@@ -337,7 +338,7 @@ export default function Account() {
             <p style={{ marginTop: 0 }}>Enter your password to confirm permanent deletion.</p>
             {delErr && <div className="error-banner">{delErr}</div>}
             <div className="field">
-              <input type="password" value={delPw} onChange={(e) => setDelPw(e.target.value)} placeholder="Your password" required />
+              <PasswordInput value={delPw} onChange={(e) => setDelPw(e.target.value)} placeholder="Your password" autoComplete="current-password" ariaLabel="Password" required />
             </div>
             <div className="row">
               <button type="button" className="btn-ghost" onClick={() => { setConfirming(false); setDelPw(''); setDelErr(''); }}>Cancel</button>
