@@ -13,6 +13,7 @@ export default function TrackerBar() {
   const toast = useToast();
   const navigate = useNavigate();
   const [manage, setManage] = useState(false);
+  const [drawer, setDrawer] = useState(false);
   const [name, setName] = useState('');
   const [bankroll, setBankroll] = useState('');
   const [newName, setNewName] = useState('');
@@ -67,7 +68,14 @@ export default function TrackerBar() {
   return (
     <>
       <div className="tracker-bar">
+        {/* Mobile: hamburger opens the tracker drawer; the logo is centred. */}
+        <button className="tb-menu" onClick={() => setDrawer(true)} aria-label="Open menu" aria-haspopup="true" aria-expanded={drawer}>
+          <span className="tb-menu-lines"><span /><span /><span /></span>
+        </button>
         <Logo />
+        <span className="tb-spacer" aria-hidden="true" />
+
+        {/* Desktop: the inline tracker switcher + Manage (the sidebar holds the logo). */}
         <div className="tracker-switch">
           <span className="tsw-ic"><Icon name="layers" size={18} /></span>
           <div className="tsw-body">
@@ -81,6 +89,32 @@ export default function TrackerBar() {
         </div>
         <button className="btn-ghost btn-sm tsw-manage" onClick={openManage}>Manage</button>
       </div>
+
+      {drawer && (
+        <div className="drawer-overlay" onMouseDown={() => setDrawer(false)}>
+          <aside className="drawer" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="drawer-head">
+              <Logo />
+              <button className="btn-ghost btn-sm" type="button" onClick={() => setDrawer(false)} aria-label="Close menu">✕</button>
+            </div>
+            <div className="drawer-label">Your trackers</div>
+            <div className="drawer-list">
+              {trackers.map((t) => (
+                <button
+                  key={t.id}
+                  className={'drawer-item' + (t.id === activeId ? ' on' : '')}
+                  onClick={() => { switchTo(t.id); setDrawer(false); }}
+                >
+                  <span className="di-ic"><Icon name="layers" size={18} /></span>
+                  <span className="di-name">{t.name}</span>
+                  {t.id === activeId && <span className="di-check" aria-hidden="true">✓</span>}
+                </button>
+              ))}
+            </div>
+            <button className="btn-ghost drawer-manage" onClick={() => { setDrawer(false); openManage(); }}>Manage trackers</button>
+          </aside>
+        </div>
+      )}
 
       {manage && (
         <div className="modal-overlay" onMouseDown={() => !busy && setManage(false)}>
