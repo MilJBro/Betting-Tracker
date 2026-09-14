@@ -5,6 +5,7 @@ import { useSettings } from '../context/SettingsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { currencySymbol } from '../format.js';
 import Icon from './Icon.jsx';
+import Logo from './Logo.jsx';
 
 export default function TrackerBar() {
   const { trackers, active, activeId, pro, switchTo, create, update, remove } = useTracker();
@@ -66,6 +67,7 @@ export default function TrackerBar() {
   return (
     <>
       <div className="tracker-bar">
+        <Logo />
         <div className="tracker-switch">
           <span className="tsw-ic"><Icon name="layers" size={18} /></span>
           <div className="tsw-body">
