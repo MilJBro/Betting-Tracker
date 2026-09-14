@@ -67,6 +67,7 @@ export default function Analytics() {
   // blur (when the picker closes), so merely opening the picker (which defaults
   // to today) doesn't instantly filter out every past bet.
   const [dateDraft, setDateDraft] = useState({ from: '', to: '' });
+  const [showFilters, setShowFilters] = useState(false);
   useEffect(() => { setDateDraft({ from: filters.from, to: filters.to }); }, [filters.from, filters.to]);
   const currency = settings?.currency || 'GBP';
   const staking = settings?.staking;
@@ -101,39 +102,47 @@ export default function Analytics() {
   if (loading) return <div className="main"><Spinner /></div>;
 
   const anyFilter = Object.values(filters).some(Boolean);
+  const activeCount = Object.values(filters).filter(Boolean).length;
   const setFilter = (k, v) => setFilters((f) => ({ ...f, [k]: v }));
 
-  // Pro-only filter bar; free users see an upgrade teaser instead.
+  // Pro-only filters — a compact toggle bar that expands the fields only when
+  // wanted, so the page isn't dominated by an always-open filter card.
   const controls = meta.pro ? (
-    <div className="card" style={{ marginBottom: 16, padding: 14 }}>
-      <div className="row spread" style={{ marginBottom: 10 }}>
-        <h3 className="section-title" style={{ margin: 0 }}>Filters</h3>
+    <div className="filter-bar">
+      <div className="row spread">
+        <button type="button" className={`filter-toggle ${showFilters ? 'on' : ''}`} onClick={() => setShowFilters((s) => !s)}>
+          <Icon name="sliders" size={15} />
+          <span>Filters{activeCount ? ` (${activeCount})` : ''}</span>
+          <Icon name="chevron" size={14} />
+        </button>
         {anyFilter && <button className="btn-ghost btn-sm" onClick={() => setFilters(BLANK_FILTERS)}>Clear</button>}
       </div>
-      <div className="grid-2">
-        <div className="field" style={{ margin: 0 }}>
-          <label>From date</label>
-          <input type="date" value={dateDraft.from} onChange={(e) => setDateDraft((d) => ({ ...d, from: e.target.value }))} onBlur={() => setFilter('from', dateDraft.from)} />
+      {showFilters && (
+        <div className="grid-2" style={{ marginTop: 12 }}>
+          <div className="field" style={{ margin: 0 }}>
+            <label>From date</label>
+            <input type="date" value={dateDraft.from} onChange={(e) => setDateDraft((d) => ({ ...d, from: e.target.value }))} onBlur={() => setFilter('from', dateDraft.from)} />
+          </div>
+          <div className="field" style={{ margin: 0 }}>
+            <label>To date</label>
+            <input type="date" value={dateDraft.to} onChange={(e) => setDateDraft((d) => ({ ...d, to: e.target.value }))} onBlur={() => setFilter('to', dateDraft.to)} />
+          </div>
+          <div className="field" style={{ margin: 0 }}>
+            <label>Sport</label>
+            <select value={filters.sport} onChange={(e) => setFilter('sport', e.target.value)}>
+              <option value="">All sports</option>
+              {meta.options.sports.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div className="field" style={{ margin: 0 }}>
+            <label>Tipster</label>
+            <select value={filters.tipster} onChange={(e) => setFilter('tipster', e.target.value)}>
+              <option value="">All tipsters</option>
+              {meta.options.tipsters.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
         </div>
-        <div className="field" style={{ margin: 0 }}>
-          <label>To date</label>
-          <input type="date" value={dateDraft.to} onChange={(e) => setDateDraft((d) => ({ ...d, to: e.target.value }))} onBlur={() => setFilter('to', dateDraft.to)} />
-        </div>
-        <div className="field" style={{ margin: 0 }}>
-          <label>Sport</label>
-          <select value={filters.sport} onChange={(e) => setFilter('sport', e.target.value)}>
-            <option value="">All sports</option>
-            {meta.options.sports.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
-        <div className="field" style={{ margin: 0 }}>
-          <label>Tipster</label>
-          <select value={filters.tipster} onChange={(e) => setFilter('tipster', e.target.value)}>
-            <option value="">All tipsters</option>
-            {meta.options.tipsters.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
-      </div>
+      )}
     </div>
   ) : (
     <Link to="/account" className="card" style={{ marginBottom: 16, display: 'block', textDecoration: 'none', color: 'inherit', borderColor: 'var(--primary)' }}>
