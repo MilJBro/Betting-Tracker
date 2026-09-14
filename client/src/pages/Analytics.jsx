@@ -63,6 +63,11 @@ export default function Analytics() {
   const [meta, setMeta] = useState(() => getCached(cacheKey)?.meta ?? { pro: false, options: { sports: [], tipsters: [], bookmakers: [] } });
   const [loading, setLoading] = useState(() => !getCached(cacheKey));
   const [tab, setTab] = useState('sport'); // active breakdown tab
+  // Draft values for the date inputs — only committed to the applied filters on
+  // blur (when the picker closes), so merely opening the picker (which defaults
+  // to today) doesn't instantly filter out every past bet.
+  const [dateDraft, setDateDraft] = useState({ from: '', to: '' });
+  useEffect(() => { setDateDraft({ from: filters.from, to: filters.to }); }, [filters.from, filters.to]);
   const currency = settings?.currency || 'GBP';
   const staking = settings?.staking;
   const unitSize = Number(staking?.unitSize) || 0;
@@ -106,8 +111,14 @@ export default function Analytics() {
         {anyFilter && <button className="btn-ghost btn-sm" onClick={() => setFilters(BLANK_FILTERS)}>Clear</button>}
       </div>
       <div className="grid-2">
-        <div className="field" style={{ margin: 0 }}><label>From date</label><input type="date" value={filters.from} onChange={(e) => setFilter('from', e.target.value)} /></div>
-        <div className="field" style={{ margin: 0 }}><label>To date</label><input type="date" value={filters.to} onChange={(e) => setFilter('to', e.target.value)} /></div>
+        <div className="field" style={{ margin: 0 }}>
+          <label>From date</label>
+          <input type="date" value={dateDraft.from} onChange={(e) => setDateDraft((d) => ({ ...d, from: e.target.value }))} onBlur={() => setFilter('from', dateDraft.from)} />
+        </div>
+        <div className="field" style={{ margin: 0 }}>
+          <label>To date</label>
+          <input type="date" value={dateDraft.to} onChange={(e) => setDateDraft((d) => ({ ...d, to: e.target.value }))} onBlur={() => setFilter('to', dateDraft.to)} />
+        </div>
         <div className="field" style={{ margin: 0 }}>
           <label>Sport</label>
           <select value={filters.sport} onChange={(e) => setFilter('sport', e.target.value)}>
@@ -144,10 +155,10 @@ export default function Analytics() {
         {controls}
         <div className="card empty">
           <div className="em"><Icon name="analytics" size={40} /></div>
-          <h3>{anyFilter ? 'No bets in this view' : 'No settled bets yet'}</h3>
-          <p>{anyFilter ? 'Try widening your filters.' : "Once you've settled a few bets, your trends and breakdowns show up here."}</p>
+          <h3>{anyFilter ? 'No settled bets in this range' : 'No settled bets yet'}</h3>
+          <p>{anyFilter ? 'Nothing matches your current filters — widen the dates or clear them to see your stats again.' : "Once you've settled a few bets, your trends and breakdowns show up here."}</p>
           {anyFilter
-            ? <button className="btn-ghost" onClick={() => setFilters(BLANK_FILTERS)} style={{ marginTop: 10 }}>Clear filters</button>
+            ? <button className="btn-primary" onClick={() => setFilters(BLANK_FILTERS)} style={{ display: 'inline-block', marginTop: 10 }}>Clear filters</button>
             : <button type="button" onClick={() => openAddBet()} className="btn-primary" style={{ display: 'inline-block', marginTop: 10 }}>+ Add a bet</button>}
         </div>
       </div>
