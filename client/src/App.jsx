@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom';
-import BrandMark from './components/BrandMark.jsx';
+import Logo from './components/Logo.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 import { SettingsProvider, useSettings } from './context/SettingsContext.jsx';
 import { TrackerProvider } from './context/TrackerContext.jsx';
@@ -43,7 +43,7 @@ function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <BrandMark /> Betbooks
+        <Logo />
       </div>
       {NAV.map((n) => (
         <NavLink key={n.to} to={n.to} end={n.end} className={link}>

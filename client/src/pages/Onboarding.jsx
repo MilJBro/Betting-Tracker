@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { currencySymbol } from '../format.js';
-import BrandMark from '../components/BrandMark.jsx';
+import Logo from '../components/Logo.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 
 // One-time questionnaire shown right after sign-up to learn what kind of
@@ -160,7 +160,7 @@ export default function Onboarding() {
     <div className="auth-wrap">
       <div className="onboard">
         <div className="brand" style={{ justifyContent: 'center', marginBottom: 18 }}>
-          <BrandMark /> Betbooks
+          <Logo />
         </div>
 
         <div className="onboard-progress">

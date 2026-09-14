@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api.js';
-import BrandMark from '../components/BrandMark.jsx';
+import Logo from '../components/Logo.jsx';
 
 export default function ResetPassword() {
   const [params] = useSearchParams();
@@ -33,7 +33,7 @@ export default function ResetPassword() {
     <div className="auth-wrap">
       <div className="auth-card">
         <div className="brand" style={{ justifyContent: 'center', fontSize: 22, marginBottom: 18 }}>
-          <BrandMark /> Betbooks
+          <Logo />
         </div>
         <div className="card">
           <h2 style={{ margin: '0 0 14px', fontSize: 19 }}>Choose a new password</h2>

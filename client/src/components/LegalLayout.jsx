@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import BrandMark from './BrandMark.jsx';
+import Logo from './Logo.jsx';
 
 // Shared layout for the standalone Terms / Privacy pages (public, no session).
 export default function LegalLayout({ title, updated, children }) {
@@ -8,7 +8,7 @@ export default function LegalLayout({ title, updated, children }) {
       <div className="legal">
         <div className="row spread" style={{ marginBottom: 20 }}>
           <Link to="/" className="brand" style={{ fontSize: 20, textDecoration: 'none', color: 'var(--text)' }}>
-            <BrandMark /> Betbooks
+            <Logo />
           </Link>
           <Link to="/" className="btn-ghost btn-sm">← Back</Link>
         </div>

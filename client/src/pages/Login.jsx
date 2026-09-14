@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import AuthPanel from '../components/AuthPanel.jsx';
-import BrandMark from '../components/BrandMark.jsx';
+import Logo from '../components/Logo.jsx';
 
 const FEATURES = [
   {
@@ -55,7 +55,7 @@ export default function Login() {
       <div className="landing">
         <div className="lp-hero">
           <div className="brand" style={{ justifyContent: 'center', fontSize: 22 }}>
-            <BrandMark /> Betbooks
+            <Logo />
           </div>
           <h1>Know if you’re<br />really winning.</h1>
           <p className="sub">
