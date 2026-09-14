@@ -34,8 +34,8 @@ function profitOf(b) {
 
 const SETTLED = ['won', 'lost', 'void', 'cashout', 'placed'];
 const STATUS_FILTERS = ['all', 'pending', 'won', 'placed', 'lost', 'void', 'cashout'];
-// How many day rows to show in an opened month before a "Show more" toggle.
-const DAY_PREVIEW = 8;
+// How many bets to show in an opened month before a "Show more" toggle.
+const BET_PREVIEW = 15;
 const titleCase = (s) => s[0].toUpperCase() + s.slice(1);
 const statusFilterLabel = (s) => (s === 'all' ? 'All bets' : titleCase(s));
 const SORTS = [
@@ -179,45 +179,35 @@ export default function Bets() {
     });
   }, [bets, status, search, sport, bookie, from, to, sortBy, sortDir]);
 
-  // Two-level grouping of the (already sorted/filtered) bets: by month, and
-  // within each month by day. Each level carries its bet count and net profit.
+  // Group the (already sorted/filtered) bets by month. Each month carries its
+  // bet count and net profit; bets sit directly under it (the date shows on
+  // each bet), so there's no extra day-level nesting to wade through.
   const grouped = useMemo(() => {
     const sumProfit = (list) => list.reduce((s, b) => s + (profitOf(b) || 0), 0);
     const months = new Map();
     for (const b of filtered) {
       const date = b.placed_at || '';
       const monthKey = /^\d{4}-\d{2}/.test(date) ? date.slice(0, 7) : '—';
-      const dayKey = date || '—';
-      if (!months.has(monthKey)) months.set(monthKey, new Map());
-      const days = months.get(monthKey);
-      if (!days.has(dayKey)) days.set(dayKey, []);
-      days.get(dayKey).push(b);
+      if (!months.has(monthKey)) months.set(monthKey, []);
+      months.get(monthKey).push(b);
     }
-    return [...months.entries()].map(([month, days]) => {
-      const dayGroups = [...days.entries()].map(([day, list]) => ({
-        day, bets: list, count: list.length, profit: sumProfit(list),
-      }));
-      const all = dayGroups.flatMap((d) => d.bets);
-      return { month, days: dayGroups, count: all.length, profit: sumProfit(all) };
-    });
+    return [...months.entries()].map(([month, list]) => ({
+      month, bets: list, count: list.length, profit: sumProfit(list),
+    }));
   }, [filtered]);
 
-  // Months and days both start collapsed; we track only what the user has
-  // explicitly opened. Opening a month does not auto-open its days — they stay
-  // folded until tapped. State resets when leaving the tab (the page unmounts),
-  // so returning to My bets always shows everything collapsed again.
+  // Months start collapsed; we track only what the user has opened. State resets
+  // when leaving the tab (the page unmounts), so returning always shows months
+  // folded. Busy months show a preview of bets until "Show more" is tapped.
   const [openMonths, setOpenMonths] = useState(() => new Set());
-  const [openDays, setOpenDays] = useState(() => new Set());
+  const [showAllMonths, setShowAllMonths] = useState(() => new Set());
   const toggleIn = (setter) => (key) => setter((s) => {
     const n = new Set(s);
     n.has(key) ? n.delete(key) : n.add(key);
     return n;
   });
   const toggleMonth = toggleIn(setOpenMonths);
-  const toggleDay = toggleIn(setOpenDays);
-  // Months with more than DAY_PREVIEW days show a short preview until expanded.
-  const [showAllDays, setShowAllDays] = useState(() => new Set());
-  const toggleShowAllDays = toggleIn(setShowAllDays);
+  const toggleShowAll = toggleIn(setShowAllMonths);
 
   const formatMonth = (key) => {
     if (!/^\d{4}-\d{2}$/.test(key)) return key;
@@ -232,11 +222,18 @@ export default function Bets() {
     const settledStake = settled.reduce((s, b) => s + b.stake, 0);
     const profit = settled.reduce((s, b) => s + (profitOf(b) || 0), 0);
     const roi = settledStake > 0 ? (profit / settledStake) * 100 : 0;
+    const wins = filtered.filter((b) => b.status === 'won').length;
+    const losses = filtered.filter((b) => b.status === 'lost').length;
+    const decided = wins + losses;
+    const winRate = decided > 0 ? Math.round((wins / decided) * 100) : null;
     return {
       count: filtered.length,
       staked,
       profit,
       roi: Math.round(roi * 10) / 10,
+      wins,
+      losses,
+      winRate,
     };
   }, [filtered]);
 
@@ -246,7 +243,10 @@ export default function Bets() {
   }
 
   // Bulk-settle selection (pending bets only, within the current filtered view).
+  // Hidden behind a "Select" mode so the default list stays clean.
   const [selected, setSelected] = useState(() => new Set());
+  const [selectMode, setSelectMode] = useState(false);
+  function toggleSelectMode() { setSelectMode((v) => !v); setSelected(new Set()); }
   const pendingInView = filtered.filter((b) => b.status === 'pending');
   const allSelected = pendingInView.length > 0 && pendingInView.every((b) => selected.has(b.id));
   const selectedCount = pendingInView.filter((b) => selected.has(b.id)).length;
@@ -421,62 +421,51 @@ export default function Bets() {
     );
   };
 
-  // Mobile stacked card for one bet.
+  // Mobile bet card: a status-striped, tappable row. Info only — actions
+  // (edit / delete) live in the tap-to-open preview to keep it uncluttered.
   const renderCard = (b) => {
     const p = profitOf(b);
-    const extra = [col('bookmaker') && b.bookmaker, col('tipster') && b.tipster].filter(Boolean).join(' · ');
     const isMulti = b.bet_type === 'Accumulator' || b.bet_type === 'Bet builder';
     const title = (b.event && b.event.trim()) || (col('sport') && b.sport) || b.bet_type || 'Bet';
-    // The day header already shows the date, so the card sub-line drops it.
-    const sub = [
+    const meta = [
       col('sport') && b.sport && b.sport !== title ? b.sport : null,
       isMulti ? b.bet_type : null,
+      col('bookmaker') && b.bookmaker ? b.bookmaker : null,
+      formatDate(b.placed_at),
     ].filter(Boolean).join(' · ');
+    const selecting = selectMode && b.status === 'pending';
+    const sub = [
+      col('stake') && formatStake(b.stake, currency, staking),
+      col('odds') && Number(b.odds) > 0 ? `@ ${formatOdds(b.odds, oddsFormat)}` : null,
+    ].filter(Boolean).join(' ');
     return (
-      <div key={b.id} className={'bet-card' + (selected.has(b.id) ? ' row-selected' : '')}>
-        <div className="bet-card-tap" onClick={() => setPreview(b)}>
-          <div className="row spread" style={{ gap: 10, alignItems: 'flex-start' }}>
-            <div className="row" style={{ gap: 8, alignItems: 'flex-start', minWidth: 0 }}>
-              {b.status === 'pending' && (
-                <input
-                  type="checkbox"
-                  checked={selected.has(b.id)}
-                  onChange={() => toggleOne(b.id)}
-                  onClick={(e) => e.stopPropagation()}
-                  aria-label={`Select bet ${title}`}
-                  style={{ width: 'auto', margin: '3px 0 0' }}
-                />
-              )}
-              <div style={{ minWidth: 0 }}>
-                <div className="bet-card-title">{title}</div>
-                <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
-                  {sub}
-                  {Number(b.boost) > 0 && (
-                    <span className="boost-tag">+{Math.round(Number(b.boost) * 100)}% boost</span>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="bet-card-top">
-              {col('status') && <span className={`badge ${b.status}`}>{b.status}</span>}
-              <div className="bet-card-btns">
-                <button className="btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); openEdit(b); }}>Edit</button>
-                <button className="btn-danger btn-sm" onClick={(e) => { e.stopPropagation(); remove(b.id); }} aria-label="Delete bet">✕</button>
-              </div>
-            </div>
-          </div>
-
-          <div className="bet-card-figs">
-            {col('stake') && <div><span className="bcf-label">Stake</span><span className="bcf-val">{formatStake(b.stake, currency, staking)}</span></div>}
-            {col('odds') && <div><span className="bcf-label">Odds</span><span className="bcf-val">{formatOdds(b.odds, oddsFormat)}</span></div>}
-            <div><span className="bcf-label">Profit</span><span className={`bcf-val ${p > 0 ? 'pos' : p < 0 ? 'neg' : 'muted'}`}>{p == null ? '—' : formatStake(p, currency, staking, { signed: true })}</span></div>
-          </div>
-
-          {extra && <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>{extra}</div>}
-        </div>
-
-        {b.status === 'pending' && (
-          <div className="bet-card-actions">
+      <div key={b.id} className={`bet2 s-${b.status}` + (selected.has(b.id) ? ' sel' : '')}>
+        <button
+          type="button"
+          className="bet2-main"
+          onClick={() => (selecting ? toggleOne(b.id) : setPreview(b))}
+        >
+          {selecting && (
+            <span className={'bet2-check' + (selected.has(b.id) ? ' on' : '')} aria-hidden="true">
+              {selected.has(b.id) ? '✓' : ''}
+            </span>
+          )}
+          <span className="bet2-body">
+            <span className="bet2-title">
+              {title}
+              {Number(b.boost) > 0 && <span className="boost-tag">+{Math.round(Number(b.boost) * 100)}%</span>}
+            </span>
+            <span className="bet2-meta">{meta}</span>
+          </span>
+          <span className="bet2-right">
+            {p == null
+              ? <span className="bet2-open">Open</span>
+              : <span className={`bet2-profit ${p > 0 ? 'pos' : p < 0 ? 'neg' : 'muted'}`}>{formatStake(p, currency, staking, { signed: true })}</span>}
+            {sub && <span className="bet2-sub">{sub}</span>}
+          </span>
+        </button>
+        {b.status === 'pending' && !selectMode && (
+          <div className="bet2-settle">
             <SettleControls bet={b} onSettle={(s) => settle(b, s)} />
           </div>
         )}
@@ -592,29 +581,44 @@ export default function Bets() {
               </>
             )}
           </div>
+
+          <span style={{ flex: 1 }} />
+          {pendingInView.length > 0 && (
+            <button
+              className={`btn-sm ${selectMode ? 'btn-accent' : 'btn-ghost'}`}
+              onClick={toggleSelectMode}
+              style={{ flex: 'none' }}
+            >
+              {selectMode ? 'Done' : 'Select'}
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Live summary of the current slice */}
-      <div className="row spread" style={{ marginBottom: 8, alignItems: 'baseline' }}>
-        <h3 className="section-title" style={{ margin: 0 }}>Overview</h3>
-        <span className="muted" style={{ fontSize: 13 }}>{bets.length} bet{bets.length !== 1 ? 's' : ''} logged</span>
-      </div>
-      <div className="stat-grid" style={{ marginBottom: 16 }}>
-        <div className="stat"><div className="label">Showing</div><div className="value">{summary.count}</div><div className="sub">of {bets.length} bets</div></div>
-        <div className="stat"><div className="label">Staked</div><div className="value">{formatStake(summary.staked, currency, staking)}</div></div>
-        <div className="stat"><div className="label">Net Profit</div><div className={`value ${summary.profit > 0 ? 'pos' : summary.profit < 0 ? 'neg' : ''}`}>{formatStake(summary.profit, currency, staking, { signed: true })}</div></div>
-        <div className="stat"><div className="label">ROI</div><div className={`value ${summary.roi > 0 ? 'pos' : summary.roi < 0 ? 'neg' : ''}`}>{summary.roi}%</div></div>
+      {/* Clean summary: net profit hero + supporting stats. */}
+      <div className="card bets-summary">
+        <div className="bs-hero">
+          <span className="bs-label">Net profit{status !== 'all' ? ` · ${statusFilterLabel(status)}` : ''}</span>
+          <span className={`bs-profit ${summary.profit > 0 ? 'pos' : summary.profit < 0 ? 'neg' : ''}`}>
+            {formatStake(summary.profit, currency, staking, { signed: true })}
+          </span>
+        </div>
+        <div className="bs-stats">
+          <div><span className="bs-k">ROI</span><span className={`bs-v ${summary.roi > 0 ? 'pos' : summary.roi < 0 ? 'neg' : ''}`}>{summary.roi}%</span></div>
+          <div><span className="bs-k">Win rate</span><span className="bs-v">{summary.winRate == null ? '—' : summary.winRate + '%'}</span></div>
+          <div><span className="bs-k">Staked</span><span className="bs-v">{formatStake(summary.staked, currency, staking)}</span></div>
+          <div><span className="bs-k">Bets</span><span className="bs-v">{summary.count}</span></div>
+        </div>
       </div>
 
-      {selectedCount > 0 && (
+      {(selectMode || selectedCount > 0) && (
         <div className="bulk-bar">
           <span className="bulk-count">{selectedCount} selected</span>
           <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-            <button className="btn-ghost btn-sm settle-win" onClick={() => bulkSettle('won')}>Mark won</button>
-            <button className="btn-ghost btn-sm settle-loss" onClick={() => bulkSettle('lost')}>Mark lost</button>
-            <button className="btn-ghost btn-sm" onClick={() => bulkSettle('void')}>Void</button>
-            <button className="btn-ghost btn-sm" onClick={() => setSelected(new Set())}>Clear</button>
+            <button className="btn-ghost btn-sm" onClick={toggleAll}>{allSelected ? 'None' : 'All'}</button>
+            <button className="btn-ghost btn-sm settle-win" onClick={() => bulkSettle('won')} disabled={selectedCount === 0}>Won</button>
+            <button className="btn-ghost btn-sm settle-loss" onClick={() => bulkSettle('lost')} disabled={selectedCount === 0}>Lost</button>
+            <button className="btn-ghost btn-sm" onClick={() => bulkSettle('void')} disabled={selectedCount === 0}>Void</button>
           </div>
         </div>
       )}
@@ -657,6 +661,8 @@ export default function Bets() {
               <tbody>
                 {grouped.map((mo) => {
                   const moCollapsed = !openMonths.has(mo.month);
+                  const showAll = showAllMonths.has(mo.month);
+                  const visible = showAll ? mo.bets : mo.bets.slice(0, BET_PREVIEW);
                   return (
                     <Fragment key={mo.month}>
                       <tr className="month-group-row" onClick={() => toggleMonth(mo.month)}>
@@ -667,35 +673,16 @@ export default function Bets() {
                           </div>
                         </td>
                       </tr>
-                      {!moCollapsed && (() => {
-                        const showAll = showAllDays.has(mo.month);
-                        const visibleDays = showAll ? mo.days : mo.days.slice(0, DAY_PREVIEW);
-                        return (
-                          <>
-                            {visibleDays.map((g) => {
-                              const dCollapsed = !openDays.has(g.day);
-                              return (
-                                <Fragment key={g.day}>
-                                  <tr className="day-group-row" onClick={() => toggleDay(g.day)}>
-                                    <td colSpan={20}>
-                                      <div className="day-head-inner">
-                                        <span>{formatDate(g.day)} · {countLabel(g.count)}</span>
-                                        <span className={profitClass(g.profit)}>{signedProfit(g.profit)}</span>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                  {!dCollapsed && g.bets.map(renderRow)}
-                                </Fragment>
-                              );
-                            })}
-                            {mo.days.length > DAY_PREVIEW && (
-                              <tr className="day-more-row" onClick={() => toggleShowAllDays(mo.month)}>
-                                <td colSpan={20}>{showAll ? 'Show less' : 'Show more'}</td>
-                              </tr>
-                            )}
-                          </>
-                        );
-                      })()}
+                      {!moCollapsed && (
+                        <>
+                          {visible.map(renderRow)}
+                          {mo.bets.length > BET_PREVIEW && (
+                            <tr className="day-more-row" onClick={() => toggleShowAll(mo.month)}>
+                              <td colSpan={20}>{showAll ? 'Show less' : `Show ${mo.bets.length - BET_PREVIEW} more`}</td>
+                            </tr>
+                          )}
+                        </>
+                      )}
                     </Fragment>
                   );
                 })}
@@ -703,10 +690,12 @@ export default function Bets() {
             </table>
           </div>
 
-          {/* Mobile: cards grouped by month, then by day, so a long history stays tidy. */}
+          {/* Mobile: bets grouped under collapsible months. */}
           <div className="bets-cards">
             {grouped.map((mo) => {
               const moCollapsed = !openMonths.has(mo.month);
+              const showAll = showAllMonths.has(mo.month);
+              const visible = showAll ? mo.bets : mo.bets.slice(0, BET_PREVIEW);
               return (
                 <div key={mo.month} className="month-group">
                   <button type="button" className="month-head" onClick={() => toggleMonth(mo.month)}>
@@ -716,34 +705,16 @@ export default function Bets() {
                     </span>
                     <span className={profitClass(mo.profit)} style={{ fontWeight: 800 }}>{signedProfit(mo.profit)}</span>
                   </button>
-                  {!moCollapsed && (() => {
-                    const showAll = showAllDays.has(mo.month);
-                    const visibleDays = showAll ? mo.days : mo.days.slice(0, DAY_PREVIEW);
-                    return (
-                      <>
-                        {visibleDays.map((g) => {
-                          const dCollapsed = !openDays.has(g.day);
-                          return (
-                            <div key={g.day} className="day-group">
-                              <button type="button" className="day-head day-sub" onClick={() => toggleDay(g.day)}>
-                                <span className="day-head-l">
-                                  <span className="day-chevron" aria-hidden>{dCollapsed ? '▸' : '▾'}</span>
-                                  {formatDate(g.day)} <span className="muted" style={{ fontWeight: 500 }}>· {countLabel(g.count)}</span>
-                                </span>
-                                <span className={profitClass(g.profit)} style={{ fontWeight: 700 }}>{signedProfit(g.profit)}</span>
-                              </button>
-                              {!dCollapsed && g.bets.map(renderCard)}
-                            </div>
-                          );
-                        })}
-                        {mo.days.length > DAY_PREVIEW && (
-                          <button type="button" className="day-more" onClick={() => toggleShowAllDays(mo.month)}>
-                            {showAll ? 'Show less' : 'Show more'}
-                          </button>
-                        )}
-                      </>
-                    );
-                  })()}
+                  {!moCollapsed && (
+                    <div className="month-bets">
+                      {visible.map(renderCard)}
+                      {mo.bets.length > BET_PREVIEW && (
+                        <button type="button" className="day-more" onClick={() => toggleShowAll(mo.month)}>
+                          {showAll ? 'Show less' : `Show ${mo.bets.length - BET_PREVIEW} more`}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -762,6 +733,7 @@ export default function Bets() {
           oddsFormat={oddsFormat}
           profit={profitOf(preview)}
           onEdit={() => { openEdit(preview); setPreview(null); }}
+          onDelete={() => { const id = preview.id; setPreview(null); remove(id); }}
           onClose={() => setPreview(null)}
         />
       )}

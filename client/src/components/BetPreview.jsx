@@ -4,7 +4,7 @@ import { formatStake, formatOdds, formatDate } from '../format.js';
 // Read-only look at a bet — opened by tapping a bet in the list — so the full
 // selection (and each leg of an acca / bet builder) is visible without opening
 // the edit form. Portalled to <body> so it scrolls reliably on iOS.
-export default function BetPreview({ bet, currency, staking, oddsFormat = 'decimal', profit, onEdit, onClose }) {
+export default function BetPreview({ bet, currency, staking, oddsFormat = 'decimal', profit, onEdit, onDelete, onClose }) {
   if (!bet) return null;
   const legs = Array.isArray(bet.legs) ? bet.legs : [];
   const isMulti = bet.bet_type === 'Accumulator' || bet.bet_type === 'Bet builder';
@@ -66,9 +66,14 @@ export default function BetPreview({ bet, currency, staking, oddsFormat = 'decim
           </div>
         )}
 
-        <div className="row" style={{ justifyContent: 'flex-end', marginTop: 16, gap: 8 }}>
-          <button type="button" className="btn-ghost" onClick={onClose}>Close</button>
-          <button type="button" className="btn-primary" onClick={onEdit}>Edit</button>
+        <div className="row spread" style={{ marginTop: 16, gap: 8 }}>
+          {onDelete
+            ? <button type="button" className="btn-danger btn-sm" onClick={onDelete}>Delete</button>
+            : <span />}
+          <div className="row" style={{ gap: 8 }}>
+            <button type="button" className="btn-ghost" onClick={onClose}>Close</button>
+            <button type="button" className="btn-primary" onClick={onEdit}>Edit</button>
+          </div>
         </div>
       </div>
     </div>,
