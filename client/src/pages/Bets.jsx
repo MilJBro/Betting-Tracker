@@ -13,7 +13,7 @@ import { settlePayout } from '../settle.js';
 import { getCached, setCached, subscribeInvalidate } from '../dataCache.js';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
-import { formatStake, formatOdds, formatDate, units } from '../format.js';
+import { formatStake, formatOdds, formatDate, units, money } from '../format.js';
 import { betsToCsv, csvToBets, downloadCsv } from '../csv.js';
 
 // Common betting sports offered in the Add-bet form's sport field so there's
@@ -434,6 +434,8 @@ export default function Bets() {
       formatDate(b.placed_at),
     ].filter(Boolean).join(' · ');
     const selecting = selectMode && b.status === 'pending';
+    const cls = p > 0 ? 'pos' : p < 0 ? 'neg' : 'muted';
+    const unitSize = Number(staking?.unitSize) || 0;
     const sub = [
       col('stake') && formatStake(b.stake, currency, staking),
       col('odds') && Number(b.odds) > 0 ? `@ ${formatOdds(b.odds, oddsFormat)}` : null,
@@ -458,10 +460,19 @@ export default function Bets() {
             <span className="bet2-meta">{meta}</span>
           </span>
           <span className="bet2-right">
-            {p == null
-              ? <span className="bet2-open">Open</span>
-              : <span className={`bet2-profit ${p > 0 ? 'pos' : p < 0 ? 'neg' : 'muted'}`}>{formatStake(p, currency, staking, { signed: true })}</span>}
-            {sub && <span className="bet2-sub">{sub}</span>}
+            {p == null ? (
+              <>
+                <span className="bet2-open">Open</span>
+                {sub && <span className="bet2-sub">{sub}</span>}
+              </>
+            ) : (
+              <>
+                <span className={`bet2-profit ${cls}`}>{money(p, currency, { signed: true })}</span>
+                {unitSize > 0
+                  ? <span className={`bet2-punits ${cls}`}>{units(p / unitSize, { signed: true })}</span>
+                  : (sub && <span className="bet2-sub">{sub}</span>)}
+              </>
+            )}
           </span>
         </button>
         {b.status === 'pending' && !selectMode && (
