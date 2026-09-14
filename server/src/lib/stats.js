@@ -126,12 +126,15 @@ function summarise(rows) {
   const profit = rows.reduce((s, b) => s + profitOf(b), 0);
   const decisive = rows.filter((b) => ['won', 'lost'].includes(b.status));
   const wins = decisive.filter((b) => b.status === 'won').length;
+  const losses = decisive.length - wins;
   return {
     bets: rows.length,
     staked: Number(staked.toFixed(2)),
     profit: Number(profit.toFixed(2)),
     roi: staked > 0 ? Number(((profit / staked) * 100).toFixed(1)) : 0,
     winRate: decisive.length ? Number(((wins / decisive.length) * 100).toFixed(1)) : 0,
+    wins,
+    losses,
   };
 }
 
@@ -203,9 +206,21 @@ export function computeAnalytics(bets) {
   const biggestWin = profits.length ? Math.max(0, ...profits) : 0;
   const biggestLoss = profits.length ? Math.min(0, ...profits) : 0;
 
+  // Per-calendar-day P/L (chronological) — powers the hero trend line and the
+  // "recent performance" day squares.
+  const daily = [...bucket(settled, (b) => (b.placed_at || '').slice(0, 10)).entries()]
+    .filter(([k]) => k)
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([date, rows]) => ({
+      date,
+      profit: Number(rows.reduce((s, b) => s + profitOf(b), 0).toFixed(2)),
+      bets: rows.length,
+    }));
+
   return {
     overall: summarise(settled),
     monthly,
+    daily,
     bySport,
     byBookmaker,
     byTipster,

@@ -94,6 +94,43 @@ const PATHS = {
       <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
     </>
   ),
+  trophy: (
+    <>
+      <path d="M7 4h10v4a5 5 0 0 1-10 0z" />
+      <path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3" />
+      <path d="M12 13v3M9 20h6M10 20v-1.5a2 2 0 0 1 4 0V20" />
+    </>
+  ),
+  calendar: (
+    <>
+      <rect x="4" y="5" width="16" height="16" rx="2" />
+      <path d="M4 9h16M8 3v4M16 3v4" />
+    </>
+  ),
+  bank: (
+    <>
+      <path d="M4 10l8-5 8 5" />
+      <path d="M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18" />
+    </>
+  ),
+  link: (
+    <>
+      <path d="M9 15l6-6" />
+      <path d="M11 7l1-1a3.5 3.5 0 0 1 5 5l-1 1M13 17l-1 1a3.5 3.5 0 0 1-5-5l1-1" />
+    </>
+  ),
+  trend: (
+    <>
+      <path d="M4 15l5-5 4 4 7-7" />
+      <path d="M17 4h4v4" />
+    </>
+  ),
+  ball: (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 8l3.5 2.5-1.3 4.1h-4.4L8.5 10.5z" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 20, className, style }) {
