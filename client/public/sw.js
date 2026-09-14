@@ -1,49 +1,23 @@
-// Service worker for Betbooks.
+// Minimal service worker. Its only job is to make Betbooks installable as a
+// PWA (some browsers require a registered SW with a fetch handler before they
+// offer "install"). It does NO caching — every request goes straight to the
+// network — so the installed app can never be pinned to a stale build.
 //
-// Goal: make the app installable AND reliable on resume, without ever serving
-// a stale deploy while online.
-//
-//  - Navigations (loading the page itself) are NETWORK-FIRST: when online you
-//    always get the freshest index.html, so a new deploy is picked up straight
-//    away. The successful response is copied into the cache.
-//  - If the network is slow or unavailable (e.g. iOS wakes the installed app
-//    after it was suspended, before the connection is ready), we fall back to
-//    the cached index.html instead of a blank white screen. React then boots
-//    and fetches the (fingerprinted) assets as normal.
-//  - All other requests (fingerprinted JS/CSS/images, API calls) go straight
-//    to the network untouched.
-const SHELL_CACHE = 'betbooks-shell-v1';
-const SHELL_URL = '/index.html';
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(SHELL_CACHE).then((cache) => cache.add(SHELL_URL)).catch(() => {})
-  );
-  self.skipWaiting();
-});
-
+// Reliability on resume (blank screen / mis-sized layout after iOS wakes a
+// suspended app) is handled in the page instead, by reloading on resume — see
+// pwa.js. That always produces a fresh network load rather than replaying a
+// cached shell.
+self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => {
   event.waitUntil(
+    // Wipe any caches left by earlier service-worker versions that DID cache
+    // the shell, so nobody is stuck on an old build.
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== SHELL_CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
-
-self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  // Only take over top-level page navigations. Everything else is left to the
-  // browser's normal network handling.
-  if (req.mode !== 'navigate') return;
-
-  event.respondWith(
-    fetch(req)
-      .then((res) => {
-        // Cache the fresh shell for the next offline/cold resume.
-        const copy = res.clone();
-        caches.open(SHELL_CACHE).then((cache) => cache.put(SHELL_URL, copy)).catch(() => {});
-        return res;
-      })
-      .catch(() => caches.match(SHELL_URL).then((cached) => cached || Response.error()))
-  );
+self.addEventListener('fetch', () => {
+  // No respondWith(): the browser handles every request from the network as
+  // usual. Having the listener is enough to satisfy install criteria.
 });
