@@ -36,7 +36,10 @@ export default function InstallAppCard({ isPro, onUpgrade }) {
   return (
     <div className="card" style={{ marginBottom: 18 }}>
       <div className="row spread" style={{ marginBottom: 4 }}>
-        <h3 className="section-title" style={{ margin: 0 }}>Add to Home Screen</h3>
+        <div className="row" style={{ gap: 10, alignItems: 'center' }}>
+          <img src="/icon-192.png" alt="" width="34" height="34" style={{ borderRadius: 9, display: 'block' }} />
+          <h3 className="section-title" style={{ margin: 0 }}>Add to Home Screen</h3>
+        </div>
         {!isPro && <span className="pro-pill">Pro</span>}
       </div>
 

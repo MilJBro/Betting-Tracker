@@ -151,6 +151,9 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6
 .content-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .main { flex: 1; padding: 26px 32px; max-width: var(--maxw); margin: 0 auto; width: 100%; }
 .tracker-bar { display: flex; align-items: center; gap: 10px; padding: 10px 32px; border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 5; }
+/* The sidebar already shows the logo on desktop, so hide the tracker-bar copy
+   there; it appears on mobile (where the sidebar is hidden). */
+.tracker-bar .brand-logo { display: none; flex: none; }
 /* A clear, tappable tracker switcher: icon + label + name + chevron, with the
    native <select> laid invisibly over the whole pill. */
 .tracker-switch {
@@ -167,7 +170,13 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6
 .tsw-name { font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tsw-chev { color: var(--muted); flex: none; display: grid; place-items: center; }
 .tsw-native { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; }
-@media (max-width: 860px) { .tracker-bar { padding: 10px 14px; } .tracker-switch { max-width: none; } }
+@media (max-width: 860px) {
+  .tracker-bar { padding: 10px 14px; }
+  .tracker-bar .brand-logo { display: inline-flex; }
+  .tracker-bar .wordmark { font-size: 16px; font-weight: 800; font-family: var(--font-head); }
+  .tracker-bar .brand-mark svg { width: 22px; height: 22px; }
+  .tracker-switch { max-width: none; flex: 1; min-width: 0; }
+}
 .page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; gap: 16px; flex-wrap: wrap; }
 .page-head h1 { margin: 0; font-size: 26px; font-weight: 800; }
 .page-head p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
