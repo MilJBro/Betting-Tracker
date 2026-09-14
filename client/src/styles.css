@@ -198,6 +198,12 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6
 .drawer-link { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px; border: 0; background: transparent; color: var(--text); font-size: 15px; font-weight: 600; border-radius: 10px; cursor: pointer; }
 .drawer-link:hover { background: var(--surface-2); }
 .drawer-link svg { color: var(--muted); flex: none; }
+/* Drawer sub-views (Manage / New tracker) swapped in place of the list. */
+.drawer-back { display: inline-flex; align-items: center; gap: 4px; background: transparent; border: 0; color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; padding: 6px 8px; border-radius: 8px; }
+.drawer-back:hover { background: var(--surface-2); }
+.drawer-back-chev { font-size: 22px; line-height: 1; }
+.drawer-title { margin: 2px 4px 14px; font-size: 20px; font-weight: 800; }
+.drawer-form { display: block; }
 @media (max-width: 860px) {
   .tracker-bar { padding: 10px 14px; }
   .tb-menu { display: inline-flex; }
