@@ -84,8 +84,10 @@ export default function Analytics() {
   useEffect(() => {
     if (!activeId) return;
     const cached = getCached(cacheKey);
-    if (cached) { setA(cached.a); setMeta(cached.meta); setLoading(false); }
-    else setLoading(true);
+    if (cached) { setA(cached.a); setMeta(cached.meta); }
+    // Never flip to the full-page spinner once we already have something to
+    // show — a filter change re-fetches quietly and updates in place. Otherwise
+    // the page unmounts and tears down an open date picker mid-selection.
     load().finally(() => setLoading(false));
   }, [load, activeId, cacheKey]);
   // Refresh when a bet is added from the global Add-bet overlay.
