@@ -605,7 +605,9 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
     background: color-mix(in srgb, var(--surface) 94%, transparent);
     backdrop-filter: blur(14px); border-top: 1px solid var(--border);
-    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    /* Clear the home indicator with only a small gap — the full safe-area
+       inset plus a base looked lifted too high. */
+    padding: 8px 8px max(8px, calc(env(safe-area-inset-bottom) - 12px));
   }
   .bnav {
     display: flex; flex-direction: column; align-items: center; gap: 3px;
