@@ -10,7 +10,7 @@ import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
 import { getCached, setCached, subscribeInvalidate } from '../dataCache.js';
 import { useAddBet } from '../context/AddBetContext.jsx';
-import { formatStake, units, currencySymbol } from '../format.js';
+import { formatStake, units } from '../format.js';
 
 function Bars({ rows, currency, staking }) {
   // Horizontal profit bars for a labelled breakdown (bookmaker, odds band…).
@@ -62,6 +62,7 @@ export default function Analytics() {
   const [a, setA] = useState(() => getCached(cacheKey)?.a ?? null);
   const [meta, setMeta] = useState(() => getCached(cacheKey)?.meta ?? { pro: false, options: { sports: [], tipsters: [], bookmakers: [] } });
   const [loading, setLoading] = useState(() => !getCached(cacheKey));
+  const [tab, setTab] = useState('sport'); // active breakdown tab
   const currency = settings?.currency || 'GBP';
   const staking = settings?.staking;
   const unitSize = Number(staking?.unitSize) || 0;
@@ -137,7 +138,7 @@ export default function Analytics() {
   if (!hasData) {
     return (
       <div className="main">
-        <div className="page-head"><div><h1>Analytics</h1><p>Insights from your betting.</p></div></div>
+        <div className="page-head"><div><h1>Stats</h1></div></div>
         {controls}
         <div className="card empty">
           <div className="em"><Icon name="analytics" size={40} /></div>
@@ -157,68 +158,55 @@ export default function Analytics() {
     ? buildHighlights(a, (v) => formatStake(v, currency, staking, { signed: true }))
     : [];
 
+  const o = a.overall;
+  const avgStake = o.bets ? o.staked / o.bets : 0;
+  const pcls = (v) => (v > 0 ? 'pos' : v < 0 ? 'neg' : '');
+
+  // Breakdowns shown in one tabbed card — only those with data.
+  const breakdowns = [
+    a.bySport?.length ? { key: 'sport', label: 'Sport', rows: a.bySport.map((s) => ({ ...s, label: s.sport })) } : null,
+    a.byOddsBand?.length ? { key: 'odds', label: 'Odds', rows: a.byOddsBand.map((x) => ({ ...x, label: x.band })) } : null,
+    a.byDay?.some((d) => d.bets > 0) ? { key: 'day', label: 'Day', rows: a.byDay.filter((d) => d.bets > 0).map((d) => ({ ...d, label: d.day })) } : null,
+    a.byTipster?.length ? { key: 'tipster', label: 'Tipster', rows: a.byTipster.map((t) => ({ ...t, label: t.tipster })) } : null,
+  ].filter(Boolean);
+  const activeBreak = breakdowns.find((b) => b.key === tab) || breakdowns[0];
+
   return (
     <div className="main">
-      <div className="page-head"><div><h1>Analytics</h1><p>Insights from your betting.</p></div></div>
+      <div className="page-head"><div><h1>Stats</h1></div></div>
       {controls}
 
-      {/* In units — everything expressed in the user's unit size */}
-      {unitSize > 0 ? (
-        <div className="card" style={{ marginBottom: 16 }}>
-          <div className="row spread" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 6 }}>
-            <h3 className="section-title" style={{ margin: 0 }}>In units</h3>
-            <span className="muted" style={{ fontSize: 12.5 }}>1u = {currencySymbol(currency)}{unitSize} · <Link to="/customise">change</Link></span>
-          </div>
-          <div className="stat-grid" style={{ marginBottom: 0 }}>
-            <div className="stat"><div className="label">Amount bet</div><div className="value">{units(a.overall.staked / unitSize)}</div></div>
-            <div className="stat"><div className="label">Net profit</div><div className={`value ${a.overall.profit > 0 ? 'pos' : a.overall.profit < 0 ? 'neg' : ''}`}>{units(a.overall.profit / unitSize, { signed: true })}</div></div>
-            <div className="stat"><div className="label">Avg stake</div><div className="value">{units(a.overall.bets ? (a.overall.staked / a.overall.bets) / unitSize : 0)}</div></div>
-          </div>
+      {/* Summary hero — net profit (money + units) and the headline rates. */}
+      <div className="card bets-summary">
+        <div className="bs-hero">
+          <span className="bs-label">Net profit</span>
+          <span className="bs-figures">
+            <span className={`bs-profit ${pcls(o.profit)}`}>{formatStake(o.profit, currency, staking, { signed: true })}</span>
+            {unitSize > 0 && (staking?.mode || 'currency') === 'currency' && (
+              <span className={`bs-units ${pcls(o.profit)}`}>{units(o.profit / unitSize, { signed: true })}</span>
+            )}
+          </span>
         </div>
-      ) : (
-        <Link to="/customise" className="card" style={{ marginBottom: 16, display: 'block', textDecoration: 'none', color: 'inherit' }}>
-          <div style={{ fontWeight: 700 }}>See everything in units</div>
-          <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>Set what one unit is worth in Customise → Units &amp; staking, and your profit, stake and total bet show in units here.</div>
-        </Link>
-      )}
-
-      {/* Headline numbers */}
-      <div className="stat-grid">
-        <div className="stat"><div className="label">Net Profit</div><div className={`value ${a.overall.profit > 0 ? 'pos' : a.overall.profit < 0 ? 'neg' : ''}`}>{formatStake(a.overall.profit, currency, staking, { signed: true })}</div></div>
-        <div className="stat"><div className="label">ROI</div><div className={`value ${a.overall.roi > 0 ? 'pos' : a.overall.roi < 0 ? 'neg' : ''}`}>{a.overall.roi}%</div></div>
-        <div className="stat"><div className="label">Win Rate</div><div className="value">{a.overall.winRate}%</div></div>
-        <div className="stat"><div className="label">Best Streak</div><div className="value pos">{st.longestWin}W</div><div className="sub">worst {st.longestLoss}L</div></div>
-        <div className="stat"><div className="label">Biggest Win</div><div className="value pos">{formatStake(a.biggestWin, currency, staking, { signed: true })}</div></div>
-        <div className="stat"><div className="label">Biggest Loss</div><div className="value neg">{formatStake(a.biggestLoss, currency, staking, { signed: true })}</div></div>
+        <div className="bs-stats">
+          <div><span className="bs-k">ROI</span><span className={`bs-v ${pcls(o.roi)}`}>{o.roi}%</span></div>
+          <div><span className="bs-k">Win rate</span><span className="bs-v">{o.winRate}%</span></div>
+          <div><span className="bs-k">Staked</span><span className="bs-v">{formatStake(o.staked, currency, staking)}</span></div>
+          <div><span className="bs-k">Bets</span><span className="bs-v">{o.bets}</span></div>
+        </div>
       </div>
 
-      {/* Where your edge is — auto-surfaced findings */}
-      {highlights.length > 0 && (
-        <div className="card" style={{ marginBottom: 18 }}>
-          <h3 className="section-title">Where your edge is</h3>
-          <div className="stack" style={{ gap: 10 }}>
-            {highlights.map((h, i) => (
-              <div key={i} className="row spread" style={{ fontSize: 14, borderBottom: i < highlights.length - 1 ? '1px solid var(--border)' : 'none', paddingBottom: i < highlights.length - 1 ? 10 : 0 }}>
-                <span>{h.text}</span>
-                <span className={h.tone} style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{h.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Compact key facts. */}
+      <div className="stat-grid" style={{ marginBottom: 18 }}>
+        <div className="stat"><div className="label">Best streak</div><div className="value pos">{st.longestWin}W</div><div className="sub">worst {st.longestLoss}L</div></div>
+        <div className="stat"><div className="label">Avg stake</div><div className="value">{formatStake(avgStake, currency, staking)}</div></div>
+        <div className="stat"><div className="label">Biggest win</div><div className="value pos">{formatStake(a.biggestWin, currency, staking, { signed: true })}</div></div>
+        <div className="stat"><div className="label">Biggest loss</div><div className="value neg">{formatStake(a.biggestLoss, currency, staking, { signed: true })}</div></div>
+      </div>
 
-      {/* By sport / category */}
-      {a.bySport && a.bySport.length > 0 && (
-        <div className="card" style={{ marginBottom: 18 }}>
-          <h3 className="section-title">By sport / category</h3>
-          <Bars rows={a.bySport.map((s) => ({ ...s, label: s.sport }))} currency={currency} staking={staking} />
-        </div>
-      )}
-
-      {/* Monthly P/L */}
+      {/* Monthly P/L chart. */}
       <div className="card" style={{ marginBottom: 18 }}>
         <h3 className="section-title">Monthly profit / loss</h3>
-        <ResponsiveContainer width="100%" height={260}>
+        <ResponsiveContainer width="100%" height={250}>
           <BarChart data={monthly} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
             <XAxis dataKey="name" stroke="var(--muted)" fontSize={11} tickLine={false} />
@@ -238,41 +226,42 @@ export default function Analytics() {
         </ResponsiveContainer>
       </div>
 
-      {/* By odds band */}
-      <div className="card">
-        <h3 className="section-title">By odds range</h3>
-        <Bars rows={a.byOddsBand.map((o) => ({ ...o, label: o.band }))} currency={currency} staking={staking} />
-      </div>
-
-      {/* By tipster — only when some bets name a tipster */}
-      {a.byTipster && a.byTipster.length > 0 && (
-        <div className="card" style={{ marginTop: 18 }}>
-          <h3 className="section-title">By tipster</h3>
-          <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>How the tipsters you follow are actually performing.</p>
-          <Bars rows={a.byTipster.map((t) => ({ ...t, label: t.tipster }))} currency={currency} staking={staking} />
+      {/* Where your edge is — auto-surfaced findings. */}
+      {highlights.length > 0 && (
+        <div className="card" style={{ marginBottom: 18 }}>
+          <h3 className="section-title">Where your edge is</h3>
+          <div className="stack" style={{ gap: 10 }}>
+            {highlights.map((h, i) => (
+              <div key={i} className="row spread" style={{ fontSize: 14, borderBottom: i < highlights.length - 1 ? '1px solid var(--border)' : 'none', paddingBottom: i < highlights.length - 1 ? 10 : 0 }}>
+                <span>{h.text}</span>
+                <span className={h.tone} style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{h.value}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Day of week */}
-      <div className="card" style={{ marginTop: 18 }}>
-        <h3 className="section-title">By day of week</h3>
-        <div className="table-wrap">
-          <table>
-            <thead><tr><th>Day</th><th>Bets</th><th>Win rate</th><th>ROI</th><th>Profit</th></tr></thead>
-            <tbody>
-              {a.byDay.filter((d) => d.bets > 0).map((d) => (
-                <tr key={d.day}>
-                  <td>{d.day}</td>
-                  <td>{d.bets}</td>
-                  <td>{d.winRate}%</td>
-                  <td className={d.roi > 0 ? 'pos' : d.roi < 0 ? 'neg' : ''}>{d.roi}%</td>
-                  <td className={d.profit > 0 ? 'pos' : d.profit < 0 ? 'neg' : 'muted'}>{formatStake(d.profit, currency, staking, { signed: true })}</td>
-                </tr>
+      {/* Breakdowns — one card, switchable by tab. */}
+      {activeBreak && (
+        <div className="card">
+          <h3 className="section-title">Breakdown</h3>
+          {breakdowns.length > 1 && (
+            <div className="seg-group" style={{ marginBottom: 16 }}>
+              {breakdowns.map((b) => (
+                <button
+                  key={b.key}
+                  type="button"
+                  className={activeBreak.key === b.key ? 'seg on' : 'seg'}
+                  onClick={() => setTab(b.key)}
+                >
+                  {b.label}
+                </button>
               ))}
-            </tbody>
-          </table>
+            </div>
+          )}
+          <Bars rows={activeBreak.rows} currency={currency} staking={staking} />
         </div>
-      </div>
+      )}
     </div>
   );
 }
