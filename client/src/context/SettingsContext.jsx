@@ -42,12 +42,14 @@ export function applyTheme(theme) {
   root.style.setProperty('--head-spacing', style.headSpacing);
 }
 
-// The locked-in design, with ONLY the user's accent colour (theme.primary)
-// allowed through. Everything else — dark mode, background, surface, soft
-// style, font — stays fixed so the app can't be made unusable.
+// The locked-in design, with only the user's accent colour (theme.primary)
+// and light/dark mode allowed through. Background, surface, style and font
+// stay fixed so the app can't be made unusable; applyTheme derives the light
+// palette when mode is 'light'.
 export function resolveTheme(settings) {
   const chosen = settings?.theme?.primary || DEFAULT_THEME.primary;
-  return { ...DEFAULT_THEME, primary: chosen, accent: chosen };
+  const mode = settings?.theme?.mode === 'light' ? 'light' : 'dark';
+  return { ...DEFAULT_THEME, primary: chosen, accent: chosen, mode };
 }
 
 export function SettingsProvider({ children }) {
