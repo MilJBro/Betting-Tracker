@@ -1,9 +1,12 @@
 import { createContext, useContext, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { useSettings } from './SettingsContext.jsx';
 import { useTracker } from './TrackerContext.jsx';
 import { useToast } from './ToastContext.jsx';
 import BetForm from '../components/BetForm.jsx';
+import PasteBetDialog from '../components/PasteBetDialog.jsx';
+import { usePlan } from '../usePlan.js';
 import { getCached, invalidateData } from '../dataCache.js';
 
 // A starter list so common sports (incl. horse racing) are always offered on
@@ -24,20 +27,45 @@ export function AddBetProvider({ children }) {
   const { settings, update: updateSettings } = useSettings();
   const { activeId } = useTracker();
   const toast = useToast();
+  const navigate = useNavigate();
+  const { ent } = usePlan();
+  const aiEnabled = ent?.ai?.enabled !== false; // show unless the server says it's off
 
   const [open, setOpen] = useState(false);
   const [template, setTemplate] = useState(null);
   const [bets, setBets] = useState([]);
+  const [pasting, setPasting] = useState(false);
+  const [initialBet, setInitialBet] = useState(null);
+  const [formKey, setFormKey] = useState(0); // bump to remount the form with a new pre-fill
   const lastDateRef = useRef('');
 
   const openAddBet = (opts = {}) => {
     setTemplate(opts.template || null);
+    setInitialBet(null);
     // Seed autocomplete from cache instantly, then refresh from the server.
     setBets(getCached('bets:' + activeId)?.bets || []);
     if (activeId) api.get(`/bets?tracker=${activeId}`).then((d) => setBets(d.bets)).catch(() => {});
     setOpen(true);
+    if (opts.paste) setPasting(true);
   };
-  const close = () => { setOpen(false); setTemplate(null); };
+  const close = () => { setOpen(false); setTemplate(null); setPasting(false); setInitialBet(null); };
+
+  // A pasted bet was read: drop the paste dialog and re-mount the slip
+  // pre-filled with the extracted fields for the user to confirm.
+  const applyParsed = (bet) => {
+    // The text parser returns combined odds + a joined selection but no
+    // per-leg breakdown, so keep multi-selection bets as a single slip (which
+    // preserves the odds and selection) rather than switching to an empty
+    // multi-leg form. The user can split it into legs if they want.
+    const clean = { ...bet };
+    if (['Accumulator', 'Bet builder'].includes(clean.bet_type) && (!Array.isArray(clean.legs) || clean.legs.length < 2)) {
+      clean.bet_type = '';
+    }
+    setInitialBet(clean);
+    setTemplate(null);
+    setFormKey((k) => k + 1);
+    setPasting(false);
+  };
 
   async function save(form) {
     try {
@@ -84,8 +112,10 @@ export function AddBetProvider({ children }) {
       {children}
       {open && settings && (
         <BetForm
-          initial={null}
+          key={formKey}
+          initial={initialBet}
           isEdit={false}
+          onPaste={aiEnabled ? () => setPasting(true) : undefined}
           fields={settings.fields || {}}
           staking={settings.staking}
           currency={settings.currency}
@@ -101,6 +131,13 @@ export function AddBetProvider({ children }) {
           onToggleField={(k, v) => updateSettings({ fields: { ...settings.fields, [k]: v } })}
           onSave={save}
           onClose={close}
+        />
+      )}
+      {pasting && (
+        <PasteBetDialog
+          onParsed={applyParsed}
+          onClose={() => setPasting(false)}
+          onUpgrade={() => { close(); navigate('/account'); }}
         />
       )}
     </AddBetContext.Provider>
