@@ -377,10 +377,11 @@ tr:last-child td { border-bottom: none; }
 .perf-card-head.static { cursor: default; }
 .pch-title { display: inline-flex; align-items: center; gap: 9px; font-size: 16px; font-weight: 800; font-family: var(--font-head); white-space: nowrap; }
 .pch-title svg { color: var(--primary); }
-/* Flip instantly (no transition): animating the chevron re-rasterises the
-   whole button each frame, which makes the web-font title shimmer/jitter. */
 .perf-card-head > svg { color: var(--muted); }
 .perf-card-head > svg.flip { transform: rotate(180deg); }
+/* These are large full-width buttons, not little tappable chips, so suppress
+   the global button press-nudge (translateY) — it just makes the title jitter. */
+.perf-card-head:active, .brk-row:active, .paste-cta:active { transform: none; }
 
 /* Breakdown rows */
 .brk-row {
