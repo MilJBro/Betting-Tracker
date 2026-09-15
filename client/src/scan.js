@@ -39,3 +39,9 @@ export async function scanBetSlip(file) {
   const { image, mediaType } = await fileToScaledImage(file);
   return api.post('/bets/scan', { image, mediaType }); // { bet, confidence, currency }
 }
+
+// Parse pasted/shared bet text (e.g. a bet365 "share bet" message) into bet
+// fields. Returns { bet, confidence, currency, scans }.
+export async function parseBetText(text) {
+  return api.post('/bets/scan/text', { text });
+}

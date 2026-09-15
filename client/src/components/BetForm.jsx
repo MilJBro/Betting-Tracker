@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { currencySymbol, money, formatOdds, parseOdds } from '../format.js';
+import Icon from './Icon.jsx';
 
 const STATUS_OPTIONS = ['pending', 'won', 'lost', 'void', 'cashout'];
 // Each-way place-terms fractions (the place part pays at this fraction of odds).
@@ -95,7 +96,7 @@ const EDITABLE_FIELDS = [
   { key: 'tags', label: 'Tags' },
 ];
 
-export default function BetForm({ initial, isEdit, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], template, defaultDate, onSetUnitSize, onSaveTemplate, onToggleField, onSave, onClose }) {
+export default function BetForm({ initial, isEdit, onPaste, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], template, defaultDate, onSetUnitSize, onSaveTemplate, onToggleField, onSave, onClose }) {
   const unitSize = Number(staking?.unitSize) || 0;
   const [editUnit, setEditUnit] = useState(false);
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
@@ -407,6 +408,17 @@ export default function BetForm({ initial, isEdit, fields, staking, currency, od
             <button className="btn-ghost btn-sm" type="button" onClick={onClose} aria-label="Close">✕</button>
           </div>
         </div>
+
+        {!isEdit && onPaste && (
+          <button type="button" className="paste-cta" onClick={onPaste}>
+            <span className="paste-cta-ic"><Icon name="clipboard" size={18} /></span>
+            <span className="paste-cta-txt">
+              <strong>Paste a bet</strong>
+              <span className="muted">Shared it from bet365 or another app? We’ll read it for you</span>
+            </span>
+            <Icon name="chevron" size={16} className="paste-cta-chev" />
+          </button>
+        )}
 
         {fieldsEditing && onToggleField && (
           <div className="field-editor">
