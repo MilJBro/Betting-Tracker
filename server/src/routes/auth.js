@@ -92,6 +92,19 @@ router.post('/change-password', requireAuth, (req, res) => {
   res.json({ token: signToken({ ...row, token_version: tv }), user: publicUser(row) });
 });
 
+// Update the display name (username). Email isn't editable here (it would need
+// a re-verification flow); everything else on the profile is read-only.
+router.post('/profile', requireAuth, (req, res) => {
+  const { username } = req.body || {};
+  const err = validateUsername(username);
+  if (err) return res.status(400).json({ error: err });
+  const row = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
+  if (!row) return res.status(404).json({ error: 'Account not found' });
+  const name = username.trim();
+  db.prepare('UPDATE users SET username = ? WHERE id = ?').run(name, req.userId);
+  res.json({ user: publicUser({ ...row, username: name }) });
+});
+
 // Log out of every device by bumping the token version.
 router.post('/logout-all', requireAuth, (req, res) => {
   db.prepare('UPDATE users SET token_version = token_version + 1 WHERE id = ?').run(
