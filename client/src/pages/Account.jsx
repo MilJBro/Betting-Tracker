@@ -299,7 +299,15 @@ export default function Account() {
           <div className="set-head-txt"><strong>Display preferences</strong><span className="muted">Choose what you want to see in your app.</span></div>
         </div>
 
-        <div className="set-subhead">Accent colour<span className="muted">Personalise the highlight colour across your app</span></div>
+        <div className="set-subhead">Appearance<span className="muted">Light or dark theme</span></div>
+        <div className="seg-group" style={{ marginBottom: 6, maxWidth: 260 }}>
+          {[{ k: 'dark', label: 'Dark' }, { k: 'light', label: 'Light' }].map((o) => (
+            <button key={o.k} type="button" className={`seg ${(settings?.theme?.mode || 'dark') === o.k ? 'on' : ''}`}
+              onClick={() => update({ theme: { ...settings.theme, mode: o.k } })}>{o.label}</button>
+          ))}
+        </div>
+
+        <div className="set-subhead" style={{ marginTop: 14 }}>Accent colour<span className="muted">Personalise the highlight colour across your app</span></div>
         <div className="swatch-row">
           {ACCENTS.map((c) => (
             <button
