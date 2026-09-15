@@ -220,39 +220,6 @@ export default function Account() {
         </div>
       </div>
 
-      {/* Plan */}
-      <div className="card set-card">
-        <div className="set-head">
-          <span className="set-ic"><Icon name="trophy" size={18} /></span>
-          <div className="set-head-txt"><strong>Plan</strong><span className="muted">{isPro ? 'You’re on Pro — thanks for supporting Betbooks.' : 'Upgrade to unlock everything.'}</span></div>
-          <span className={`badge ${isPro ? 'won' : ''}`} style={{ textTransform: 'none' }}>{isPro ? 'Pro' : 'Free'}</span>
-        </div>
-        {planMsg && <div className="muted" style={{ fontSize: 13, margin: '4px 2px 8px' }}>{planMsg}</div>}
-        {!isPro ? (
-          <div style={{ padding: '4px 2px 2px' }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>
-              {billing?.trialDays > 0
-                ? <>Try Pro free for {billing.trialDays} days{billing?.priceLabel ? <span className="muted" style={{ fontWeight: 500 }}> · then {billing.priceLabel}</span> : ''}</>
-                : <>Upgrade to Pro{billing?.priceLabel ? <span className="muted" style={{ fontWeight: 500 }}> · {billing.priceLabel}</span> : ''}</>}
-            </div>
-            <ul className="muted" style={{ margin: '0 0 12px', paddingLeft: 18, fontSize: 13, lineHeight: 1.7 }}>
-              {PRO_FEATURE_LABELS.map((f) => <li key={f}>{f}</li>)}
-            </ul>
-            <button className="btn-primary" onClick={doUpgrade} disabled={planBusy || !ent}>
-              {planBusy ? 'Working…' : billing?.trialDays > 0 ? `Start ${billing.trialDays}-day free trial` : 'Upgrade to Pro'}
-            </button>
-          </div>
-        ) : (
-          <div style={{ padding: '2px 2px' }}>
-            {billing?.enabled ? (
-              <button className="btn-ghost btn-sm" onClick={openPortal} disabled={planBusy}>{planBusy ? 'Working…' : 'Manage billing'}</button>
-            ) : (
-              <button className="btn-ghost btn-sm" onClick={() => setPlanDev('free')} disabled={planBusy}>Switch back to Free</button>
-            )}
-          </div>
-        )}
-      </div>
-
       {/* Account settings */}
       <div className="card set-card">
         <div className="set-head">
@@ -365,6 +332,41 @@ export default function Account() {
       </div>
 
       <InstallAppCard isPro={isPro} onUpgrade={doUpgrade} />
+
+      {/* Plan & billing — kept a clear, standard route so cancelling stays
+          easy to find (as the law and Stripe require), just not the most
+          prominent thing on the page. */}
+      <div className="card set-card">
+        <div className="set-head">
+          <span className="set-ic"><Icon name="trophy" size={18} /></span>
+          <div className="set-head-txt"><strong>Plan & billing</strong><span className="muted">{isPro ? 'Manage or cancel your subscription.' : 'Upgrade to unlock everything.'}</span></div>
+          <span className={`badge ${isPro ? 'won' : ''}`} style={{ textTransform: 'none' }}>{isPro ? 'Pro' : 'Free'}</span>
+        </div>
+        {planMsg && <div className="muted" style={{ fontSize: 13, margin: '4px 2px 8px' }}>{planMsg}</div>}
+        {!isPro ? (
+          <div style={{ padding: '4px 2px 2px' }}>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>
+              {billing?.trialDays > 0
+                ? <>Try Pro free for {billing.trialDays} days{billing?.priceLabel ? <span className="muted" style={{ fontWeight: 500 }}> · then {billing.priceLabel}</span> : ''}</>
+                : <>Upgrade to Pro{billing?.priceLabel ? <span className="muted" style={{ fontWeight: 500 }}> · {billing.priceLabel}</span> : ''}</>}
+            </div>
+            <ul className="muted" style={{ margin: '0 0 12px', paddingLeft: 18, fontSize: 13, lineHeight: 1.7 }}>
+              {PRO_FEATURE_LABELS.map((f) => <li key={f}>{f}</li>)}
+            </ul>
+            <button className="btn-primary" onClick={doUpgrade} disabled={planBusy || !ent}>
+              {planBusy ? 'Working…' : billing?.trialDays > 0 ? `Start ${billing.trialDays}-day free trial` : 'Upgrade to Pro'}
+            </button>
+          </div>
+        ) : (
+          <div style={{ padding: '2px 2px' }}>
+            {billing?.enabled ? (
+              <button className="btn-ghost btn-sm" onClick={openPortal} disabled={planBusy}>{planBusy ? 'Working…' : 'Manage or cancel'}</button>
+            ) : (
+              <button className="btn-ghost btn-sm" onClick={() => setPlanDev('free')} disabled={planBusy}>Switch back to Free</button>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Data & security */}
       <div className="card set-card">
