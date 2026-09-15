@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 import { api } from '../api.js';
@@ -67,15 +68,32 @@ function computeMetrics(list) {
     timeline.push({ date: (b.placed_at || '').slice(0, 10), profit: Number(running.toFixed(2)) });
   }
 
+  const roi = staked > 0 ? (profit / staked) * 100 : 0;
   return {
-    profit: Number(profit.toFixed(2)), staked, winRate: Number(winRate.toFixed(1)),
-    totalBets: list.length, avgStake, biggestWin: Number(biggestWin.toFixed(2)),
+    profit: Number(profit.toFixed(2)), staked, roi: Number(roi.toFixed(1)), winRate: Number(winRate.toFixed(1)),
+    totalBets: list.length, settled: settled.length, avgStake, biggestWin: Number(biggestWin.toFixed(2)),
     biggestLoss: Number(biggestLoss.toFixed(2)), longestWin, current, currentType, timeline,
   };
 }
 
+// The catalog of tiles a user can put on their dashboard (label + icon). The
+// value/delta for each is built in tileData() from the computed metrics.
+export const TILE_CATALOG = [
+  { key: 'netProfit', label: 'Net Profit', icon: 'trend' },
+  { key: 'roi', label: 'ROI', icon: 'trend' },
+  { key: 'winRate', label: 'Win Rate', icon: 'target' },
+  { key: 'totalBets', label: 'Total Bets', icon: 'coins' },
+  { key: 'avgStake', label: 'Avg. Stake', icon: 'clock' },
+  { key: 'totalStaked', label: 'Total Staked', icon: 'coins' },
+  { key: 'biggestWin', label: 'Best Win', icon: 'trophy' },
+  { key: 'biggestLoss', label: 'Biggest Loss', icon: 'target' },
+  { key: 'currentStreak', label: 'Current Streak', icon: 'calendar' },
+  { key: 'longestWin', label: 'Longest Streak', icon: 'analytics' },
+  { key: 'pending', label: 'Open Bets', icon: 'clock' },
+];
+
 export default function Dashboard() {
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const { active, activeId } = useTracker();
   const toast = useToast();
   const navigate = useNavigate();
@@ -85,6 +103,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(() => !getCached('dash:' + activeId));
   const [range, setRange] = useState('30d');
   const [chartRange, setChartRange] = useState('30d');
+  const [editTiles, setEditTiles] = useState(false);
 
   const load = useCallback(() => {
     const q = activeId ? `?tracker=${activeId}` : '';
@@ -213,6 +232,37 @@ export default function Dashboard() {
 
   const recent = bets.slice(0, 5);
   const chartData = chartM.timeline;
+  const pendingStake = pending.reduce((s, b) => s + b.stake, 0);
+
+  // The user's chosen dashboard tiles (2–4), validated against the catalog.
+  const dashTiles = (Array.isArray(settings.dashTiles) && settings.dashTiles.length >= 2
+    ? settings.dashTiles : ['netProfit', 'winRate', 'totalBets', 'avgStake'])
+    .filter((k) => TILE_CATALOG.some((t) => t.key === k)).slice(0, 4);
+  const toggleTile = (key) => {
+    let next;
+    if (dashTiles.includes(key)) { if (dashTiles.length <= 2) return; next = dashTiles.filter((k) => k !== key); }
+    else { if (dashTiles.length >= 4) return; next = [...dashTiles, key]; }
+    update({ dashTiles: next });
+  };
+  // Build a tile's value + sub/delta from the computed metrics.
+  function tileData(key) {
+    const meta = TILE_CATALOG.find((t) => t.key === key) || {};
+    const base = { label: meta.label, icon: meta.icon };
+    switch (key) {
+      case 'netProfit': return { ...base, value: money(m.profit, currency, { signed: true }), valCls: pcls(m.profit), sub: showUnits ? unitsOf(m.profit) : null, subCls: pcls(m.profit) };
+      case 'roi': return { ...base, value: `${m.roi}%`, valCls: pcls(m.roi) };
+      case 'winRate': return { ...base, value: `${m.winRate}%`, delta: delta?.winRate, deltaFmt: (x) => `${x.toFixed(0)}%` };
+      case 'totalBets': return { ...base, value: m.totalBets, delta: delta?.totalBets, deltaFmt: (x) => `${x}` };
+      case 'avgStake': return { ...base, value: formatStake(m.avgStake, currency, staking), delta: delta?.avgStake, deltaFmt: (x) => money(x, currency) };
+      case 'totalStaked': return { ...base, value: formatStake(m.staked, currency, staking) };
+      case 'biggestWin': return { ...base, value: money(m.biggestWin, currency, { signed: true }), valCls: 'pos', sub: showUnits ? unitsOf(m.biggestWin) : null, subCls: 'pos' };
+      case 'biggestLoss': return { ...base, value: money(m.biggestLoss, currency, { signed: true }), valCls: 'neg', sub: showUnits ? unitsOf(m.biggestLoss) : null, subCls: 'neg' };
+      case 'currentStreak': return { ...base, value: m.current, valCls: m.currentType === 'won' ? 'pos' : m.currentType === 'lost' ? 'neg' : '', sub: m.currentType === 'won' ? 'wins' : m.currentType === 'lost' ? 'losses' : '—' };
+      case 'longestWin': return { ...base, value: m.longestWin, sub: 'wins' };
+      case 'pending': return { ...base, value: pending.length, sub: formatStake(pendingStake, currency, staking) };
+      default: return base;
+    }
+  }
 
   return (
     <div className="main">
@@ -238,33 +288,53 @@ export default function Dashboard() {
 
       <PendingReminder bets={bets} onReview={() => navigate('/bets')} reviewLabel="Show open bets" />
 
-      {/* Stat tiles */}
-      <div className="dstat-grid">
-        <div className="dstat primary">
-          <div className="dstat-top"><span className="dstat-ic"><Icon name="trend" size={16} /></span></div>
-          <div className="dstat-label">Net Profit</div>
-          <div className={`dstat-val ${pcls(m.profit)}`}>{money(m.profit, currency, { signed: true })}</div>
-          {showUnits ? <span className={`dstat-sub ${pcls(m.profit)}`}>{unitsOf(m.profit)}</span> : <Delta v={0} fmt={() => ''} />}
-        </div>
-        <div className="dstat">
-          <div className="dstat-top"><span className="dstat-ic"><Icon name="target" size={16} /></span></div>
-          <div className="dstat-label">Win Rate</div>
-          <div className="dstat-val">{m.winRate}%</div>
-          <Delta v={delta?.winRate ?? 0} fmt={(x) => `${x.toFixed(0)}%`} />
-        </div>
-        <div className="dstat">
-          <div className="dstat-top"><span className="dstat-ic"><Icon name="coins" size={16} /></span></div>
-          <div className="dstat-label">Total Bets</div>
-          <div className="dstat-val">{m.totalBets}</div>
-          <Delta v={delta?.totalBets ?? 0} fmt={(x) => `${x}`} />
-        </div>
-        <div className="dstat">
-          <div className="dstat-top"><span className="dstat-ic"><Icon name="clock" size={16} /></span></div>
-          <div className="dstat-label">Avg. Stake</div>
-          <div className="dstat-val">{formatStake(m.avgStake, currency, staking)}</div>
-          <Delta v={delta?.avgStake ?? 0} fmt={(x) => money(x, currency)} />
-        </div>
+      {/* Stat tiles — choosable */}
+      <div className="row" style={{ justifyContent: 'flex-end', marginBottom: 6 }}>
+        <button type="button" className="tile-edit" onClick={() => setEditTiles(true)}><Icon name="edit" size={13} /> Edit tiles</button>
       </div>
+      <div className="dstat-grid" style={{ gridTemplateColumns: `repeat(${dashTiles.length}, 1fr)` }}>
+        {dashTiles.map((key, i) => {
+          const td = tileData(key);
+          return (
+            <div key={key} className={`dstat ${i === 0 ? 'primary' : ''}`}>
+              <div className="dstat-top"><span className="dstat-ic"><Icon name={td.icon} size={16} /></span></div>
+              <div className="dstat-label">{td.label}</div>
+              <div className={`dstat-val ${td.valCls || ''}`}>{td.value}</div>
+              {td.sub != null
+                ? <span className={`dstat-sub ${td.subCls || 'muted'}`}>{td.sub}</span>
+                : td.delta !== undefined
+                  ? <Delta v={td.delta ?? 0} fmt={td.deltaFmt} />
+                  : <span className="dstat-sub muted">—</span>}
+            </div>
+          );
+        })}
+      </div>
+
+      {editTiles && createPortal(
+        <div className="modal-overlay" onMouseDown={() => setEditTiles(false)}>
+          <div className="modal" style={{ maxWidth: 440 }} onMouseDown={(e) => e.stopPropagation()}>
+            <div className="row spread" style={{ marginBottom: 6 }}>
+              <h2 style={{ margin: 0, fontSize: 20 }}>Dashboard tiles</h2>
+              <button className="btn-ghost btn-sm" onClick={() => setEditTiles(false)}>Done</button>
+            </div>
+            <p className="muted" style={{ margin: '0 0 10px', fontSize: 13 }}>Choose 2–4 stats to show at the top of your dashboard.</p>
+            <div className="stack" style={{ gap: 0 }}>
+              {TILE_CATALOG.map((t) => {
+                const on = dashTiles.includes(t.key);
+                const disabled = (!on && dashTiles.length >= 4) || (on && dashTiles.length <= 2);
+                return (
+                  <button key={t.key} type="button" className={`tile-pick ${on ? 'on' : ''}`} disabled={disabled} onClick={() => toggleTile(t.key)}>
+                    <span className="sr-ic"><Icon name={t.icon} size={16} /></span>
+                    <span className="tile-pick-label">{t.label}</span>
+                    <span className="tile-pick-check">{on && <Icon name="check" size={16} />}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Profit Overview */}
       <div className="card perf-card">

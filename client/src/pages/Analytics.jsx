@@ -76,7 +76,6 @@ export default function Analytics() {
   const unitSize = Number(staking?.unitSize) || 0;
   const showUnits = unitSize > 0;
   const unitsFirst = (staking?.mode === 'units') && showUnits;
-  const simpleStats = !!settings?.simpleStats;
 
   const load = useCallback(() => {
     const q = new URLSearchParams();
@@ -287,8 +286,7 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Performance breakdown + trends — the deeper stats, hidden in simple mode. */}
-      {!simpleStats && (<>
+      {/* Performance breakdown + trends. */}
       <div className="card perf-card">
         <button type="button" className="perf-card-head" onClick={toggleBreak}>
           <span className="pch-title"><Icon name="analytics" size={18} /> Performance breakdown</span>
@@ -383,7 +381,6 @@ export default function Analytics() {
           </div>
         </div>
       </div>
-      </>)}
 
       {/* Recent performance. */}
       <div className="card perf-card">
