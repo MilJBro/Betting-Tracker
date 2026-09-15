@@ -30,8 +30,32 @@ const CURRENCY_OPTS = [
   { key: 'GBP', label: 'GBP (£)' },
   { key: 'USD', label: 'USD ($)' },
   { key: 'EUR', label: 'EUR (€)' },
-  { key: 'AUD', label: 'AUD (A$)' },
-  { key: 'CAD', label: 'CAD (C$)' },
+  { key: 'AUD', label: 'A$ (AUD)' },
+  { key: 'CAD', label: 'C$ (CAD)' },
+];
+// Accent colours the user can theme their app with. All are bright enough to
+// carry the near-black button text and read well on the dark UI.
+const ACCENTS = [
+  { name: 'Green', value: '#22c55e' },
+  { name: 'Blue', value: '#3b82f6' },
+  { name: 'Violet', value: '#8b5cf6' },
+  { name: 'Cyan', value: '#06b6d4' },
+  { name: 'Amber', value: '#f59e0b' },
+  { name: 'Rose', value: '#f43f5e' },
+  { name: 'Pink', value: '#ec4899' },
+  { name: 'Teal', value: '#14b8a6' },
+  { name: 'Indigo', value: '#6366f1' },
+  { name: 'Lime', value: '#84cc16' },
+];
+const STAKE_OPTS = [
+  { key: 'currency', label: 'Money' },
+  { key: 'units', label: 'Units' },
+  { key: 'both', label: 'Both' },
+];
+const ODDS_OPTS = [
+  { key: 'decimal', label: 'Decimal' },
+  { key: 'fractional', label: 'Fractional' },
+  { key: 'american', label: 'American' },
 ];
 
 // Two-letter avatar initials: prefer the capital letters in the name
@@ -182,8 +206,7 @@ export default function Account() {
     catch (err) { setDelErr(err.message); setBusy(false); }
   }
 
-  const nav = settings?.nav || {};
-  const setNav = (key, val) => update({ nav: { ...nav, [key]: val } });
+  const accent = settings?.theme?.primary || '#22c55e';
   const profitCls = stats && stats.netProfit > 0 ? 'pos' : stats && stats.netProfit < 0 ? 'neg' : '';
 
   return (
@@ -276,24 +299,24 @@ export default function Account() {
           <div className="set-head-txt"><strong>Display preferences</strong><span className="muted">Choose what you want to see in your app.</span></div>
         </div>
 
-        <div className="set-subhead">Show / hide tabs<span className="muted">Customise your bottom navigation</span></div>
-        {[{ key: 'home', label: 'Home', icon: 'house' }, { key: 'bets', label: 'Bets', icon: 'bets' }, { key: 'stats', label: 'Stats', icon: 'analytics' }].map((t) => (
-          <div className="tog-row" key={t.key}>
-            <span className="sr-ic"><Icon name={t.icon} size={17} /></span>
-            <span className="tog-label">{t.label}</span>
-            <label className="switch">
-              <input type="checkbox" checked={nav[t.key] !== false} onChange={(e) => setNav(t.key, e.target.checked)} />
-              <span className="slider" />
-            </label>
-          </div>
-        ))}
-        <div className="tog-row">
-          <span className="sr-ic"><Icon name="account" size={17} /></span>
-          <span className="tog-label">You <span className="muted" style={{ fontWeight: 500, fontSize: 12 }}>· always on</span></span>
-          <label className="switch"><input type="checkbox" checked readOnly disabled /><span className="slider" /></label>
+        <div className="set-subhead">Accent colour<span className="muted">Personalise the highlight colour across your app</span></div>
+        <div className="swatch-row">
+          {ACCENTS.map((c) => (
+            <button
+              key={c.value}
+              type="button"
+              className={`swatch ${accent.toLowerCase() === c.value.toLowerCase() ? 'on' : ''}`}
+              style={{ background: c.value }}
+              onClick={() => update({ theme: { ...settings.theme, primary: c.value } })}
+              aria-label={c.name}
+              title={c.name}
+            >
+              {accent.toLowerCase() === c.value.toLowerCase() && <Icon name="check" size={16} />}
+            </button>
+          ))}
         </div>
 
-        <div className="tog-row" style={{ borderTop: '1px solid var(--border)', marginTop: 6, paddingTop: 14 }}>
+        <div className="tog-row" style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 14 }}>
           <span className="sr-ic"><Icon name="eye-off" size={17} /></span>
           <span className="tog-label">Hide advanced stats<span className="muted" style={{ display: 'block', fontWeight: 500, fontSize: 12 }}>Keep the Stats page simple</span></span>
           <label className="switch">
@@ -324,9 +347,23 @@ export default function Account() {
             {CURRENCY_OPTS.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
           </select>
         </div>
+        <div className="pref-row">
+          <span className="sr-ic"><Icon name="trophy" size={17} /></span>
+          <span className="pref-label">Show profit as</span>
+          <select className="pref-select" value={staking?.mode || 'currency'} onChange={(e) => update({ staking: { ...staking, mode: e.target.value } })}>
+            {STAKE_OPTS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+          </select>
+        </div>
+        <div className="pref-row">
+          <span className="sr-ic"><Icon name="target" size={17} /></span>
+          <span className="pref-label">Odds format</span>
+          <select className="pref-select" value={settings?.oddsFormat || 'decimal'} onChange={(e) => update({ oddsFormat: e.target.value })}>
+            {ODDS_OPTS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+          </select>
+        </div>
         <button type="button" className="set-row" onClick={() => navigate('/customise')}>
           <span className="sr-ic"><Icon name="sliders" size={17} /></span>
-          <div className="sr-txt"><strong>More customisation</strong><span className="muted">Themes, dashboard, odds format, staking & sharing</span></div>
+          <div className="sr-txt"><strong>More customisation</strong><span className="muted">Dashboard cards, staking unit & sharing</span></div>
           <Icon name="chevron" size={16} className="sr-chev" style={{ transform: 'rotate(-90deg)' }} />
         </button>
       </div>

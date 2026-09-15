@@ -42,6 +42,14 @@ export function applyTheme(theme) {
   root.style.setProperty('--head-spacing', style.headSpacing);
 }
 
+// The locked-in design, with ONLY the user's accent colour (theme.primary)
+// allowed through. Everything else — dark mode, background, surface, soft
+// style, font — stays fixed so the app can't be made unusable.
+export function resolveTheme(settings) {
+  const chosen = settings?.theme?.primary || DEFAULT_THEME.primary;
+  return { ...DEFAULT_THEME, primary: chosen, accent: chosen };
+}
+
 export function SettingsProvider({ children }) {
   const { user } = useAuth();
   const [settings, setSettings] = useState(null);
@@ -52,20 +60,22 @@ export function SettingsProvider({ children }) {
       return;
     }
     api.get('/settings').then((d) => {
-      // Theme switching is disabled for now — pin every account to the one
-      // locked-in design regardless of what's stored.
-      setSettings({ ...d.settings, theme: DEFAULT_THEME });
-      applyTheme(DEFAULT_THEME);
+      const theme = resolveTheme(d.settings);
+      setSettings({ ...d.settings, theme });
+      applyTheme(theme);
     });
   }, [user]);
 
-  // Optimistic local update + persist. Theme stays locked to the default.
+  // Optimistic local update + persist. The whole design stays locked to the
+  // default EXCEPT the user's chosen accent colour (theme.primary).
   const save = useCallback(async (next) => {
-    const pinned = { ...next, theme: DEFAULT_THEME };
-    setSettings(pinned);
-    applyTheme(DEFAULT_THEME);
-    const d = await api.put('/settings', { settings: pinned });
-    setSettings({ ...d.settings, theme: DEFAULT_THEME });
+    const theme = resolveTheme(next);
+    const stored = { ...next, theme };
+    setSettings(stored);
+    applyTheme(theme);
+    const d = await api.put('/settings', { settings: stored });
+    const t2 = resolveTheme(d.settings);
+    setSettings({ ...d.settings, theme: t2 });
     return d.settings;
   }, []);
 
