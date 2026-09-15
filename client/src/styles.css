@@ -377,7 +377,9 @@ tr:last-child td { border-bottom: none; }
 .perf-card-head.static { cursor: default; }
 .pch-title { display: inline-flex; align-items: center; gap: 9px; font-size: 16px; font-weight: 800; font-family: var(--font-head); white-space: nowrap; }
 .pch-title svg { color: var(--primary); }
-.perf-card-head > svg { color: var(--muted); transition: transform 0.18s ease; }
+/* Flip instantly (no transition): animating the chevron re-rasterises the
+   whole button each frame, which makes the web-font title shimmer/jitter. */
+.perf-card-head > svg { color: var(--muted); }
 .perf-card-head > svg.flip { transform: rotate(180deg); }
 
 /* Breakdown rows */
