@@ -1,18 +1,78 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 import { api } from '../api.js';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { useTracker } from '../context/TrackerContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import StatCard from '../components/StatCard.jsx';
-import ProfitChart from '../components/ProfitChart.jsx';
 import SettleControls from '../components/SettleControls.jsx';
 import PendingReminder from '../components/PendingReminder.jsx';
 import Spinner from '../components/Spinner.jsx';
+import Icon from '../components/Icon.jsx';
 import { settlePayout } from '../settle.js';
 import { getCached, setCached, subscribeInvalidate } from '../dataCache.js';
 import { useAddBet } from '../context/AddBetContext.jsx';
-import { formatStake, formatOdds, formatDate, units } from '../format.js';
+import { formatStake, formatOdds, formatDate, units, money } from '../format.js';
+
+const SETTLED = ['won', 'lost', 'void', 'cashout', 'placed'];
+const DASH_RANGES = [
+  { key: '7d', label: 'Last 7 days', days: 7 },
+  { key: '30d', label: 'Last 30 days', days: 30 },
+  { key: 'all', label: 'All time', days: null },
+];
+
+const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const betDate = (b) => new Date((b.placed_at || '').length <= 10 ? (b.placed_at || '') + 'T00:00:00' : b.placed_at);
+
+function betProfit(b) {
+  if (b.status === 'won') return (b.payout ?? b.stake * b.odds) - b.stake;
+  if (b.status === 'lost') return -b.stake;
+  if (b.status === 'placed') return (b.payout ?? 0) - b.stake;
+  if (b.status === 'void' || b.status === 'cashout') return (b.payout ?? b.stake) - b.stake;
+  return 0; // pending
+}
+
+// All the headline metrics for a set of bets (already filtered to a window).
+function computeMetrics(list) {
+  const settled = list.filter((b) => SETTLED.includes(b.status));
+  const profit = settled.reduce((s, b) => s + betProfit(b), 0);
+  const staked = settled.reduce((s, b) => s + b.stake, 0);
+  const decisive = settled.filter((b) => b.status === 'won' || b.status === 'lost');
+  const wins = decisive.filter((b) => b.status === 'won').length;
+  const winRate = decisive.length ? (wins / decisive.length) * 100 : 0;
+  const avgStake = settled.length ? staked / settled.length : 0;
+  const profits = settled.map(betProfit);
+  const biggestWin = profits.length ? Math.max(0, ...profits) : 0;
+  const biggestLoss = profits.length ? Math.min(0, ...profits) : 0;
+
+  // Streaks over decisive bets, chronological.
+  const ordered = decisive.slice().sort((a, b) => betDate(a) - betDate(b));
+  let longestWin = 0, run = 0, current = 0, currentType = null;
+  for (const b of ordered) {
+    if (b.status === 'won') { run++; longestWin = Math.max(longestWin, run); } else run = 0;
+  }
+  for (let i = ordered.length - 1; i >= 0; i--) {
+    const t = ordered[i].status;
+    if (currentType === null) { currentType = t; current = 1; }
+    else if (t === currentType) current++;
+    else break;
+  }
+
+  // Cumulative profit timeline for the chart.
+  const timeline = [];
+  let running = 0;
+  for (const b of settled.slice().sort((a, b) => betDate(a) - betDate(b))) {
+    running += betProfit(b);
+    timeline.push({ date: (b.placed_at || '').slice(0, 10), profit: Number(running.toFixed(2)) });
+  }
+
+  return {
+    profit: Number(profit.toFixed(2)), staked, winRate: Number(winRate.toFixed(1)),
+    totalBets: list.length, avgStake, biggestWin: Number(biggestWin.toFixed(2)),
+    biggestLoss: Number(biggestLoss.toFixed(2)), longestWin, current, currentType, timeline,
+  };
+}
 
 export default function Dashboard() {
   const { settings } = useSettings();
@@ -23,6 +83,8 @@ export default function Dashboard() {
   const [stats, setStats] = useState(() => getCached('dash:' + activeId)?.stats ?? null);
   const [bets, setBets] = useState(() => getCached('dash:' + activeId)?.bets ?? []);
   const [loading, setLoading] = useState(() => !getCached('dash:' + activeId));
+  const [range, setRange] = useState('30d');
+  const [chartRange, setChartRange] = useState('30d');
 
   const load = useCallback(() => {
     const q = activeId ? `?tracker=${activeId}` : '';
@@ -30,8 +92,7 @@ export default function Dashboard() {
       api.get('/bets/stats' + q).then((d) => d.stats),
       api.get('/bets' + q).then((d) => d.bets),
     ]).then(([s, b]) => {
-      setStats(s);
-      setBets(b);
+      setStats(s); setBets(b);
       setCached('dash:' + activeId, { stats: s, bets: b });
     });
   }, [activeId]);
@@ -42,15 +103,31 @@ export default function Dashboard() {
     else setLoading(true);
     load().finally(() => setLoading(false));
   }, [activeId, load]);
-  // Refresh when a bet is added from the global Add-bet overlay.
   useEffect(() => subscribeInvalidate(() => load()), [load]);
+
+  // Filter the bets to a range, and compute this-period + previous-period metrics.
+  const windowFor = useCallback((key) => {
+    const r = DASH_RANGES.find((x) => x.key === key) || DASH_RANGES[1];
+    if (!r.days) return { list: bets, prev: null };
+    const start = new Date(); start.setDate(start.getDate() - (r.days - 1)); start.setHours(0, 0, 0, 0);
+    const prevStart = new Date(start); prevStart.setDate(prevStart.getDate() - r.days);
+    const from = isoLocal(start);
+    const prevFrom = isoLocal(prevStart);
+    const list = bets.filter((b) => (b.placed_at || '') >= from);
+    const prev = bets.filter((b) => (b.placed_at || '') >= prevFrom && (b.placed_at || '') < from);
+    return { list, prev };
+  }, [bets]);
+
+  const cur = useMemo(() => windowFor(range), [windowFor, range]);
+  const m = useMemo(() => computeMetrics(cur.list), [cur.list]);
+  const prevM = useMemo(() => (cur.prev && cur.prev.length ? computeMetrics(cur.prev) : null), [cur.prev]);
+  const chartM = useMemo(() => computeMetrics(windowFor(chartRange).list), [windowFor, chartRange]);
 
   async function settle(bet, status) {
     try {
       await api.put(`/bets/${bet.id}`, { ...bet, status, payout: settlePayout(bet, status) });
       await load();
-      const label = { won: 'won', lost: 'lost', placed: 'placed', void: 'void' }[status] || status;
-      toast(`Marked ${label}`);
+      toast(`Marked ${status}`);
     } catch (e) { toast(e.message, 'error'); }
   }
 
@@ -61,18 +138,7 @@ export default function Dashboard() {
   const unitSize = Number(staking?.unitSize) || 0;
   const showUnits = (staking?.mode || 'currency') === 'currency' && unitSize > 0;
   const enabledCards = settings.statCards.filter((c) => c.enabled);
-  const w = settings.widgets;
-  const recent = bets.slice(0, 8);
   const pending = bets.filter((b) => b.status === 'pending');
-  const pendingStaked = pending.reduce((s, b) => s + b.stake, 0);
-  const pendingReturn = pending.reduce((s, b) => s + b.stake * b.odds, 0);
-
-  // Bankroll: current balance is the tracker's starting bankroll plus realised profit.
-  const bankrollStart = Number(active?.bankroll_start) || 0;
-  const balance = bankrollStart + stats.netProfit;
-  const bankrollGrowth = bankrollStart > 0 ? Math.round((stats.netProfit / bankrollStart) * 1000) / 10 : null;
-  const balanceTimeline = stats.timeline.map((p) => ({ ...p, balance: bankrollStart + p.profit }));
-  const showBankroll = bankrollStart > 0 && w.bankroll !== false;
 
   // First-run onboarding: guide brand-new accounts before there's any data.
   if (stats.totalBets === 0) {
@@ -110,165 +176,230 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-
         {enabledCards.length > 0 && (
           <>
             <h3 className="section-title" style={{ marginTop: 26 }}>Your dashboard</h3>
             <div className="stat-grid">
-              {enabledCards.map((c) => (
-                <StatCard key={c.key} statKey={c.key} stats={stats} currency={currency} staking={staking} />
-              ))}
+              {enabledCards.map((c) => <StatCard key={c.key} statKey={c.key} stats={stats} currency={currency} staking={staking} />)}
             </div>
             <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>These fill in as soon as you start logging bets.</p>
           </>
         )}
-
         <p className="muted" style={{ textAlign: 'center', fontSize: 12, marginTop: 22 }}>Please gamble responsibly.</p>
       </div>
     );
   }
 
+  const pcls = (v) => (v > 0 ? 'pos' : v < 0 ? 'neg' : '');
+  const unitsOf = (v) => units(unitSize > 0 ? v / unitSize : 0, { signed: true });
+  const rangeWord = range === '7d' ? 'this week' : range === '30d' ? 'this month' : 'overall';
+
+  // Period-over-period deltas (only when there's a comparable previous period).
+  const delta = prevM ? {
+    winRate: m.winRate - prevM.winRate,
+    totalBets: m.totalBets - prevM.totalBets,
+    avgStake: m.avgStake - prevM.avgStake,
+  } : null;
+  const Delta = ({ v, fmt }) => {
+    if (!delta || v === 0) return <span className="dstat-sub muted">—</span>;
+    const cls = v > 0 ? 'pos' : 'neg';
+    return <span className={`dstat-sub ${cls}`}>{v > 0 ? '▲' : '▼'} {fmt(Math.abs(v))}</span>;
+  };
+
+  // "Keep going" nudge from the period result.
+  const up = m.profit > 0, down = m.profit < 0;
+  const keepTitle = up ? 'Keep going!' : down ? 'Stay disciplined' : 'Off to a start';
+  const keepSub = up ? `You're up ${rangeWord}` : down ? `Down ${rangeWord} — trust your process` : `Log a few bets to see trends`;
+
+  const recent = bets.slice(0, 5);
+  const chartData = chartM.timeline;
+
   return (
     <div className="main">
-      <div className="page-head">
+      <div className="page-head" style={{ marginBottom: 14 }}>
         <div>
           <h1>Dashboard</h1>
-          <p>Here's how you're getting on.</p>
+          <p>Your betting performance at a glance.</p>
         </div>
-        <button type="button" onClick={() => openAddBet()} className="btn-primary" style={{ display: 'inline-block' }}>+ Add bet</button>
+        <label className="range-pill">
+          <Icon name="calendar" size={15} />
+          <select value={range} onChange={(e) => { setRange(e.target.value); setChartRange(e.target.value); }}>
+            {DASH_RANGES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
+          </select>
+          <Icon name="chevron" size={14} />
+        </label>
       </div>
+
+      <Link to="/analytics" className={`dash-keep ${up ? 'up' : down ? 'down' : ''}`}>
+        <span className="dk-ic"><Icon name="target" size={20} /></span>
+        <span className="dk-txt"><strong>{keepTitle}</strong><span>{keepSub}</span></span>
+        <Icon name="chevron" size={16} className="dk-chev" />
+      </Link>
 
       <PendingReminder bets={bets} onReview={() => navigate('/bets')} reviewLabel="Show open bets" />
 
-      {enabledCards.length === 0 ? (
-        <div className="card empty">No stat cards enabled — turn some on in Customise.</div>
-      ) : (
-        <div className="stat-grid">
-          {enabledCards.map((c) => (
-            <StatCard key={c.key} statKey={c.key} stats={stats} currency={currency} staking={staking} />
-          ))}
+      {/* Stat tiles */}
+      <div className="dstat-grid">
+        <div className="dstat primary">
+          <div className="dstat-top"><span className="dstat-ic"><Icon name="trend" size={16} /></span></div>
+          <div className="dstat-label">Net Profit</div>
+          <div className={`dstat-val ${pcls(m.profit)}`}>{money(m.profit, currency, { signed: true })}</div>
+          {showUnits ? <span className={`dstat-sub ${pcls(m.profit)}`}>{unitsOf(m.profit)}</span> : <Delta v={0} fmt={() => ''} />}
         </div>
-      )}
+        <div className="dstat">
+          <div className="dstat-top"><span className="dstat-ic"><Icon name="target" size={16} /></span></div>
+          <div className="dstat-label">Win Rate</div>
+          <div className="dstat-val">{m.winRate}%</div>
+          <Delta v={delta?.winRate ?? 0} fmt={(x) => `${x.toFixed(0)}%`} />
+        </div>
+        <div className="dstat">
+          <div className="dstat-top"><span className="dstat-ic"><Icon name="coins" size={16} /></span></div>
+          <div className="dstat-label">Total Bets</div>
+          <div className="dstat-val">{m.totalBets}</div>
+          <Delta v={delta?.totalBets ?? 0} fmt={(x) => `${x}`} />
+        </div>
+        <div className="dstat">
+          <div className="dstat-top"><span className="dstat-ic"><Icon name="clock" size={16} /></span></div>
+          <div className="dstat-label">Avg. Stake</div>
+          <div className="dstat-val">{formatStake(m.avgStake, currency, staking)}</div>
+          <Delta v={delta?.avgStake ?? 0} fmt={(x) => money(x, currency)} />
+        </div>
+      </div>
 
-      {showBankroll && (
-        <div className="card" style={{ marginBottom: 24 }}>
-          <div className="row spread" style={{ marginBottom: 14 }}>
-            <h3 className="section-title" style={{ margin: 0 }}>Bankroll</h3>
-            {bankrollGrowth != null && (
-              <span className={bankrollGrowth > 0 ? 'pos' : bankrollGrowth < 0 ? 'neg' : 'muted'} style={{ fontWeight: 700, fontSize: 14 }}>
-                {bankrollGrowth > 0 ? '+' : ''}{bankrollGrowth}%
-              </span>
+      {/* Profit Overview */}
+      <div className="card perf-card">
+        <div className="perf-card-head static">
+          <span className="pch-title"><Icon name="trend" size={18} /> Profit Overview</span>
+          <div className="seg-mini">
+            {['7d', '30d', 'all'].map((k) => (
+              <button key={k} type="button" className={chartRange === k ? 'on' : ''} onClick={() => setChartRange(k)}>{k === 'all' ? 'ALL' : k.toUpperCase()}</button>
+            ))}
+          </div>
+        </div>
+        <div className="po-body">
+          <div className="po-figures">
+            <span className="po-label">Total Profit</span>
+            <span className={`po-big ${pcls(chartM.profit)}`}>{money(chartM.profit, currency, { signed: true })}</span>
+            {showUnits && <span className={`po-sub ${pcls(chartM.profit)}`}>{unitsOf(chartM.profit)}</span>}
+          </div>
+          <div className="po-chart">
+            {chartData.length >= 2 ? (
+              <ResponsiveContainer width="100%" height={170}>
+                <AreaChart data={chartData} margin={{ top: 8, right: 6, bottom: 0, left: -12 }}>
+                  <defs>
+                    <linearGradient id="dashFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="date" stroke="var(--muted)" fontSize={10.5} tickLine={false} axisLine={false}
+                    tickFormatter={(d) => new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                    minTickGap={40} />
+                  <YAxis stroke="var(--muted)" fontSize={10.5} tickLine={false} axisLine={false} width={42} />
+                  <Tooltip
+                    contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontSize: 12 }}
+                    labelFormatter={(d) => new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                    formatter={(v) => [money(v, currency, { signed: true }), 'Profit']} />
+                  <ReferenceLine y={0} stroke="var(--muted)" strokeOpacity={0.5} />
+                  <Area type="monotone" dataKey="profit" stroke="var(--primary)" strokeWidth={2.5} fill="url(#dashFill)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="po-empty muted">Not enough settled bets in this range to chart yet.</div>
             )}
           </div>
-          <div className="stat-grid" style={{ marginBottom: balanceTimeline.length >= 2 ? 16 : 0 }}>
-            <div className="stat"><div className="label">Starting</div><div className="value">{formatStake(bankrollStart, currency, staking)}</div></div>
-            <div className="stat"><div className="label">Balance</div><div className={`value ${balance > bankrollStart ? 'pos' : balance < bankrollStart ? 'neg' : ''}`}>{formatStake(balance, currency, staking)}</div></div>
-            <div className="stat">
-              <div className="label">Profit</div>
-              <div className={`value ${stats.netProfit > 0 ? 'pos' : stats.netProfit < 0 ? 'neg' : ''}`}>{formatStake(stats.netProfit, currency, staking, { signed: true })}</div>
-              {showUnits && <div className={`sub ${stats.netProfit > 0 ? 'pos' : stats.netProfit < 0 ? 'neg' : ''}`}>{units(stats.netProfit / unitSize, { signed: true })}</div>}
-            </div>
-          </div>
-          {balanceTimeline.length >= 2 && (
-            <ProfitChart
-              timeline={balanceTimeline}
-              primary={settings.theme.primary}
-              height={150}
-              dataKey="balance"
-              baseline={bankrollStart}
-              tooltipLabel="Balance"
-              formatValue={(v) => formatStake(v, currency, staking)}
-            />
-          )}
         </div>
-      )}
+      </div>
 
-      {w.pendingBets !== false && pending.length > 0 && (
-        <div className="card" style={{ marginBottom: 24 }}>
-          <div className="row spread" style={{ marginBottom: 14 }}>
-            <h3 className="section-title" style={{ margin: 0 }}>Open bets ({pending.length})</h3>
-            <span className="muted" style={{ fontSize: 13 }}>
-              {formatStake(pendingStaked, currency, staking)} staked · {formatStake(pendingReturn, currency, staking)} to return
-            </span>
+      {/* Quick Stats */}
+      <div className="card perf-card">
+        <div className="perf-card-head static"><span className="pch-title">Quick Stats</span></div>
+        <div className="qs-grid">
+          <div className="qs">
+            <span className="qs-ic"><Icon name="trophy" size={16} /></span>
+            <span className="qs-label">Best Win</span>
+            <span className="qs-val pos">{money(m.biggestWin, currency, { signed: true })}</span>
+            {showUnits && <span className="qs-sub">({unitsOf(m.biggestWin).replace('+', '')})</span>}
+          </div>
+          <div className="qs">
+            <span className="qs-ic"><Icon name="target" size={16} /></span>
+            <span className="qs-label">Biggest Loss</span>
+            <span className="qs-val neg">{money(m.biggestLoss, currency, { signed: true })}</span>
+            {showUnits && <span className="qs-sub">({unitsOf(m.biggestLoss).replace('-', '')})</span>}
+          </div>
+          <div className="qs">
+            <span className="qs-ic"><Icon name="analytics" size={16} /></span>
+            <span className="qs-label">Longest Win Streak</span>
+            <span className="qs-val">{m.longestWin}</span>
+            <span className="qs-sub">(bets)</span>
+          </div>
+          <div className="qs">
+            <span className="qs-ic"><Icon name="calendar" size={16} /></span>
+            <span className="qs-label">Current Streak</span>
+            <span className={`qs-val ${m.currentType === 'won' ? 'pos' : m.currentType === 'lost' ? 'neg' : ''}`}>{m.current}</span>
+            <span className="qs-sub">({m.currentType === 'won' ? 'wins' : m.currentType === 'lost' ? 'losses' : '—'})</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="card perf-card">
+        <div className="perf-card-head static">
+          <span className="pch-title"><Icon name="clock" size={17} /> Recent Activity</span>
+          <Link to="/bets" className="muted" style={{ fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>View all <Icon name="chevron" size={13} style={{ transform: 'rotate(-90deg)' }} /></Link>
+        </div>
+        {recent.length === 0 ? <p className="muted" style={{ margin: '4px 2px' }}>No bets logged yet.</p> : (
+          <div className="act-list">
+            {recent.map((b) => {
+              const p = betProfit(b);
+              const settled = SETTLED.includes(b.status);
+              const title = b.event || b.selection || b.sport || 'Bet';
+              const sub = b.event ? (b.selection || b.bet_type || b.sport) : (b.bet_type || b.sport || '');
+              return (
+                <button key={b.id} type="button" className="act-row" onClick={() => navigate('/bets')}>
+                  <span className="act-ic">{(b.sport || '?').slice(0, 1).toUpperCase()}</span>
+                  <span className="act-mid">
+                    <span className="act-title">{title}</span>
+                    {sub ? <span className="act-sub">{sub}</span> : null}
+                  </span>
+                  <span className="act-stake">{formatStake(b.stake, currency, staking)}<span className="act-odds">@ {formatOdds(b.odds, settings.oddsFormat)}</span></span>
+                  <span className="act-right">
+                    <span className={`act-badge ${b.status}`}>{b.status === 'won' ? 'Won' : b.status === 'lost' ? 'Lost' : b.status === 'pending' ? 'Open' : b.status}</span>
+                    {settled && (
+                      <span className="act-pl">
+                        <span className={pcls(p)}>{money(p, currency, { signed: true })}</span>
+                        {showUnits && <span className={`act-pl-u ${pcls(p)}`}>{unitsOf(p)}</span>}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Open bets — quick settle */}
+      {pending.length > 0 && (
+        <div className="card perf-card">
+          <div className="perf-card-head static">
+            <span className="pch-title"><Icon name="bets" size={17} /> Open bets ({pending.length})</span>
+            <span className="muted" style={{ fontSize: 12.5 }}>{formatStake(pending.reduce((s, b) => s + b.stake, 0), currency, staking)} staked</span>
           </div>
           <div className="stack">
-            {pending.slice(0, 8).map((b) => (
-              <div key={b.id} className="row spread" style={{ flexWrap: 'wrap', gap: 8, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+            {pending.slice(0, 6).map((b) => (
+              <div key={b.id} className="row spread" style={{ flexWrap: 'wrap', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontWeight: 600 }}>{b.selection || b.event || b.sport || 'Bet'}</div>
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    {formatDate(b.placed_at)} · {formatStake(b.stake, currency, staking)} @ {formatOdds(b.odds, settings.oddsFormat)} → {formatStake(b.stake * b.odds, currency, staking)}
-                  </div>
+                  <div className="muted" style={{ fontSize: 12 }}>{formatDate(b.placed_at)} · {formatStake(b.stake, currency, staking)} @ {formatOdds(b.odds, settings.oddsFormat)}</div>
                 </div>
                 <SettleControls bet={b} onSettle={(status) => settle(b, status)} />
               </div>
             ))}
           </div>
-          {pending.length > 8 && <Link to="/bets" className="muted" style={{ fontSize: 13, display: 'inline-block', marginTop: 10 }}>View all {pending.length} open bets →</Link>}
         </div>
       )}
-
-      {w.profitChart && stats.timeline.length >= 2 && (
-        <div className="card" style={{ marginBottom: 24 }}>
-          <h3 className="section-title">Profit over time</h3>
-          <ProfitChart timeline={stats.timeline} primary={settings.theme.primary} height={130} />
-        </div>
-      )}
-
-      <div className="grid-2">
-        {w.sportBreakdown && (
-          <div className="card">
-            <h3 className="section-title">By sport / category</h3>
-            {stats.sportBreakdown.length === 0 ? (
-              <p className="muted">No settled bets yet.</p>
-            ) : (
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr><th>Category</th><th>Bets</th><th>ROI</th><th>Profit</th></tr>
-                  </thead>
-                  <tbody>
-                    {stats.sportBreakdown.map((s) => (
-                      <tr key={s.sport}>
-                        <td>{s.sport}</td>
-                        <td>{s.bets}</td>
-                        <td className={s.roi > 0 ? 'pos' : s.roi < 0 ? 'neg' : ''}>{s.roi}%</td>
-                        <td className={s.profit > 0 ? 'pos' : s.profit < 0 ? 'neg' : ''}>
-                          {formatStake(s.profit, currency, staking, { signed: true })}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-        {w.recentBets && (
-          <div className="card">
-            <div className="row spread" style={{ marginBottom: 14 }}>
-              <h3 className="section-title" style={{ margin: 0 }}>Recent bets</h3>
-              <Link to="/bets" className="muted" style={{ fontSize: 13 }}>View all →</Link>
-            </div>
-            {recent.length === 0 ? (
-              <p className="muted">No bets logged yet.</p>
-            ) : (
-              <div className="stack">
-                {recent.map((b) => (
-                  <div key={b.id} className="row spread" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{b.selection || b.event || b.sport || 'Bet'}</div>
-                      <div className="muted" style={{ fontSize: 12 }}>{formatDate(b.placed_at)} · {b.sport || 'Uncategorised'}</div>
-                    </div>
-                    <span className={`badge ${b.status}`}>{b.status}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
