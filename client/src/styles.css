@@ -343,6 +343,14 @@ tr:last-child td { border-bottom: none; }
 .dk-txt span { font-size: 12.5px; color: var(--muted); }
 .dk-chev { color: var(--muted); transform: rotate(-90deg); flex: none; }
 
+.tile-edit { background: transparent; border: 0; color: var(--muted); font-weight: 700; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; padding: 2px 2px; }
+.tile-edit:active { transform: none; }
+.tile-pick { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 2px; border-top: 1px solid var(--border); background: transparent; color: var(--text); }
+.tile-pick:first-child { border-top: 0; }
+.tile-pick:disabled { opacity: 0.4; }
+.tile-pick:active { transform: none; }
+.tile-pick-label { flex: 1; min-width: 0; font-weight: 700; font-size: 14.5px; }
+.tile-pick-check { flex: none; width: 20px; color: var(--primary); }
 .dstat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin-bottom: 16px; }
 .dstat { background: var(--surface); border: 1px solid var(--border); border-radius: 15px; padding: 11px 9px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .dstat.primary { border-color: color-mix(in srgb, var(--primary) 55%, var(--border)); background: color-mix(in srgb, var(--primary) 9%, var(--surface)); }

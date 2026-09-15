@@ -323,15 +323,6 @@ export default function Account() {
             </button>
           ))}
         </div>
-
-        <div className="tog-row" style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 14 }}>
-          <span className="sr-ic"><Icon name="eye-off" size={17} /></span>
-          <span className="tog-label">Hide advanced stats<span className="muted" style={{ display: 'block', fontWeight: 500, fontSize: 12 }}>Keep the Stats page simple</span></span>
-          <label className="switch">
-            <input type="checkbox" checked={!!settings?.simpleStats} onChange={(e) => update({ simpleStats: e.target.checked })} />
-            <span className="slider" />
-          </label>
-        </div>
       </div>
 
       {/* App preferences */}
