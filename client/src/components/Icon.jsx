@@ -138,6 +138,26 @@ const PATHS = {
       <path d="M9 11h6M9 15h4" />
     </>
   ),
+  coins: (
+    <>
+      <ellipse cx="9" cy="7" rx="5" ry="2.6" />
+      <path d="M4 7v4c0 1.4 2.2 2.6 5 2.6s5-1.2 5-2.6V7" />
+      <path d="M14 11.2c2.4.2 4 1.2 4 2.4 0 1.4-2.2 2.6-5 2.6-1 0-2-.2-2.8-.5" />
+      <path d="M10 13.6v3.2c0 1.4 2.2 2.6 5 2.6s5-1.2 5-2.6v-3.4" />
+    </>
+  ),
+  monitor: (
+    <>
+      <rect x="3" y="4" width="18" height="12" rx="2" />
+      <path d="M8 20h8M12 16v4" />
+    </>
+  ),
+  gear: (
+    <>
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1M18.4 18.4l-2.1-2.1M7.7 7.7L5.6 5.6" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 20, className, style }) {

@@ -25,6 +25,17 @@ const RANGES = [
 // Local YYYY-MM-DD (avoids the UTC shift toISOString would introduce near midnight).
 const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
+// The applied from/to filters for a named range preset.
+function rangeToFilters(key) {
+  const f = { ...BLANK_FILTERS };
+  if (key === 'ytd') f.from = `${new Date().getFullYear()}-01-01`;
+  else {
+    const r = RANGES.find((x) => x.key === key);
+    if (r?.days) { const d = new Date(); d.setDate(d.getDate() - (r.days - 1)); f.from = isoLocal(d); }
+  }
+  return f;
+}
+
 function Bars({ rows, currency, staking }) {
   const max = Math.max(1, ...rows.map((r) => Math.abs(r.profit)));
   return (
@@ -48,8 +59,10 @@ export default function Analytics() {
   const { settings } = useSettings();
   const { activeId } = useTracker();
   const { openAddBet } = useAddBet();
-  const [filters, setFilters] = useState(BLANK_FILTERS);
-  const [range, setRange] = useState('all');
+  // Open on the user's preferred default window (You → App preferences), Pro only.
+  const defaultRange = settings?.defaultRange || 'all';
+  const [filters, setFilters] = useState(() => rangeToFilters(defaultRange));
+  const [range, setRange] = useState(defaultRange);
   const cacheKey = 'analytics:' + activeId + ':' + JSON.stringify(filters);
   const [a, setA] = useState(() => getCached(cacheKey)?.a ?? null);
   const [meta, setMeta] = useState(() => getCached(cacheKey)?.meta ?? { pro: false, options: { sports: [], tipsters: [], bookmakers: [] } });
@@ -63,6 +76,7 @@ export default function Analytics() {
   const unitSize = Number(staking?.unitSize) || 0;
   const showUnits = unitSize > 0;
   const unitsFirst = (staking?.mode === 'units') && showUnits;
+  const simpleStats = !!settings?.simpleStats;
 
   const load = useCallback(() => {
     const q = new URLSearchParams();
@@ -89,13 +103,8 @@ export default function Analytics() {
   const setFilter = (k, v) => setFilters((f) => ({ ...f, [k]: v }));
   const applyRange = (key) => {
     setRange(key);
-    let from = '';
-    if (key === 'ytd') from = `${new Date().getFullYear()}-01-01`;
-    else {
-      const r = RANGES.find((x) => x.key === key);
-      if (r?.days) { const d = new Date(); d.setDate(d.getDate() - (r.days - 1)); from = isoLocal(d); }
-    }
-    setFilters((f) => ({ ...f, from, to: '' }));
+    const r = rangeToFilters(key);
+    setFilters((f) => ({ ...f, from: r.from, to: r.to }));
   };
 
   if (loading) return <div className="main"><Spinner /></div>;
@@ -278,7 +287,8 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Performance breakdown. */}
+      {/* Performance breakdown + trends — the deeper stats, hidden in simple mode. */}
+      {!simpleStats && (<>
       <div className="card perf-card">
         <button type="button" className="perf-card-head" onClick={toggleBreak}>
           <span className="pch-title"><Icon name="analytics" size={18} /> Performance breakdown</span>
@@ -373,6 +383,7 @@ export default function Analytics() {
           </div>
         </div>
       </div>
+      </>)}
 
       {/* Recent performance. */}
       <div className="card perf-card">

@@ -45,8 +45,11 @@ export function AuthProvider({ children }) {
     clearCache();
   }
 
+  // Re-read the signed-in user (e.g. after editing the display name).
+  const refreshUser = () => api.get('/auth/me').then((d) => setUser(d.user)).catch(() => {});
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

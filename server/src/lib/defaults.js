@@ -14,6 +14,14 @@ export const DEFAULT_SETTINGS = {
   currency: 'GBP', // GBP | USD | EUR | AUD | CAD
   oddsFormat: 'decimal', // 'decimal' | 'fractional' | 'american'
 
+  // Which bottom-nav / sidebar tabs are shown. "You" (Account) is always
+  // available since the settings live there.
+  nav: { home: true, bets: true, stats: true },
+  // Simplify the Stats page — hide the deeper breakdowns and trends.
+  simpleStats: false,
+  // Default time window the Stats page opens on: '7d' | '30d' | '90d' | 'ytd' | 'all'.
+  defaultRange: 'all',
+
   // Staking display. Money is always the source of truth; `unitSize` is the
   // currency value of 1 unit, used to convert to/from units.
   staking: {
@@ -113,6 +121,7 @@ export function mergeSettings(saved) {
     ...base,
     ...saved,
     theme: { ...base.theme, ...(saved.theme || {}) },
+    nav: { ...base.nav, ...(saved.nav || {}) },
     widgets: { ...base.widgets, ...(saved.widgets || {}) },
     fields: { ...base.fields, ...(saved.fields || {}) },
     sharing: { ...base.sharing, ...(saved.sharing || {}) },
