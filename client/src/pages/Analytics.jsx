@@ -312,7 +312,7 @@ export default function Analytics() {
         )}
 
         {bestSport && (
-          <button type="button" className={`brk-row tap ${breakTab === 'sport' ? 'on' : ''}`} onClick={() => openBreak('sport')}>
+          <button type="button" className="brk-row tap" onClick={() => openBreak('sport')}>
             <span className="brk-ic"><Icon name="ball" size={17} /></span>
             <div className="brk-mid">
               <div className="brk-top">
@@ -325,7 +325,7 @@ export default function Analytics() {
         )}
 
         {bestBook && (
-          <button type="button" className={`brk-row tap ${breakTab === 'bookmaker' ? 'on' : ''}`} onClick={() => openBreak('bookmaker')}>
+          <button type="button" className="brk-row tap" onClick={() => openBreak('bookmaker')}>
             <span className="brk-ic"><Icon name="bank" size={17} /></span>
             <div className="brk-mid">
               <div className="brk-top">

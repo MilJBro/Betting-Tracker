@@ -387,7 +387,6 @@ tr:last-child td { border-bottom: none; }
   background: var(--surface-2); border: 1px solid var(--border);
 }
 button.brk-row { cursor: pointer; }
-button.brk-row.on { border-color: var(--primary); }
 .brk-ic { flex: none; width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--primary); }
 .brk-ic.u { font-weight: 800; font-size: 16px; font-style: italic; }
 .brk-mid { flex: 1; min-width: 0; }
