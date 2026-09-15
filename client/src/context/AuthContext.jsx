@@ -16,7 +16,12 @@ export function AuthProvider({ children }) {
     api
       .get('/auth/me')
       .then((d) => setUser(d.user))
-      .catch(() => setToken(null))
+      .catch((err) => {
+        // Only sign out on a genuine auth rejection (401). A transient failure
+        // — a flaky network on resume, or a request aborted by a reload — must
+        // NOT wipe the token, or the user gets logged out for no reason.
+        if (err?.status === 401) setToken(null);
+      })
       .finally(() => setLoading(false));
   }, []);
 
