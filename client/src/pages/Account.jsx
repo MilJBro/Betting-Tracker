@@ -71,6 +71,10 @@ export default function Account() {
     setPlanBusy(true); setPlanMsg('');
     try {
       const d = await api.post('/billing/portal');
+      // Leaving the installed app for Stripe and navigating back leaves iOS with
+      // a stale viewport, which raises the fixed bottom nav on return. Flag the
+      // trip so the app can do one clean reload when it comes back (see pwa.js).
+      try { localStorage.setItem('bt_stripe_return', String(Date.now())); } catch {}
       window.location.href = d.url;
     } catch (err) {
       setPlanMsg(err.message || 'Could not open the billing portal.');
