@@ -6,23 +6,32 @@ let deferredPrompt = null;
 const subscribers = new Set();
 const notify = () => subscribers.forEach((fn) => { try { fn(); } catch {} });
 
-if (typeof window !== 'undefined') {
-  // Returning from Stripe (Manage payment / checkout) navigates the installed
-  // app out and back, and iOS lays the returning page out with a stale viewport
-  // — which raises the fixed bottom nav off the bottom. If we flagged a Stripe
-  // trip on the way out (see Account.jsx), do one clean reload on return so the
-  // page lays out correctly. The flag is cleared first, so this never loops.
+// Returning from Stripe (Manage payment / checkout) navigates the installed app
+// out and back, and iOS lays the returning page out with a stale viewport —
+// which raises the fixed bottom nav off the bottom. If we flagged a Stripe trip
+// on the way out (see Account.jsx), do one clean reload on return so the page
+// lays out correctly. Call this from main.jsx BEFORE React mounts and skip
+// rendering when it returns true, so the reload can't abort an in-flight
+// request (an aborted /auth/me would otherwise be treated as a logout). The
+// flag is cleared first, so this never loops.
+export function reloadIfReturningFromStripe() {
+  if (typeof window === 'undefined') return false;
   try {
     const t = Number(localStorage.getItem('bt_stripe_return') || 0);
-    if (t) {
-      localStorage.removeItem('bt_stripe_return');
-      const standalone =
-        window.matchMedia?.('(display-mode: standalone)').matches ||
-        window.navigator.standalone === true;
-      if (standalone && Date.now() - t < 15 * 60 * 1000) window.location.reload();
+    if (!t) return false;
+    localStorage.removeItem('bt_stripe_return');
+    const standalone =
+      window.matchMedia?.('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+    if (standalone && Date.now() - t < 15 * 60 * 1000) {
+      window.location.reload();
+      return true;
     }
   } catch {}
+  return false;
+}
 
+if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', (e) => {
     // Stash the event so we can trigger the native install prompt from a button.
     e.preventDefault();
