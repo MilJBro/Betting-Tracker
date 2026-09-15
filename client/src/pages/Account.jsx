@@ -69,15 +69,28 @@ export default function Account() {
   }
   async function openPortal() {
     setPlanBusy(true); setPlanMsg('');
+    // Open Stripe in a SEPARATE browser view rather than navigating the app's
+    // own view. Navigating the installed (standalone) app out to Stripe and
+    // back leaves iOS with a mis-sized web view that raises the bottom nav —
+    // and a reload can't fix a view the OS has resized. Keeping our view put
+    // means returning is a normal resume, which sits flush. Pre-open the view
+    // synchronously (inside the click) so it isn't treated as a blocked popup,
+    // then point it at the portal URL once we have it.
+    const win = window.open('', '_blank');
     try {
       const d = await api.post('/billing/portal');
-      // Leaving the installed app for Stripe and navigating back leaves iOS with
-      // a stale viewport, which raises the fixed bottom nav on return. Flag the
-      // trip so the app can do one clean reload when it comes back (see pwa.js).
-      try { localStorage.setItem('bt_stripe_return', String(Date.now())); } catch {}
-      window.location.href = d.url;
+      if (win) {
+        win.location.href = d.url;
+      } else {
+        // Popup blocked (rare in the installed app): fall back to same-view
+        // navigation and flag the trip so we reload on return to help the layout.
+        try { localStorage.setItem('bt_stripe_return', String(Date.now())); } catch {}
+        window.location.href = d.url;
+      }
     } catch (err) {
+      try { win?.close(); } catch {}
       setPlanMsg(err.message || 'Could not open the billing portal.');
+    } finally {
       setPlanBusy(false);
     }
   }
