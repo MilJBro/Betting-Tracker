@@ -38,17 +38,8 @@ const BOTTOM_NAV = [
   { to: '/account', icon: 'account', short: 'You' },
 ];
 
-// Tabs the user has hidden via You → Display preferences. "You"/Customise are
-// never hideable (settings live there). Keys map to the toggle in settings.nav.
-const NAV_KEY = { '/': 'home', '/bets': 'bets', '/analytics': 'stats' };
-const navVisible = (settings, to) => {
-  const key = NAV_KEY[to];
-  return !key || settings?.nav?.[key] !== false;
-};
-
 function Sidebar() {
   const { user, logout } = useAuth();
-  const { settings } = useSettings();
   const navigate = useNavigate();
   const link = ({ isActive }) => 'nav-link' + (isActive ? ' active' : '');
   return (
@@ -56,7 +47,7 @@ function Sidebar() {
       <div className="brand">
         <Logo />
       </div>
-      {NAV.filter((n) => navVisible(settings, n.to)).map((n) => (
+      {NAV.map((n) => (
         <NavLink key={n.to} to={n.to} end={n.end} className={link}>
           <Icon name={n.icon} size={18} /> {n.label}
         </NavLink>
@@ -70,18 +61,12 @@ function Sidebar() {
 
 function BottomNav() {
   const { openAddBet } = useAddBet();
-  const { settings } = useSettings();
   const bnav = ({ isActive }) => 'bnav' + (isActive ? ' active' : '');
-  // Hide any tabs the user switched off; "You" always stays. The add button
-  // sits in the middle, so split the visible tabs into two balanced halves and
-  // size the grid to however many are showing.
-  const tabs = BOTTOM_NAV.filter((n) => navVisible(settings, n.to));
-  const mid = Math.ceil(tabs.length / 2);
-  const left = tabs.slice(0, mid);
-  const right = tabs.slice(mid);
+  const left = BOTTOM_NAV.slice(0, 2);
+  const right = BOTTOM_NAV.slice(2);
   const addBet = () => openAddBet();
   return (
-    <nav className="bottom-nav" style={{ gridTemplateColumns: `repeat(${tabs.length + 1}, 1fr)` }}>
+    <nav className="bottom-nav">
       {left.map((n) => (
         <NavLink key={n.to} to={n.to} end={n.end} className={bnav}>
           <Icon name={n.icon} size={22} />

@@ -164,6 +164,7 @@ const PATHS = {
       <path d="M12 7.5V12l3 2" />
     </>
   ),
+  check: <path d="M5 12.5l4.5 4.5L19 6.5" />,
 };
 
 export default function Icon({ name, size = 20, className, style }) {
