@@ -114,13 +114,13 @@ export function AddBetProvider({ children }) {
     try {
       const res = await scanBetSlip(file);
       applyParsed(res.bet);
-      toast('Read from your photo — check the details', 'success');
+      toast('Scanned your bet — check the details', 'success');
     } catch (err) {
       if (err?.data?.upgrade || err?.status === 402) {
         close(); navigate('/account');
         toast(err.message || 'You’ve used all your free reads this month.', 'error');
       } else {
-        toast(err?.message || 'Couldn’t read that photo — try a clearer screenshot.', 'error');
+        toast(err?.message || 'Couldn’t read that bet — try a clearer screenshot.', 'error');
       }
     } finally {
       setScanning(false);
