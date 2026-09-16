@@ -39,6 +39,7 @@ const blank = () => ({
 const BOOSTS = [
   { v: 0, label: 'None' },
   { v: 0.25, label: '+25%' },
+  { v: 0.3, label: '+30%' },
   { v: 0.5, label: '+50%' },
 ];
 
