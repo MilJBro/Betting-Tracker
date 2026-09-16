@@ -114,7 +114,7 @@ export function AddBetProvider({ children }) {
     try {
       const res = await scanBetSlip(file);
       applyParsed(res.bet);
-      toast('Scan A Bet — check the details', 'success');
+      toast('Scan A Bet', 'success');
     } catch (err) {
       if (err?.data?.upgrade || err?.status === 402) {
         close(); navigate('/account');
