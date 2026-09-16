@@ -57,7 +57,7 @@ export function entitlements(userId) {
     plan,
     pro,
     features: pro ? PRO_FEATURES : [],
-    // Whether AI-powered reading (scan / paste-a-bet) is configured on the server.
+    // Whether AI-powered bet-slip scanning is configured on the server.
     ai: { enabled: !!config.anthropic.apiKey },
     scans: {
       used,

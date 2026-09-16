@@ -6,7 +6,6 @@ import { useSettings } from './SettingsContext.jsx';
 import { useTracker } from './TrackerContext.jsx';
 import { useToast } from './ToastContext.jsx';
 import BetForm from '../components/BetForm.jsx';
-import PasteBetDialog from '../components/PasteBetDialog.jsx';
 import Spinner from '../components/Spinner.jsx';
 import { usePlan } from '../usePlan.js';
 import { scanBetSlip } from '../scan.js';
@@ -36,27 +35,25 @@ export function AddBetProvider({ children }) {
 
   const [open, setOpen] = useState(false);
   const [bets, setBets] = useState([]);
-  const [pasting, setPasting] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [initialBet, setInitialBet] = useState(null);
   const [formKey, setFormKey] = useState(0); // bump to remount the form with a new pre-fill
   const lastDateRef = useRef('');
   const scanInputRef = useRef(null);
 
-  const openAddBet = (opts = {}) => {
+  const openAddBet = () => {
     setInitialBet(null);
     // Seed autocomplete from cache instantly, then refresh from the server.
     setBets(getCached('bets:' + activeId)?.bets || []);
     if (activeId) api.get(`/bets?tracker=${activeId}`).then((d) => setBets(d.bets)).catch(() => {});
     setOpen(true);
-    if (opts.paste) setPasting(true);
   };
-  const close = () => { setOpen(false); setPasting(false); setInitialBet(null); };
+  const close = () => { setOpen(false); setInitialBet(null); };
 
-  // A scanned/pasted bet was read: drop the dialog and re-mount the slip
-  // pre-filled with the extracted fields for the user to confirm. We keep the
-  // detected bet type (single / bet builder / accumulator) accurate and build
-  // the legs so a bet builder doesn't get flattened into a single.
+  // A scanned bet was read: re-mount the slip pre-filled with the extracted
+  // fields for the user to confirm. We keep the detected bet type (single /
+  // bet builder / accumulator) accurate and build the legs so a bet builder
+  // doesn't get flattened into a single.
   const applyParsed = (bet) => {
     const clean = { ...bet };
     // The tipster's stake/unit is their own and may differ from the user's, so
@@ -71,7 +68,7 @@ export function AddBetProvider({ children }) {
     const isMulti = clean.bet_type === 'Accumulator' || clean.bet_type === 'Bet builder';
 
     // Prefer the model's per-leg breakdown; otherwise recover legs from the
-    // joined selection ("A / B / C") that both scanners produce for multiples.
+    // joined selection ("A / B / C") the scanner produces for multiples.
     let legs = Array.isArray(clean.legs)
       ? clean.legs
           .map((l) => ({ selection: (l.selection || '').trim(), odds: Number(l.odds) || 0 }))
@@ -105,7 +102,6 @@ export function AddBetProvider({ children }) {
 
     setInitialBet(clean);
     setFormKey((k) => k + 1);
-    setPasting(false);
   };
 
   // Scan a bet-slip screenshot/photo into a pre-filled slip.
@@ -172,7 +168,6 @@ export function AddBetProvider({ children }) {
           key={formKey}
           initial={initialBet}
           isEdit={false}
-          onPaste={aiEnabled ? () => setPasting(true) : undefined}
           onScan={aiEnabled ? triggerScan : undefined}
           fields={settings.fields || {}}
           staking={settings.staking}
@@ -187,13 +182,6 @@ export function AddBetProvider({ children }) {
           onToggleField={(k, v) => updateSettings({ fields: { ...settings.fields, [k]: v } })}
           onSave={save}
           onClose={close}
-        />
-      )}
-      {pasting && (
-        <PasteBetDialog
-          onParsed={applyParsed}
-          onClose={() => setPasting(false)}
-          onUpgrade={() => { close(); navigate('/account'); }}
         />
       )}
       {/* Hidden picker for "Scan a photo" — no `capture` so iOS offers Photo
