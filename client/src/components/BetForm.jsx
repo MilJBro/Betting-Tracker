@@ -97,7 +97,7 @@ const EDITABLE_FIELDS = [
   { key: 'tags', label: 'Tags' },
 ];
 
-export default function BetForm({ initial, isEdit, onPaste, onScan, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], template, defaultDate, onSetUnitSize, onSaveTemplate, onToggleField, onSave, onClose }) {
+export default function BetForm({ initial, isEdit, onPaste, onScan, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], defaultDate, onSetUnitSize, onToggleField, onSave, onClose }) {
   const unitSize = Number(staking?.unitSize) || 0;
   const [editUnit, setEditUnit] = useState(false);
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
@@ -111,14 +111,6 @@ export default function BetForm({ initial, isEdit, onPaste, onScan, fields, stak
       if (defaultDate) base.placed_at = defaultDate; // keep the last date when adding several
       if (defaults?.stake !== '' && defaults?.stake != null) base.stake = String(defaults.stake);
       if (defaults?.bookmaker) base.bookmaker = defaults.bookmaker;
-      // A quick-add template seeds the starting fields for a new bet.
-      if (template) {
-        if (template.sport) base.sport = template.sport;
-        if (template.bookmaker) base.bookmaker = template.bookmaker;
-        if (template.tipster) base.tipster = template.tipster;
-        if (template.stake !== '' && template.stake != null) base.stake = String(template.stake);
-        if (template.each_way) { base.each_way = true; base.ew_fraction = template.ew_fraction || '1/5'; }
-      }
     }
     const f = { ...base, ...(initial || {}) };
     if (initial) {
