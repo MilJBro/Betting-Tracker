@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { useSettings } from './SettingsContext.jsx';
@@ -6,7 +7,9 @@ import { useTracker } from './TrackerContext.jsx';
 import { useToast } from './ToastContext.jsx';
 import BetForm from '../components/BetForm.jsx';
 import PasteBetDialog from '../components/PasteBetDialog.jsx';
+import Spinner from '../components/Spinner.jsx';
 import { usePlan } from '../usePlan.js';
+import { scanBetSlip } from '../scan.js';
 import { getCached, invalidateData } from '../dataCache.js';
 
 // A starter list so common sports (incl. horse racing) are always offered on
@@ -35,9 +38,11 @@ export function AddBetProvider({ children }) {
   const [template, setTemplate] = useState(null);
   const [bets, setBets] = useState([]);
   const [pasting, setPasting] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [initialBet, setInitialBet] = useState(null);
   const [formKey, setFormKey] = useState(0); // bump to remount the form with a new pre-fill
   const lastDateRef = useRef('');
+  const scanInputRef = useRef(null);
 
   const openAddBet = (opts = {}) => {
     setTemplate(opts.template || null);
@@ -66,6 +71,29 @@ export function AddBetProvider({ children }) {
     setFormKey((k) => k + 1);
     setPasting(false);
   };
+
+  // Scan a bet-slip screenshot/photo into a pre-filled slip.
+  const triggerScan = () => scanInputRef.current?.click();
+  async function onScanFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow picking the same file again later
+    if (!file) return;
+    setScanning(true);
+    try {
+      const res = await scanBetSlip(file);
+      applyParsed(res.bet);
+      toast('Read from your photo — check the details', 'success');
+    } catch (err) {
+      if (err?.data?.upgrade || err?.status === 402) {
+        close(); navigate('/account');
+        toast(err.message || 'You’ve used all your free reads this month.', 'error');
+      } else {
+        toast(err?.message || 'Couldn’t read that photo — try a clearer screenshot.', 'error');
+      }
+    } finally {
+      setScanning(false);
+    }
+  }
 
   async function save(form) {
     try {
@@ -116,6 +144,7 @@ export function AddBetProvider({ children }) {
           initial={initialBet}
           isEdit={false}
           onPaste={aiEnabled ? () => setPasting(true) : undefined}
+          onScan={aiEnabled ? triggerScan : undefined}
           fields={settings.fields || {}}
           staking={settings.staking}
           currency={settings.currency}
@@ -139,6 +168,15 @@ export function AddBetProvider({ children }) {
           onClose={() => setPasting(false)}
           onUpgrade={() => { close(); navigate('/account'); }}
         />
+      )}
+      {/* Hidden picker for "Scan a photo" — no `capture` so iOS offers Photo
+          Library (for saved tipster screenshots) as well as the camera. */}
+      <input ref={scanInputRef} type="file" accept="image/*" onChange={onScanFile} hidden />
+      {scanning && createPortal(
+        <div className="modal-overlay" style={{ alignItems: 'center' }}>
+          <div className="scan-loading"><Spinner /><span>Reading your bet slip…</span></div>
+        </div>,
+        document.body
       )}
     </AddBetContext.Provider>
   );
