@@ -245,7 +245,6 @@ export default function Dashboard() {
     if (unitSize <= 0 || mode === 'currency' || v == null) return null;
     return units(v / unitSize);
   };
-  const rangeWord = range === '7d' ? 'this week' : range === '30d' ? 'this month' : 'overall';
 
   // Period-over-period deltas (only when there's a comparable previous period).
   const delta = prevM ? {
@@ -258,11 +257,6 @@ export default function Dashboard() {
     const cls = v > 0 ? 'pos' : 'neg';
     return <span className={`dstat-sub ${cls}`}>{v > 0 ? '▲' : '▼'} {fmt(Math.abs(v))}</span>;
   };
-
-  // "Keep going" nudge from the period result.
-  const up = m.profit > 0, down = m.profit < 0;
-  const keepTitle = up ? 'Keep going!' : down ? 'Stay disciplined' : 'Off to a start';
-  const keepSub = up ? `You're up ${rangeWord}` : down ? `Down ${rangeWord} — trust your process` : `Log a few bets to see trends`;
 
   const recent = bets.slice(0, 5);
   const chartData = chartM.timeline;
@@ -315,12 +309,6 @@ export default function Dashboard() {
           <Icon name="chevron" size={14} />
         </label>
       </div>
-
-      <Link to="/analytics" className={`dash-keep ${up ? 'up' : down ? 'down' : ''}`}>
-        <span className="dk-ic"><Icon name="target" size={20} /></span>
-        <span className="dk-txt"><strong>{keepTitle}</strong><span>{keepSub}</span></span>
-        <Icon name="chevron" size={16} className="dk-chev" />
-      </Link>
 
       <PendingReminder bets={bets} onReview={() => navigate('/bets')} reviewLabel="Show open bets" />
 
