@@ -425,7 +425,6 @@ export default function BetForm({ initial, isEdit, onPaste, onScan, fields, stak
                 </button>
               )}
             </div>
-            <div className="auto-add-note">Snap a tipster’s bet slip or paste a shared bet — we’ll fill it in for you.</div>
           </div>
         )}
 
