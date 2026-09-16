@@ -97,7 +97,7 @@ const EDITABLE_FIELDS = [
   { key: 'tags', label: 'Tags' },
 ];
 
-export default function BetForm({ initial, isEdit, onPaste, onScan, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], defaultDate, onSetUnitSize, onToggleField, onSave, onClose }) {
+export default function BetForm({ initial, isEdit, onScan, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], defaultDate, onSetUnitSize, onToggleField, onSave, onClose }) {
   const unitSize = Number(staking?.unitSize) || 0;
   const [editUnit, setEditUnit] = useState(false);
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
@@ -385,21 +385,13 @@ export default function BetForm({ initial, isEdit, onPaste, onScan, fields, stak
           </div>
         </div>
 
-        {!isEdit && (onScan || onPaste) && (
+        {!isEdit && onScan && (
           <div className="auto-add">
             <div className="auto-add-btns">
-              {onScan && (
-                <button type="button" className="auto-add-btn" onClick={onScan}>
-                  <Icon name="camera" size={15} />
-                  <span>Scan a photo</span>
-                </button>
-              )}
-              {onPaste && (
-                <button type="button" className="auto-add-btn" onClick={onPaste}>
-                  <Icon name="clipboard" size={15} />
-                  <span>Paste a bet</span>
-                </button>
-              )}
+              <button type="button" className="auto-add-btn" onClick={onScan}>
+                <Icon name="camera" size={15} />
+                <span>Scan a photo</span>
+              </button>
             </div>
           </div>
         )}
