@@ -55,17 +55,51 @@ export function AddBetProvider({ children }) {
   };
   const close = () => { setOpen(false); setTemplate(null); setPasting(false); setInitialBet(null); };
 
-  // A pasted bet was read: drop the paste dialog and re-mount the slip
-  // pre-filled with the extracted fields for the user to confirm.
+  // A scanned/pasted bet was read: drop the dialog and re-mount the slip
+  // pre-filled with the extracted fields for the user to confirm. We keep the
+  // detected bet type (single / bet builder / accumulator) accurate and build
+  // the legs so a bet builder doesn't get flattened into a single.
   const applyParsed = (bet) => {
-    // The text parser returns combined odds + a joined selection but no
-    // per-leg breakdown, so keep multi-selection bets as a single slip (which
-    // preserves the odds and selection) rather than switching to an empty
-    // multi-leg form. The user can split it into legs if they want.
     const clean = { ...bet };
-    if (['Accumulator', 'Bet builder'].includes(clean.bet_type) && (!Array.isArray(clean.legs) || clean.legs.length < 2)) {
-      clean.bet_type = '';
+    // Normalise the various names for a multiple to the app's "Accumulator".
+    if (['Double', 'Treble', 'Fourfold', 'Fivefold', 'Multiple', 'Acca'].includes(clean.bet_type)) {
+      clean.bet_type = 'Accumulator';
     }
+    const isMulti = clean.bet_type === 'Accumulator' || clean.bet_type === 'Bet builder';
+
+    // Prefer the model's per-leg breakdown; otherwise recover legs from the
+    // joined selection ("A / B / C") that both scanners produce for multiples.
+    let legs = Array.isArray(clean.legs)
+      ? clean.legs
+          .map((l) => ({ selection: (l.selection || '').trim(), odds: Number(l.odds) || 0 }))
+          .filter((l) => l.selection)
+      : [];
+    if (isMulti && legs.length < 2 && typeof clean.selection === 'string' && clean.selection.includes(' / ')) {
+      legs = clean.selection
+        .split(' / ')
+        .map((s) => ({ selection: s.trim(), odds: 0 }))
+        .filter((l) => l.selection);
+    }
+
+    if (isMulti && legs.length >= 2) {
+      // An accumulator is priced from its per-leg odds. If the slip only showed
+      // the combined price, park it on the first leg so the product still
+      // equals the shown odds and nothing is lost when saved.
+      if (
+        clean.bet_type === 'Accumulator' &&
+        Number(clean.odds) > 1 &&
+        !legs.some((l) => l.odds > 1)
+      ) {
+        legs = legs.map((l, i) => (i === 0 ? { ...l, odds: Number(clean.odds) } : l));
+      }
+      clean.legs = legs;
+    } else {
+      // Not enough to build a multiple — fall back to a single so the odds and
+      // selection stay put rather than opening an empty multi-leg form.
+      delete clean.legs;
+      if (isMulti) clean.bet_type = '';
+    }
+
     setInitialBet(clean);
     setTemplate(null);
     setFormKey((k) => k + 1);
