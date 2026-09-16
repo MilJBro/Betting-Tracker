@@ -61,6 +61,11 @@ export function AddBetProvider({ children }) {
   // the legs so a bet builder doesn't get flattened into a single.
   const applyParsed = (bet) => {
     const clean = { ...bet };
+    // The tipster's stake/unit is their own and may differ from the user's, so
+    // leave the stake (and the return derived from it) blank for the user to
+    // fill — the Return recalculates from their stake, boost included.
+    clean.stake = '';
+    clean.payout = '';
     // Normalise the various names for a multiple to the app's "Accumulator".
     if (['Double', 'Treble', 'Fourfold', 'Fivefold', 'Multiple', 'Acca'].includes(clean.bet_type)) {
       clean.bet_type = 'Accumulator';

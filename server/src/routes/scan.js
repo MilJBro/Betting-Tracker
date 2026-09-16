@@ -31,6 +31,10 @@ markdown code fences) with exactly these keys:
 - stake (number): the stake as a plain number in the account currency (e.g. 10.00). 0 if not shown.
 - odds (number): the TOTAL odds in DECIMAL format. Convert fractional (e.g. 6/4 -> 2.5) and American (e.g. +150 -> 2.5, -200 -> 1.5). For an accumulator use the combined odds. 0 if not shown.
 - payout (number or null): the potential returns / "to return" amount as a number, or null if not shown.
+- boost_percent (number): if the slip shows a WINNINGS boost / profit boost / bet-builder
+  boost added to the returns (e.g. "25% Boost", "Boost +50%", "Profit Boost applied"), the
+  percentage as a plain number (e.g. 25 or 50). 0 if there is no such boost. Do NOT use this
+  for an enhanced/boosted PRICE that is already baked into the odds.
 - placed_at (string or null): the bet date as YYYY-MM-DD if clearly shown, else null.
 - status (string): one of "pending","won","lost","void","cashout". Use "pending" for an open/unsettled slip unless it clearly shows the outcome.
 - currency (string or null): "GBP","USD","EUR","AUD","CAD" if identifiable from a symbol or code, else null.
@@ -69,6 +73,8 @@ export function normalizeBet(parsed) {
         .map((l) => ({ selection: String(l?.selection || '').trim(), odds: coerceNumber(l?.odds) }))
         .filter((l) => l.selection)
     : [];
+  // Winnings boost is stored as a fraction of the profit (0.25 = +25%).
+  const boostPct = coerceNumber(parsed.boost_percent);
   return {
     selection: String(parsed.selection || '').trim(),
     event: String(parsed.event || '').trim(),
@@ -83,6 +89,7 @@ export function normalizeBet(parsed) {
         ? parsed.placed_at
         : new Date().toISOString().slice(0, 10),
     status: statuses.includes(parsed.status) ? parsed.status : 'pending',
+    boost: boostPct > 0 ? Math.min(3, boostPct / 100) : 0,
     legs,
     notes: String(parsed.notes || '').trim(),
   };
