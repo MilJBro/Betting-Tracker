@@ -414,13 +414,13 @@ export default function BetForm({ initial, isEdit, onPaste, onScan, fields, stak
             <div className="auto-add-btns">
               {onScan && (
                 <button type="button" className="auto-add-btn" onClick={onScan}>
-                  <Icon name="camera" size={20} />
+                  <Icon name="camera" size={15} />
                   <span>Scan a photo</span>
                 </button>
               )}
               {onPaste && (
                 <button type="button" className="auto-add-btn" onClick={onPaste}>
-                  <Icon name="clipboard" size={20} />
+                  <Icon name="clipboard" size={15} />
                   <span>Paste a bet</span>
                 </button>
               )}
