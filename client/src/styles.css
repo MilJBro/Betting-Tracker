@@ -334,19 +334,6 @@ tr:last-child td { border-bottom: none; }
 .paste-area:focus { outline: none; border-color: var(--primary); }
 
 /* ============ Dashboard ============ */
-.dash-keep {
-  display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text);
-  padding: 12px 14px; margin-bottom: 14px; border-radius: 14px;
-  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border));
-}
-.dash-keep.down { background: color-mix(in srgb, var(--loss) 8%, var(--surface)); border-color: color-mix(in srgb, var(--loss) 28%, var(--border)); }
-.dk-ic { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary); }
-.dash-keep.down .dk-ic { background: color-mix(in srgb, var(--loss) 16%, transparent); color: var(--loss); }
-.dk-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.dk-txt strong { font-size: 15px; font-weight: 800; }
-.dk-txt span { font-size: 12.5px; color: var(--muted); }
-.dk-chev { color: var(--muted); transform: rotate(-90deg); flex: none; }
 
 .tile-edit { background: transparent; border: 0; color: var(--muted); font-weight: 700; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; padding: 2px 2px; }
 .tile-edit:active { transform: none; }
