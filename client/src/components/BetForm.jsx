@@ -766,11 +766,6 @@ export default function BetForm({ initial, isEdit, onScan, fields, staking, curr
                   </button>
                 ))}
               </div>
-              {(Number(form.boost) || 0) > 0 && (
-                <div className="muted" style={{ fontSize: 11, marginTop: 6 }}>
-                  +{Math.round((Number(form.boost) || 0) * 100)}% added to your winnings — the Return above includes it.
-                </div>
-              )}
             </div>
           )}
 
