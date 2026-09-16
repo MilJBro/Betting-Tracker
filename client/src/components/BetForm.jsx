@@ -217,25 +217,8 @@ export default function BetForm({ initial, isEdit, onPaste, onScan, fields, stak
 
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
-  const [tplOpen, setTplOpen] = useState(false);
-  const [tplName, setTplName] = useState('');
   const [fieldsEditing, setFieldsEditing] = useState(false);
 
-  function saveTemplate() {
-    const name = tplName.trim();
-    if (!name || !onSaveTemplate) return;
-    onSaveTemplate({
-      name,
-      sport: form.sport,
-      bookmaker: form.bookmaker,
-      tipster: form.tipster,
-      stake: form.stake,
-      each_way: eachWay,
-      ew_fraction: form.ew_fraction,
-    });
-    setTplName('');
-    setTplOpen(false);
-  }
   // Once the user edits the payout themselves, stop auto-filling it.
   const [payoutTouched, setPayoutTouched] = useState(
     () => !!(initial && initial.payout != null && initial.payout !== '')
@@ -826,31 +809,6 @@ export default function BetForm({ initial, isEdit, onPaste, onScan, fields, stak
                   </span>
                 ))}
               </div>
-            </div>
-          )}
-
-          {!isEdit && onSaveTemplate && (
-            <div style={{ marginTop: 14 }}>
-              {tplOpen ? (
-                <div className="row" style={{ gap: 8, alignItems: 'center' }}>
-                  <input
-                    value={tplName}
-                    onChange={(e) => setTplName(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveTemplate(); } }}
-                    placeholder="Template name — e.g. Football single"
-                    aria-label="Template name"
-                    maxLength={40}
-                    style={{ flex: 1 }}
-                    autoFocus
-                  />
-                  <button type="button" className="btn-ghost btn-sm" onClick={saveTemplate} disabled={!tplName.trim()}>Save</button>
-                  <button type="button" className="btn-ghost btn-sm" onClick={() => { setTplOpen(false); setTplName(''); }}>✕</button>
-                </div>
-              ) : (
-                <button type="button" className="linklike" onClick={() => setTplOpen(true)}>
-                  Save these settings as a template
-                </button>
-              )}
             </div>
           )}
 
