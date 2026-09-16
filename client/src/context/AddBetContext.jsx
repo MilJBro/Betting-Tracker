@@ -119,6 +119,10 @@ export function AddBetProvider({ children }) {
       if (err?.data?.upgrade || err?.status === 402) {
         close(); navigate('/account');
         toast(err.message || 'You’ve used all your free reads this month.', 'error');
+      } else if (!err?.status || /load failed|failed to fetch|network/i.test(err?.message || '')) {
+        // No HTTP response at all — a connection/timeout issue (often the server
+        // waking up). A second try usually goes through.
+        toast('Couldn’t reach the server — check your connection and try again.', 'error');
       } else {
         toast(err?.message || 'Couldn’t read that bet — try a clearer screenshot.', 'error');
       }

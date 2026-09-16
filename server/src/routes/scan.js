@@ -140,7 +140,10 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    const client = new Anthropic({ apiKey: config.anthropic.apiKey });
+    // Bound the upstream call so a slow/overloaded model returns a clean error
+    // instead of leaving the request hanging until the platform drops it (which
+    // the browser surfaces as an opaque "Load failed").
+    const client = new Anthropic({ apiKey: config.anthropic.apiKey, timeout: 45000, maxRetries: 1 });
     const message = await client.messages.create({
       model: config.anthropic.model,
       max_tokens: 2000,
@@ -180,9 +183,16 @@ router.post('/', async (req, res) => {
 
     res.json({ bet, confidence, currency: parsed.currency || null, scans: entitlements(req.userId).scans });
   } catch (err) {
-    console.error('[scan] extraction failed:', err?.message || err);
-    const status = err?.status === 401 ? 502 : 502;
-    res.status(status).json({ error: 'Bet scanning is temporarily unavailable. Please add the bet manually.' });
+    console.error('[scan] extraction failed:', err?.status || '', err?.message || err);
+    let msg = 'Bet scanning is temporarily unavailable — please try again in a moment.';
+    if (err?.status === 401 || err?.status === 403) {
+      msg = 'Bet scanning is misconfigured on the server (invalid API key).';
+    } else if (err?.status === 429) {
+      msg = 'Bet scanning is busy right now — wait a few seconds and try again.';
+    } else if (err?.status === 400 && /credit|balance|billing/i.test(err?.message || '')) {
+      msg = 'Bet scanning is unavailable (the AI account is out of credit).';
+    }
+    res.status(502).json({ error: msg });
   }
 });
 
