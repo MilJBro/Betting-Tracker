@@ -15,10 +15,18 @@ const SYSTEM_PROMPT = `You extract structured data from a screenshot of a bettin
 confirmation from any bookmaker. Return ONLY a single JSON object (no prose, no
 markdown code fences) with exactly these keys:
 
-- selection (string): the main pick. For an accumulator/multiple, join each leg with " / ".
+- selection (string): the main pick. For a multiple/bet builder, join each leg with " / ".
 - event (string): the match or event, e.g. "Arsenal v Chelsea". "" if not shown.
 - sport (string): sport or category, e.g. "Football", "Horse Racing", "Tennis". "" if unknown.
-- bet_type (string): e.g. "Single", "Double", "Treble", "Accumulator", "Match Result", "Over/Under". "" if unknown.
+- bet_type (string): the KIND of bet. Use exactly one of: "Single" (one selection),
+  "Bet builder" (two or more selections within ONE match/event — also called Same Game
+  Multi, Bet Builder, BetBuilder, #YourOdds), "Accumulator" (two or more selections across
+  DIFFERENT matches/events — includes Double, Treble, Fourfold, etc.). If it is clearly a
+  single pick use "Single". "" only if you genuinely cannot tell.
+- legs (array): for a bet builder or accumulator, one object per selection:
+  { "selection": string, "odds": number }. Put each leg's odds in DECIMAL if the slip shows
+  them, otherwise 0. A bet builder usually shows only the combined price, so its legs will
+  have odds 0 — that's fine. Use an empty array [] for a Single.
 - bookmaker (string): the bookmaker's name if identifiable (e.g. "Bet365", "Sky Bet", "Paddy Power"). "" if unknown.
 - stake (number): the stake as a plain number in the account currency (e.g. 10.00). 0 if not shown.
 - odds (number): the TOTAL odds in DECIMAL format. Convert fractional (e.g. 6/4 -> 2.5) and American (e.g. +150 -> 2.5, -200 -> 1.5). For an accumulator use the combined odds. 0 if not shown.
@@ -56,6 +64,11 @@ function modelOptions() {
 // for testing.
 export function normalizeBet(parsed) {
   const statuses = ['pending', 'won', 'lost', 'void', 'cashout'];
+  const legs = Array.isArray(parsed.legs)
+    ? parsed.legs
+        .map((l) => ({ selection: String(l?.selection || '').trim(), odds: coerceNumber(l?.odds) }))
+        .filter((l) => l.selection)
+    : [];
   return {
     selection: String(parsed.selection || '').trim(),
     event: String(parsed.event || '').trim(),
@@ -70,6 +83,7 @@ export function normalizeBet(parsed) {
         ? parsed.placed_at
         : new Date().toISOString().slice(0, 10),
     status: statuses.includes(parsed.status) ? parsed.status : 'pending',
+    legs,
     notes: String(parsed.notes || '').trim(),
   };
 }
