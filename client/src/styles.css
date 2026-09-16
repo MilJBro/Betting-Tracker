@@ -308,19 +308,25 @@ tr:last-child td { border-bottom: none; }
 .seg-group .seg { flex: 1; padding: 9px; border-radius: calc(var(--radius-sm) - 3px); background: transparent; color: var(--muted); font-weight: 700; font-size: 13.5px; }
 .seg-group .seg.on { background: var(--primary); color: #04120a; }
 
-/* ============ Paste a bet ============ */
-.paste-cta {
-  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer;
-  padding: 12px 14px; margin-bottom: 14px; border-radius: 14px;
-  background: color-mix(in srgb, var(--primary) 9%, var(--surface-2));
-  border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border));
-  color: var(--text);
+/* ============ Add automatically (scan / paste) ============ */
+.auto-add {
+  margin-bottom: 14px; padding: 12px; border-radius: 14px;
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--primary) 32%, var(--border));
 }
-.paste-cta-ic { flex: none; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary); }
-.paste-cta-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.paste-cta-txt strong { font-size: 14.5px; font-weight: 800; }
-.paste-cta-txt .muted { font-size: 12px; font-weight: 500; }
-.paste-cta-chev { color: var(--muted); transform: rotate(-90deg); flex: none; }
+.auto-add-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.auto-add-btns:has(> :only-child) { grid-template-columns: 1fr; }
+.auto-add-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  padding: 14px 8px; border-radius: 12px; background: var(--surface); color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border)); font-weight: 800; font-size: 13.5px;
+}
+.auto-add-btn span { color: var(--text); }
+.auto-add-btn:active { transform: translateY(1px); }
+.auto-add-note { font-size: 12px; color: var(--muted); font-weight: 500; text-align: center; margin-top: 9px; }
+
+.scan-loading { display: flex; flex-direction: column; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px 34px; color: var(--text); font-weight: 700; }
+
 .paste-area {
   width: 100%; resize: vertical; min-height: 120px; padding: 12px 14px;
   border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2);

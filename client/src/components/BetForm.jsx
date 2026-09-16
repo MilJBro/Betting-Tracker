@@ -96,7 +96,7 @@ const EDITABLE_FIELDS = [
   { key: 'tags', label: 'Tags' },
 ];
 
-export default function BetForm({ initial, isEdit, onPaste, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], template, defaultDate, onSetUnitSize, onSaveTemplate, onToggleField, onSave, onClose }) {
+export default function BetForm({ initial, isEdit, onPaste, onScan, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], template, defaultDate, onSetUnitSize, onSaveTemplate, onToggleField, onSave, onClose }) {
   const unitSize = Number(staking?.unitSize) || 0;
   const [editUnit, setEditUnit] = useState(false);
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
@@ -409,15 +409,24 @@ export default function BetForm({ initial, isEdit, onPaste, fields, staking, cur
           </div>
         </div>
 
-        {!isEdit && onPaste && (
-          <button type="button" className="paste-cta" onClick={onPaste}>
-            <span className="paste-cta-ic"><Icon name="clipboard" size={18} /></span>
-            <span className="paste-cta-txt">
-              <strong>Paste a bet</strong>
-              <span className="muted">Shared it from bet365 or another app? We’ll read it for you</span>
-            </span>
-            <Icon name="chevron" size={16} className="paste-cta-chev" />
-          </button>
+        {!isEdit && (onScan || onPaste) && (
+          <div className="auto-add">
+            <div className="auto-add-btns">
+              {onScan && (
+                <button type="button" className="auto-add-btn" onClick={onScan}>
+                  <Icon name="camera" size={20} />
+                  <span>Scan a photo</span>
+                </button>
+              )}
+              {onPaste && (
+                <button type="button" className="auto-add-btn" onClick={onPaste}>
+                  <Icon name="clipboard" size={20} />
+                  <span>Paste a bet</span>
+                </button>
+              )}
+            </div>
+            <div className="auto-add-note">Snap a tipster’s bet slip or paste a shared bet — we’ll fill it in for you.</div>
+          </div>
         )}
 
         {fieldsEditing && onToggleField && (
