@@ -875,8 +875,9 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
     background: color-mix(in srgb, var(--surface) 94%, transparent);
     backdrop-filter: blur(14px); border-top: 1px solid var(--border);
-    /* Flat, flush to the bottom edge — no home-indicator inset. */
-    padding: 8px;
+    /* Flat, no dynamic home-indicator inset (that caused the raised-nav bug);
+       a small static bottom pad keeps the labels off the very edge. */
+    padding: 8px 8px 13px;
   }
   .bnav {
     display: flex; flex-direction: column; align-items: center; gap: 3px;
