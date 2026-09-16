@@ -102,6 +102,21 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6
 .betform .seg-group .seg { padding: 7px; font-size: 13px; }
 /* Date + Sport stay side-by-side even on mobile (both are short fields). */
 .betform .betgrid { grid-template-columns: 1fr 1fr; gap: 10px; }
+/* Status picker: four tappable letter boxes (Won / Pending / Lost / Cashed out). */
+.status-boxes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.st-box {
+  height: 40px; border-radius: 10px; font-weight: 800; font-size: 16px; letter-spacing: 0.5px;
+  display: grid; place-items: center; cursor: pointer;
+  border: 1.5px solid color-mix(in srgb, var(--c) 34%, var(--border));
+  background: color-mix(in srgb, var(--c) 10%, var(--surface-2));
+  color: var(--c);
+}
+.st-box.st-won { --c: #16a34a; }
+.st-box.st-pending { --c: #d97706; }
+.st-box.st-lost { --c: #dc2626; }
+.st-box.st-cashout { --c: #2563eb; }
+.st-box.on { background: var(--c); border-color: var(--c); color: #fff; box-shadow: 0 2px 8px color-mix(in srgb, var(--c) 38%, transparent); }
+.st-box:active { transform: translateY(1px); }
 /* Selection (needs room) paired with the short Odds field. */
 .betform .sel-odds { grid-template-columns: 1.7fr 1fr; gap: 10px; }
 

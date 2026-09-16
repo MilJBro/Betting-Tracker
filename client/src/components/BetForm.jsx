@@ -3,7 +3,13 @@ import { createPortal } from 'react-dom';
 import { currencySymbol, money, formatOdds, parseOdds } from '../format.js';
 import Icon from './Icon.jsx';
 
-const STATUS_OPTIONS = ['pending', 'won', 'lost', 'void', 'cashout'];
+// The status picker: four tappable boxes (Won / Pending / Lost / Cashed out).
+const STATUS_BOXES = [
+  { key: 'won', letter: 'W', label: 'Won' },
+  { key: 'pending', letter: 'P', label: 'Pending' },
+  { key: 'lost', letter: 'L', label: 'Lost' },
+  { key: 'cashout', letter: 'C', label: 'Cashed out' },
+];
 // Each-way place-terms fractions (the place part pays at this fraction of odds).
 const EW_FRACTIONS = ['1/5', '1/4', '1/3', '1/2', '1/6'];
 const fractionValue = (frac) => {
@@ -161,9 +167,6 @@ export default function BetForm({ initial, isEdit, onScan, fields, staking, curr
   // Each-way (Win + Place) applies to racing and other field sports (e.g. golf).
   const ewEligible = layout === 'racing' || layout === 'field';
   const eachWay = !!form.each_way && ewEligible;
-  const statusOptions = eachWay
-    ? ['pending', 'won', 'placed', 'lost', 'void', 'cashout']
-    : STATUS_OPTIONS;
 
   // Sport is a dropdown; "Other…" reveals a free-text box for anything not
   // in the list. Match the saved sport to a list option case-insensitively.
@@ -717,11 +720,21 @@ export default function BetForm({ initial, isEdit, onScan, fields, staking, curr
               {show('status') && (
                 <div className="field">
                   <label>Status</label>
-                  <select value={form.status} onChange={(e) => set('status', e.target.value)} aria-label="Status">
-                    {statusOptions.map((s) => (
-                      <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>
+                  <div className="status-boxes" role="group" aria-label="Status">
+                    {STATUS_BOXES.map((s) => (
+                      <button
+                        key={s.key}
+                        type="button"
+                        className={`st-box st-${s.key} ${form.status === s.key ? 'on' : ''}`}
+                        onClick={() => set('status', s.key)}
+                        aria-pressed={form.status === s.key}
+                        aria-label={s.label}
+                        title={s.label}
+                      >
+                        {s.letter}
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
               )}
               {show('payout') && (
