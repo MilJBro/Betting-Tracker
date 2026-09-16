@@ -7,7 +7,7 @@ import { useTracker } from '../context/TrackerContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { usePlan } from '../usePlan.js';
 import { getCached, setCached } from '../dataCache.js';
-import { formatDate, formatStake } from '../format.js';
+import { formatDate, formatStake, money } from '../format.js';
 import Icon from '../components/Icon.jsx';
 import CheckoutModal from '../components/CheckoutModal.jsx';
 import InstallAppCard from '../components/InstallAppCard.jsx';
@@ -91,9 +91,15 @@ export default function Account() {
   const currency = settings?.currency || 'GBP';
   const staking = settings?.staking;
   const toggle = (key) => setExpanded((e) => (e === key ? null : key));
-  // Compact joined date so it fits the stat tile (e.g. "13 Sep 26").
+  // Compact joined date so it fits the stat tile (e.g. "13 Sep 26"). Force a
+  // 3-letter month — some locales render "Sept" for September, which is wide
+  // enough to overflow the narrow stat column.
   const joinedShort = joined
-    ? new Date(joined).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })
+    ? (() => {
+        const jd = new Date(joined);
+        const mon = jd.toLocaleDateString('en-GB', { month: 'short' }).replace('.', '').slice(0, 3);
+        return `${jd.getDate()} ${mon} ${String(jd.getFullYear()).slice(2)}`;
+      })()
     : '—';
 
   // Returning from Stripe Checkout (?upgrade=success|cancelled).
@@ -236,7 +242,7 @@ export default function Account() {
         </div>
 
         <div className="ah-stats">
-          <div><span className="ah-ic"><Icon name="trophy" size={16} /></span><span className="k">Total Profit</span><span className={`v ${profitCls}`}>{stats ? formatStake(stats.netProfit, currency, staking, { signed: true }) : '—'}</span></div>
+          <div><span className="ah-ic"><Icon name="trophy" size={16} /></span><span className="k">Total Profit</span><span className={`v ${profitCls}`}>{stats ? money(stats.netProfit, currency, { signed: true }) : '—'}</span></div>
           <div><span className="ah-ic"><Icon name="target" size={16} /></span><span className="k">Win Rate</span><span className="v">{stats ? `${stats.winRate}%` : '—'}</span></div>
           <div><span className="ah-ic"><Icon name="coins" size={16} /></span><span className="k">Total Bets</span><span className="v">{stats ? stats.totalBets : '—'}</span></div>
           <div><span className="ah-ic"><Icon name="calendar" size={16} /></span><span className="k">Joined</span><span className="v sm">{joinedShort}</span></div>

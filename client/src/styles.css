@@ -414,8 +414,8 @@ tr:last-child td { border-bottom: none; }
 .ah-stats > div + div::before { content: ''; position: absolute; left: 0; top: 2px; bottom: 2px; width: 1px; background: var(--border); }
 .ah-ic { color: var(--muted); }
 .ah-stats .k { font-size: 11.5px; color: var(--muted); font-weight: 600; }
-.ah-stats .v { font-size: 18px; font-weight: 800; white-space: nowrap; }
-.ah-stats .v.sm { font-size: 14px; }
+.ah-stats .v { font-size: 18px; font-weight: 800; white-space: nowrap; letter-spacing: -0.01em; }
+.ah-stats .v.sm { font-size: 12px; }
 
 /* Grouped settings cards */
 .set-card { padding: 16px; margin-bottom: 16px; }
