@@ -390,7 +390,7 @@ export default function BetForm({ initial, isEdit, onScan, fields, staking, curr
             <div className="auto-add-btns">
               <button type="button" className="auto-add-btn" onClick={onScan}>
                 <Icon name="camera" size={15} />
-                <span>Scan a bet</span>
+                <span>Scan A Bet</span>
               </button>
             </div>
           </div>
