@@ -4,7 +4,7 @@ import { api } from './api.js';
 // base64 JPEG data suitable for the scan endpoint. Screenshots are often large;
 // shrinking them keeps the upload fast and the vision call cheap without losing
 // the legibility of the text on a bet slip.
-export function fileToScaledImage(file, maxDim = 1600, quality = 0.85) {
+export function fileToScaledImage(file, maxDim = 1400, quality = 0.78) {
   return new Promise((resolve, reject) => {
     if (!file || !file.type?.startsWith('image/')) {
       reject(new Error('Please choose an image.'));

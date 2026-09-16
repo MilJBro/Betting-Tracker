@@ -105,14 +105,32 @@ export function AddBetProvider({ children }) {
   };
 
   // Scan a bet-slip screenshot/photo into a pre-filled slip.
-  const triggerScan = () => scanInputRef.current?.click();
+  const triggerScan = () => {
+    // Wake the (possibly idle) server while the user is picking a photo, so the
+    // scan request doesn't hit a cold start and time out.
+    fetch('/api/health').catch(() => {});
+    scanInputRef.current?.click();
+  };
   async function onScanFile(e) {
     const file = e.target.files?.[0];
     e.target.value = ''; // allow picking the same file again later
     if (!file) return;
     setScanning(true);
     try {
-      const res = await scanBetSlip(file);
+      let res;
+      try {
+        res = await scanBetSlip(file);
+      } catch (err) {
+        // A failure with no HTTP status is a connection/timeout — usually the
+        // free-tier server waking up. Wait a moment and try once more before
+        // surfacing an error (the quota only counts a successful scan).
+        if (!err?.status) {
+          await new Promise((r) => setTimeout(r, 2500));
+          res = await scanBetSlip(file);
+        } else {
+          throw err;
+        }
+      }
       applyParsed(res.bet);
       toast('Scan A Bet', 'success');
     } catch (err) {
