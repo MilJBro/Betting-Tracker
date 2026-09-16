@@ -9,6 +9,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import StatCard from '../components/StatCard.jsx';
 import SettleControls from '../components/SettleControls.jsx';
 import PendingReminder from '../components/PendingReminder.jsx';
+import BetPreview from '../components/BetPreview.jsx';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
 import { settlePayout } from '../settle.js';
@@ -129,6 +130,7 @@ export default function Dashboard() {
   const [range, setRange] = useState('30d');
   const [chartRange, setChartRange] = useState('30d');
   const [editTiles, setEditTiles] = useState(false);
+  const [preview, setPreview] = useState(null); // tapped recent bet — full breakdown
 
   const load = useCallback(() => {
     const q = activeId ? `?tracker=${activeId}` : '';
@@ -461,7 +463,7 @@ export default function Dashboard() {
               const title = b.event || b.selection || b.sport || 'Bet';
               const sub = b.event ? (b.selection || b.bet_type || b.sport) : (b.bet_type || b.sport || '');
               return (
-                <button key={b.id} type="button" className="act-row" onClick={() => navigate('/bets')}>
+                <button key={b.id} type="button" className="act-row" onClick={() => setPreview(b)}>
                   <span className="act-ic">{(b.sport || '?').slice(0, 1).toUpperCase()}</span>
                   <span className="act-mid">
                     <span className="act-title">{title}</span>
@@ -503,6 +505,18 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
+      )}
+
+      {preview && (
+        <BetPreview
+          bet={preview}
+          currency={currency}
+          staking={staking}
+          oddsFormat={settings.oddsFormat || 'decimal'}
+          profit={SETTLED.includes(preview.status) ? betProfit(preview) : null}
+          onEdit={() => { setPreview(null); navigate('/bets'); }}
+          onClose={() => setPreview(null)}
+        />
       )}
     </div>
   );
