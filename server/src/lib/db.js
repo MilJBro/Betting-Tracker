@@ -101,6 +101,10 @@ ensureColumn('bets', 'ew_places', 'INTEGER');
 // Winnings boost applied to the return (e.g. 0.25 for a bookmaker's +25% offer).
 ensureColumn('bets', 'boost', 'REAL NOT NULL DEFAULT 0');
 
+// Notes were removed as a feature — wipe any stored notes so they're gone from
+// every tracked bet. Idempotent: a no-op once there are none left to clear.
+db.prepare("UPDATE bets SET notes = NULL WHERE notes IS NOT NULL AND notes <> ''").run();
+
 // --- One-off data migration: give every user a default tracker and adopt any
 // bets that predate trackers. Idempotent — safe to run on every boot.
 const usersNeedingTracker = db

@@ -39,7 +39,6 @@ markdown code fences) with exactly these keys:
 - status (string): one of "pending","won","lost","void","cashout". Use "pending" for an open/unsettled slip unless it clearly shows the outcome.
 - currency (string or null): "GBP","USD","EUR","AUD","CAD" if identifiable from a symbol or code, else null.
 - confidence (number): 0..1, your overall confidence in the extraction.
-- notes (string): anything useful that didn't fit (each-way, boosted/enhanced odds, bet ID), else "".
 
 Rules: output valid JSON and nothing else. Use "" for unknown text fields and 0
 for unknown numbers, except payout, placed_at and currency which use null. Never
@@ -91,7 +90,6 @@ export function normalizeBet(parsed) {
     status: statuses.includes(parsed.status) ? parsed.status : 'pending',
     boost: boostPct > 0 ? Math.min(3, boostPct / 100) : 0,
     legs,
-    notes: String(parsed.notes || '').trim(),
   };
 }
 

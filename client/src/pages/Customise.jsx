@@ -10,7 +10,7 @@ import { currencySymbol } from '../format.js';
 const FIELD_LABELS = {
   sport: 'Sport / Category', event: 'Event', selection: 'Selection', betType: 'Bet type',
   bookmaker: 'Bookmaker', tipster: 'Tipster', stake: 'Stake', odds: 'Odds', status: 'Status',
-  payout: 'Payout / Return', notes: 'Notes', tags: 'Tags',
+  payout: 'Payout / Return', tags: 'Tags',
 };
 
 export default function Customise() {

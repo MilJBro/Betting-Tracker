@@ -81,7 +81,6 @@ export const DEFAULT_SETTINGS = {
     odds: true,
     status: true,
     payout: true,
-    notes: true,
     tags: false,
   },
 
