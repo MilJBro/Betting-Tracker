@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
@@ -15,6 +15,31 @@ import { settlePayout } from '../settle.js';
 import { getCached, setCached, subscribeInvalidate } from '../dataCache.js';
 import { useAddBet } from '../context/AddBetContext.jsx';
 import { formatStake, formatOdds, formatDate, units, money } from '../format.js';
+
+// A stat value that shrinks its font-size to fit its tile, so long numbers
+// (e.g. "+£1,523.52") never overflow or clip regardless of how many tiles are
+// on screen. Scales between `min` and `max` px based on the actual width.
+function FitValue({ children, className = '', max = 20, min = 10 }) {
+  const ref = useRef(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const fit = () => {
+      let size = max;
+      el.style.fontSize = size + 'px';
+      // Shrink until the (nowrap) text stops overflowing its box.
+      while (size > min && el.scrollWidth > el.clientWidth) {
+        size -= 0.5;
+        el.style.fontSize = size + 'px';
+      }
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [children, max, min]);
+  return <div ref={ref} className={className}>{children}</div>;
+}
 
 const SETTLED = ['won', 'lost', 'void', 'cashout', 'placed'];
 const DASH_RANGES = [
@@ -211,6 +236,13 @@ export default function Dashboard() {
 
   const pcls = (v) => (v > 0 ? 'pos' : v < 0 ? 'neg' : '');
   const unitsOf = (v) => units(unitSize > 0 ? v / unitSize : 0, { signed: true });
+  // Unit amount for a stake tile — shown as a sub-line when the user stakes in
+  // units or both, so the tile's main value stays a short money figure.
+  const unitStakeSub = (v) => {
+    const mode = staking?.mode || 'currency';
+    if (unitSize <= 0 || mode === 'currency' || v == null) return null;
+    return units(v / unitSize);
+  };
   const rangeWord = range === '7d' ? 'this week' : range === '30d' ? 'this month' : 'overall';
 
   // Period-over-period deltas (only when there's a comparable previous period).
@@ -253,8 +285,10 @@ export default function Dashboard() {
       case 'roi': return { ...base, value: `${m.roi}%`, valCls: pcls(m.roi) };
       case 'winRate': return { ...base, value: `${m.winRate}%`, delta: delta?.winRate, deltaFmt: (x) => `${x.toFixed(0)}%` };
       case 'totalBets': return { ...base, value: m.totalBets, delta: delta?.totalBets, deltaFmt: (x) => `${x}` };
-      case 'avgStake': return { ...base, value: formatStake(m.avgStake, currency, staking), delta: delta?.avgStake, deltaFmt: (x) => money(x, currency) };
-      case 'totalStaked': return { ...base, value: formatStake(m.staked, currency, staking) };
+      // Tiles are narrow, so show a compact money value (not the long
+      // "money · units" dual form) — the units read is available on Stats.
+      case 'avgStake': return { ...base, value: money(m.avgStake, currency), sub: unitStakeSub(m.avgStake), delta: unitStakeSub(m.avgStake) ? undefined : delta?.avgStake, deltaFmt: (x) => money(x, currency) };
+      case 'totalStaked': return { ...base, value: money(m.staked, currency), sub: unitStakeSub(m.staked) };
       case 'biggestWin': return { ...base, value: money(m.biggestWin, currency, { signed: true }), valCls: 'pos', sub: showUnits ? unitsOf(m.biggestWin) : null, subCls: 'pos' };
       case 'biggestLoss': return { ...base, value: money(m.biggestLoss, currency, { signed: true }), valCls: 'neg', sub: showUnits ? unitsOf(m.biggestLoss) : null, subCls: 'neg' };
       case 'currentStreak': return { ...base, value: m.current, valCls: m.currentType === 'won' ? 'pos' : m.currentType === 'lost' ? 'neg' : '', sub: m.currentType === 'won' ? 'wins' : m.currentType === 'lost' ? 'losses' : '—' };
@@ -299,7 +333,7 @@ export default function Dashboard() {
             <div key={key} className={`dstat ${i === 0 ? 'primary' : ''}`}>
               <div className="dstat-top"><span className="dstat-ic"><Icon name={td.icon} size={16} /></span></div>
               <div className="dstat-label">{td.label}</div>
-              <div className={`dstat-val ${td.valCls || ''}`}>{td.value}</div>
+              <FitValue className={`dstat-val ${td.valCls || ''}`}>{td.value}</FitValue>
               {td.sub != null
                 ? <span className={`dstat-sub ${td.subCls || 'muted'}`}>{td.sub}</span>
                 : td.delta !== undefined
