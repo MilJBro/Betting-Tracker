@@ -38,6 +38,19 @@ function coerceNumber(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+// `output_config.effort` is only supported on the larger models (Opus/Sonnet 5,
+// Fable, etc.). Haiku 4.5 and Sonnet 4.5 reject it with a 400, so we omit it
+// there — otherwise the whole scan fails and the user just sees "add manually".
+// Extraction from a bet slip is a simple task, so dropping effort costs nothing.
+function supportsEffort(model) {
+  return !/haiku|sonnet-4-5|sonnet-3/i.test(model || '');
+}
+function modelOptions() {
+  return supportsEffort(config.anthropic.model)
+    ? { output_config: { effort: 'low' } }
+    : {};
+}
+
 // Map the model's raw JSON into the app's bet shape. Unknown fields stay blank
 // so the user just fills the gaps rather than fighting wrong guesses. Exported
 // for testing.
@@ -110,7 +123,7 @@ router.post('/', async (req, res) => {
     const message = await client.messages.create({
       model: config.anthropic.model,
       max_tokens: 2000,
-      output_config: { effort: 'low' },
+      ...modelOptions(),
       system: SYSTEM_PROMPT,
       messages: [
         {
@@ -184,7 +197,7 @@ router.post('/text', async (req, res) => {
     const message = await client.messages.create({
       model: config.anthropic.model,
       max_tokens: 2000,
-      output_config: { effort: 'low' },
+      ...modelOptions(),
       system: SYSTEM_PROMPT,
       messages: [
         {
