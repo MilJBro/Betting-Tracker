@@ -35,7 +35,6 @@ export function AddBetProvider({ children }) {
   const aiEnabled = ent?.ai?.enabled !== false; // show unless the server says it's off
 
   const [open, setOpen] = useState(false);
-  const [template, setTemplate] = useState(null);
   const [bets, setBets] = useState([]);
   const [pasting, setPasting] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -45,7 +44,6 @@ export function AddBetProvider({ children }) {
   const scanInputRef = useRef(null);
 
   const openAddBet = (opts = {}) => {
-    setTemplate(opts.template || null);
     setInitialBet(null);
     // Seed autocomplete from cache instantly, then refresh from the server.
     setBets(getCached('bets:' + activeId)?.bets || []);
@@ -53,7 +51,7 @@ export function AddBetProvider({ children }) {
     setOpen(true);
     if (opts.paste) setPasting(true);
   };
-  const close = () => { setOpen(false); setTemplate(null); setPasting(false); setInitialBet(null); };
+  const close = () => { setOpen(false); setPasting(false); setInitialBet(null); };
 
   // A scanned/pasted bet was read: drop the dialog and re-mount the slip
   // pre-filled with the extracted fields for the user to confirm. We keep the
@@ -106,7 +104,6 @@ export function AddBetProvider({ children }) {
     }
 
     setInitialBet(clean);
-    setTemplate(null);
     setFormKey((k) => k + 1);
     setPasting(false);
   };
@@ -145,13 +142,6 @@ export function AddBetProvider({ children }) {
     if (form.placed_at) lastDateRef.current = form.placed_at; // next new bet keeps this date
     invalidateData(); // refresh whatever tab is on screen
   }
-
-  const templates = Array.isArray(settings?.templates) ? settings.templates : [];
-  const saveTemplate = (data) => {
-    const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
-    updateSettings({ templates: [...templates, { id, ...data }] });
-    toast(`Template "${data.name}" saved`, 'success');
-  };
 
   const bookmakers = useMemo(
     () => [...new Set(bets.map((b) => b.bookmaker).filter(Boolean))].sort(),
@@ -192,8 +182,6 @@ export function AddBetProvider({ children }) {
           bookmakers={bookmakers}
           sports={sportSuggestions}
           bets={bets}
-          template={template}
-          onSaveTemplate={saveTemplate}
           defaultDate={lastDateRef.current}
           onSetUnitSize={(v) => updateSettings({ staking: { ...settings.staking, unitSize: v } })}
           onToggleField={(k, v) => updateSettings({ fields: { ...settings.fields, [k]: v } })}

@@ -62,7 +62,6 @@ export default function Bets() {
   const [editing, setEditing] = useState(null);
   const [preview, setPreview] = useState(null);
   const [prefill, setPrefill] = useState(null);
-  const [template, setTemplate] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [importing, setImporting] = useState(false);
   const [dataMenu, setDataMenu] = useState(false);
@@ -314,20 +313,8 @@ export default function Bets() {
     }
   }
 
-  function openNew() { setEditing(null); setPrefill(null); setTemplate(null); setShowForm(true); }
-  function openEdit(b) { setEditing(b); setPrefill(null); setTemplate(null); setShowForm(true); }
-  function openTemplate(t) { setEditing(null); setPrefill(null); setTemplate(t); setShowForm(true); }
-
-  // Saved quick-add templates live in account settings.
-  const templates = Array.isArray(settings?.templates) ? settings.templates : [];
-  function saveTemplate(data) {
-    const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
-    updateSettings({ templates: [...templates, { id, ...data }] });
-    toast(`Template "${data.name}" saved`, 'success');
-  }
-  function deleteTemplate(id) {
-    updateSettings({ templates: templates.filter((t) => t.id !== id) });
-  }
+  function openNew() { setEditing(null); setPrefill(null); setShowForm(true); }
+  function openEdit(b) { setEditing(b); setPrefill(null); setShowForm(true); }
 
   const isPro = !!ent?.pro;
   const slug = (s) => (s || 'bets').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'bets';
@@ -506,18 +493,6 @@ export default function Bets() {
       <input ref={csvRef} type="file" accept=".csv,text/csv" onChange={onImportFile} style={{ display: 'none' }} />
 
       <PendingReminder bets={bets} onReview={() => { clearFilters(); setStatus('pending'); }} reviewLabel="Show open bets" />
-
-      {templates.length > 0 && (
-        <div className="tpl-row" style={{ marginBottom: 14 }}>
-          <span className="muted" style={{ fontSize: 12.5, fontWeight: 700 }}>Quick add:</span>
-          {templates.map((t) => (
-            <span key={t.id} className="tpl-chip">
-              <button type="button" className="tpl-chip-main" onClick={() => openTemplate(t)} title="Add a bet from this template">{t.name}</button>
-              <button type="button" className="tpl-chip-x" onClick={() => deleteTemplate(t.id)} aria-label={`Delete template ${t.name}`} title="Delete template">✕</button>
-            </span>
-          ))}
-        </div>
-      )}
 
       {error && <div className="error-banner">{error} <button className="btn-ghost btn-sm" onClick={() => { setLoading(true); load(); }} style={{ marginLeft: 8 }}>Retry</button></div>}
 
@@ -768,8 +743,6 @@ export default function Bets() {
           bookmakers={bookieOptions}
           sports={sportSuggestions}
           bets={bets}
-          template={template}
-          onSaveTemplate={saveTemplate}
           defaultDate={lastDate}
           onSetUnitSize={(v) => updateSettings({ staking: { ...settings.staking, unitSize: v } })}
           onToggleField={(k, v) => updateSettings({ fields: { ...settings.fields, [k]: v } })}
@@ -777,7 +750,6 @@ export default function Bets() {
           onClose={() => {
             setShowForm(false);
             setPrefill(null);
-            setTemplate(null);
             const back = returnToRef.current;
             returnToRef.current = null;
             if (back && back !== '/bets') navigate(back);
