@@ -12,7 +12,6 @@ const EXPORT_COLUMNS = [
   ['odds', 'Odds'],
   ['status', 'Status'],
   ['payout', 'Payout'],
-  ['notes', 'Notes'],
   ['tags', 'Tags'],
 ];
 
@@ -77,7 +76,6 @@ const HEADER_MAP = {
   odds: 'odds', price: 'odds', decimal: 'odds', 'decimal odds': 'odds',
   status: 'status', result: 'status', outcome: 'status',
   payout: 'payout', return: 'payout', returns: 'payout', 'return amount': 'payout',
-  notes: 'notes', note: 'notes', comment: 'notes', comments: 'notes',
   tags: 'tags', tag: 'tags', labels: 'tags',
 };
 
@@ -147,7 +145,6 @@ export function csvToBets(text) {
       odds: num(get(cells, 'odds')),
       status: STATUS_MAP[statusRaw] || 'pending',
       payout: idx.payout != null && get(cells, 'payout') !== '' ? num(get(cells, 'payout')) : '',
-      notes: get(cells, 'notes'),
       tags: tagsRaw ? tagsRaw.split(/[;|]/).map((t) => t.trim()).filter(Boolean) : [],
     });
   }

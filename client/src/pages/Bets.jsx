@@ -158,7 +158,7 @@ export default function Bets() {
       if (to && b.placed_at > to) return false;
       if (q) {
         const hay = [b.selection, b.event, b.sport, b.bookmaker, b.tipster, b.bet_type,
-          b.notes, ...(b.tags || [])].join(' ').toLowerCase();
+          ...(b.tags || [])].join(' ').toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;

@@ -31,7 +31,6 @@ const blank = () => ({
   odds: '',
   status: 'pending',
   payout: '',
-  notes: '',
   tags: [],
   legs: [],
   each_way: false,

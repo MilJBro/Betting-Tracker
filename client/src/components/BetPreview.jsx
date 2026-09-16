@@ -57,7 +57,6 @@ export default function BetPreview({ bet, currency, staking, oddsFormat = 'decim
           <Row label="Profit" value={profit == null ? null : formatStake(profit, currency, staking, { signed: true })} />
           <Row label="Bookmaker" value={bet.bookmaker} />
           <Row label="Tipster" value={bet.tipster} />
-          <Row label="Notes" value={bet.notes} />
         </div>
 
         {Array.isArray(bet.tags) && bet.tags.length > 0 && (

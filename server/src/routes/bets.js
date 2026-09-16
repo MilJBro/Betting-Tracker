@@ -91,7 +91,7 @@ function sanitise(body) {
     odds,
     status,
     payout,
-    notes: (body.notes || '').trim(),
+    notes: '', // notes were removed as a feature — never stored anymore
     tags: JSON.stringify(Array.isArray(body.tags) ? body.tags : []),
     legs: JSON.stringify(legs),
     each_way: eachWay ? 1 : 0,
