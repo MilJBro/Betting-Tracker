@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom';
 import Logo from './components/Logo.jsx';
+import Splash from './components/Splash.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 import { SettingsProvider, useSettings } from './context/SettingsContext.jsx';
 import { TrackerProvider } from './context/TrackerContext.jsx';
@@ -100,7 +101,7 @@ function ShellInner() {
   }, [showApp]);
 
   // Wait for settings, then send brand-new accounts through the questionnaire.
-  if (!settings) return <div className="auth-wrap"><div className="spinner" /></div>;
+  if (!settings) return <Splash />;
   if (settings.profile && !settings.profile.onboarded) return <Onboarding />;
 
   return (
@@ -151,7 +152,7 @@ export default function App() {
         path="*"
         element={
           loading ? (
-            <div className="auth-wrap"><div className="spinner" /></div>
+            <Splash />
           ) : user ? (
             <AppShell />
           ) : (
