@@ -121,11 +121,12 @@ export function AddBetProvider({ children }) {
       try {
         res = await scanBetSlip(file);
       } catch (err) {
-        // A failure with no HTTP status is a connection/timeout — usually the
-        // free-tier server waking up. Wait a moment and try once more before
+        // Transient failure — a connection drop, a timeout, or the server
+        // waking up / briefly overloaded (502/503/504). Try once more before
         // surfacing an error (the quota only counts a successful scan).
-        if (!err?.status) {
-          await new Promise((r) => setTimeout(r, 2500));
+        const transient = err?.timeout || !err?.status || [502, 503, 504].includes(err?.status);
+        if (transient) {
+          await new Promise((r) => setTimeout(r, 1500));
           res = await scanBetSlip(file);
         } else {
           throw err;
@@ -137,9 +138,10 @@ export function AddBetProvider({ children }) {
       if (err?.data?.upgrade || err?.status === 402) {
         close(); navigate('/account');
         toast(err.message || 'You’ve used all your free reads this month.', 'error');
+      } else if (err?.timeout) {
+        toast('That took too long — give it another go.', 'error');
       } else if (!err?.status || /load failed|failed to fetch|network/i.test(err?.message || '')) {
-        // No HTTP response at all — a connection/timeout issue (often the server
-        // waking up). A second try usually goes through.
+        // No HTTP response at all — a connection issue (or the server waking up).
         toast('Couldn’t reach the server — check your connection and try again.', 'error');
       } else {
         toast(err?.message || 'Couldn’t read that bet — try a clearer screenshot.', 'error');

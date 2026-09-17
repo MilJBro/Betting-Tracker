@@ -141,7 +141,7 @@ router.post('/', async (req, res) => {
     // Bound the upstream call so a slow/overloaded model returns a clean error
     // instead of leaving the request hanging until the platform drops it (which
     // the browser surfaces as an opaque "Load failed").
-    const client = new Anthropic({ apiKey: config.anthropic.apiKey, timeout: 45000, maxRetries: 1 });
+    const client = new Anthropic({ apiKey: config.anthropic.apiKey, timeout: 30000, maxRetries: 0 });
     const message = await client.messages.create({
       model: config.anthropic.model,
       max_tokens: 2000,
