@@ -790,6 +790,22 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; width: 100%; max-width: 560px; margin: auto; box-shadow: var(--shadow); }
 
 /* ---- Auth ---- */
+/* Branded boot splash — one calm screen for every load gate (auth, settings),
+   matching the inline #boot splash in index.html so the two hand over cleanly. */
+.splash {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  background: var(--bg);
+}
+.splash-logo .wordmark { font-family: var(--font-head); font-weight: 800; font-size: 27px; letter-spacing: -0.02em; }
+.splash-logo .brand-mark svg { width: 30px; height: 30px; }
+.splash-bar { width: 116px; height: 3px; border-radius: 3px; overflow: hidden; background: color-mix(in srgb, var(--text) 14%, transparent); }
+.splash-bar::after {
+  content: ''; display: block; width: 38%; height: 100%; border-radius: 3px; background: var(--primary);
+  animation: boot-slide 1.05s ease-in-out infinite;
+}
+@keyframes boot-slide { 0% { transform: translateX(-120%); } 100% { transform: translateX(360%); } }
+
 .auth-wrap { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 20px;
   background: radial-gradient(1200px 600px at 20% -10%, color-mix(in srgb, var(--primary) 22%, transparent), transparent),
               radial-gradient(1000px 500px at 100% 10%, color-mix(in srgb, var(--accent) 18%, transparent), transparent), var(--bg); }

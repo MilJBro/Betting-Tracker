@@ -37,6 +37,27 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" />
     <title>Betbooks — Betting Tracker for Profit &amp; ROI</title>
+    <!-- Instant branded splash: shown before any JS/CSS parses so the app never
+         flashes a blank white screen. Styled to match the React .splash, which
+         takes over seamlessly once the app mounts. -->
+    <style>
+      html, body { margin: 0; background: #0b1120; }
+      #boot {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+        background: #0b1120;
+        font-family: 'Sora', system-ui, -apple-system, sans-serif;
+      }
+      #boot .bmark { color: #22c55e; display: flex; }
+      #boot .bword { font-weight: 800; font-size: 27px; letter-spacing: -0.02em; color: #f8fafc; }
+      #boot .bword b { color: #22c55e; font-weight: 800; }
+      #boot .bbar { width: 116px; height: 3px; border-radius: 3px; overflow: hidden; background: rgba(255,255,255,0.14); }
+      #boot .bbar::after {
+        content: ''; display: block; width: 38%; height: 100%; border-radius: 3px; background: #22c55e;
+        animation: boot-slide 1.05s ease-in-out infinite;
+      }
+      @keyframes boot-slide { 0% { transform: translateX(-120%); } 100% { transform: translateX(360%); } }
+    </style>
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -51,7 +72,18 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot">
+        <span class="bmark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 6.4C10.3 5 7.7 4.5 3.8 5.1v12.7c3.9-0.6 6.5-0.1 8.2 1.3 1.7-1.4 4.3-1.9 8.2-1.3V5.1C16.3 4.5 13.7 5 12 6.4z" />
+            <path d="M12 6.4v12.7" />
+          </svg>
+        </span>
+        <span class="bword">Bet<b>books</b></span>
+        <span class="bbar"></span>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
