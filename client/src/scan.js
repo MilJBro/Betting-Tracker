@@ -37,5 +37,7 @@ export function fileToScaledImage(file, maxDim = 1400, quality = 0.78) {
 // Upload a bet-slip screenshot and get back the extracted bet fields.
 export async function scanBetSlip(file) {
   const { image, mediaType } = await fileToScaledImage(file);
-  return api.post('/bets/scan', { image, mediaType }); // { bet, confidence, currency }
+  // Hard 35s cap so a stalled request fails cleanly instead of hanging the
+  // scan overlay forever (the server itself fails fast at ~30s).
+  return api.post('/bets/scan', { image, mediaType }, { timeoutMs: 35000 }); // { bet, confidence, currency }
 }
