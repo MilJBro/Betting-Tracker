@@ -213,6 +213,28 @@ export default function Bets() {
     const [y, m] = key.split('-').map(Number);
     return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   };
+  // A short day header, e.g. "Tue 16 Sep", used to split a month's bets by day.
+  const formatDayLabel = (iso) => {
+    if (!/^\d{4}-\d{2}-\d{2}/.test(iso || '')) return 'Undated';
+    const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+  };
+  // Only split by day when the list is actually in date order; sorting by
+  // stake/odds/profit would make day headers meaningless.
+  const groupByDay = sortBy === 'date';
+  // Render a month's bets, inserting a day sub-header whenever the day changes.
+  // `renderItem` renders one bet; `dayHeader` renders the sub-header element.
+  const withDayHeaders = (list, renderItem, dayHeader) => {
+    if (!groupByDay) return list.map(renderItem);
+    let last = null;
+    const out = [];
+    for (const b of list) {
+      const day = (b.placed_at || '').slice(0, 10);
+      if (day !== last) { last = day; out.push(dayHeader(day)); }
+      out.push(renderItem(b));
+    }
+    return out;
+  };
 
   // Live totals for whatever is currently filtered.
   const summary = useMemo(() => {
@@ -668,7 +690,9 @@ export default function Bets() {
                       </tr>
                       {!moCollapsed && (
                         <>
-                          {visible.map(renderRow)}
+                          {withDayHeaders(visible, renderRow, (day) => (
+                            <tr key={'d-' + day} className="day-group-row"><td colSpan={20}>{formatDayLabel(day)}</td></tr>
+                          ))}
                           {mo.bets.length > BET_PREVIEW && (
                             <tr className="day-more-row" onClick={() => toggleShowAll(mo.month)}>
                               <td colSpan={20}>{showAll ? 'Show less' : `Show ${mo.bets.length - BET_PREVIEW} more`}</td>
@@ -700,7 +724,9 @@ export default function Bets() {
                   </button>
                   {!moCollapsed && (
                     <div className="month-bets">
-                      {visible.map(renderCard)}
+                      {withDayHeaders(visible, renderCard, (day) => (
+                        <div key={'d-' + day} className="day-subhead">{formatDayLabel(day)}</div>
+                      ))}
                       {mo.bets.length > BET_PREVIEW && (
                         <button type="button" className="day-more" onClick={() => toggleShowAll(mo.month)}>
                           {showAll ? 'Show less' : `Show ${mo.bets.length - BET_PREVIEW} more`}
