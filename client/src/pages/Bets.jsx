@@ -34,8 +34,11 @@ function profitOf(b) {
 
 const SETTLED = ['won', 'lost', 'void', 'cashout', 'placed'];
 const STATUS_FILTERS = ['all', 'pending', 'won', 'placed', 'lost', 'void', 'cashout'];
-// How many bets to show in an opened month before a "Show more" toggle.
+// How many bets to show in an opened month before a "Show more" toggle (used
+// only when the list isn't grouped by day).
 const BET_PREVIEW = 15;
+// How many day groups to show in an opened month before a "Show more" toggle.
+const DAY_PREVIEW = 8;
 const titleCase = (s) => s[0].toUpperCase() + s.slice(1);
 const statusFilterLabel = (s) => (s === 'all' ? 'All bets' : titleCase(s));
 const SORTS = [
@@ -200,6 +203,8 @@ export default function Bets() {
   // folded. Busy months show a preview of bets until "Show more" is tapped.
   const [openMonths, setOpenMonths] = useState(() => new Set());
   const [showAllMonths, setShowAllMonths] = useState(() => new Set());
+  // Day groups start collapsed when a month is opened; track which are open.
+  const [openDays, setOpenDays] = useState(() => new Set());
   const toggleIn = (setter) => (key) => setter((s) => {
     const n = new Set(s);
     n.has(key) ? n.delete(key) : n.add(key);
@@ -207,6 +212,18 @@ export default function Bets() {
   });
   const toggleMonth = toggleIn(setOpenMonths);
   const toggleShowAll = toggleIn(setShowAllMonths);
+  const toggleDay = toggleIn(setOpenDays);
+  // Bucket a month's (date-sorted) bets into [{ day, bets }] in order.
+  const bucketByDay = (list) => {
+    const out = [];
+    for (const b of list) {
+      const day = (b.placed_at || '').slice(0, 10);
+      const last = out[out.length - 1];
+      if (last && last.day === day) last.bets.push(b);
+      else out.push({ day, bets: [b] });
+    }
+    return out;
+  };
 
   const formatMonth = (key) => {
     if (!/^\d{4}-\d{2}$/.test(key)) return key;
@@ -222,19 +239,6 @@ export default function Bets() {
   // Only split by day when the list is actually in date order; sorting by
   // stake/odds/profit would make day headers meaningless.
   const groupByDay = sortBy === 'date';
-  // Render a month's bets, inserting a day sub-header whenever the day changes.
-  // `renderItem` renders one bet; `dayHeader` renders the sub-header element.
-  const withDayHeaders = (list, renderItem, dayHeader) => {
-    if (!groupByDay) return list.map(renderItem);
-    let last = null;
-    const out = [];
-    for (const b of list) {
-      const day = (b.placed_at || '').slice(0, 10);
-      if (day !== last) { last = day; out.push(dayHeader(day)); }
-      out.push(renderItem(b));
-    }
-    return out;
-  };
 
   // Live totals for whatever is currently filtered.
   const summary = useMemo(() => {
@@ -677,7 +681,10 @@ export default function Bets() {
                 {grouped.map((mo) => {
                   const moCollapsed = !openMonths.has(mo.month);
                   const showAll = showAllMonths.has(mo.month);
-                  const visible = showAll ? mo.bets : mo.bets.slice(0, BET_PREVIEW);
+                  const dayGroups = groupByDay ? bucketByDay(mo.bets) : null;
+                  const visibleDays = dayGroups ? (showAll ? dayGroups : dayGroups.slice(0, DAY_PREVIEW)) : null;
+                  const visibleFlat = showAll ? mo.bets : mo.bets.slice(0, BET_PREVIEW);
+                  const hasMore = dayGroups ? dayGroups.length > DAY_PREVIEW : mo.bets.length > BET_PREVIEW;
                   return (
                     <Fragment key={mo.month}>
                       <tr className="month-group-row" onClick={() => toggleMonth(mo.month)}>
@@ -690,12 +697,25 @@ export default function Bets() {
                       </tr>
                       {!moCollapsed && (
                         <>
-                          {withDayHeaders(visible, renderRow, (day) => (
-                            <tr key={'d-' + day} className="day-group-row"><td colSpan={20}>{formatDayLabel(day)}</td></tr>
-                          ))}
-                          {mo.bets.length > BET_PREVIEW && (
+                          {dayGroups
+                            ? visibleDays.map(({ day, bets: dayBets }) => {
+                                const dk = mo.month + '|' + day;
+                                const dopen = openDays.has(dk);
+                                return (
+                                  <Fragment key={dk}>
+                                    <tr className="day-group-row" onClick={() => toggleDay(dk)}>
+                                      <td colSpan={20}>
+                                        <span className="day-chevron" aria-hidden>{dopen ? '▾' : '▸'}</span> {formatDayLabel(day)} · {countLabel(dayBets.length)}
+                                      </td>
+                                    </tr>
+                                    {dopen && dayBets.map(renderRow)}
+                                  </Fragment>
+                                );
+                              })
+                            : visibleFlat.map(renderRow)}
+                          {hasMore && (
                             <tr className="day-more-row" onClick={() => toggleShowAll(mo.month)}>
-                              <td colSpan={20}>{showAll ? 'Show less' : `Show ${mo.bets.length - BET_PREVIEW} more`}</td>
+                              <td colSpan={20}>{showAll ? 'Show less' : 'Show more'}</td>
                             </tr>
                           )}
                         </>
@@ -712,7 +732,10 @@ export default function Bets() {
             {grouped.map((mo) => {
               const moCollapsed = !openMonths.has(mo.month);
               const showAll = showAllMonths.has(mo.month);
-              const visible = showAll ? mo.bets : mo.bets.slice(0, BET_PREVIEW);
+              const dayGroups = groupByDay ? bucketByDay(mo.bets) : null;
+              const visibleDays = dayGroups ? (showAll ? dayGroups : dayGroups.slice(0, DAY_PREVIEW)) : null;
+              const visibleFlat = showAll ? mo.bets : mo.bets.slice(0, BET_PREVIEW);
+              const hasMore = dayGroups ? dayGroups.length > DAY_PREVIEW : mo.bets.length > BET_PREVIEW;
               return (
                 <div key={mo.month} className="month-group">
                   <button type="button" className="month-head" onClick={() => toggleMonth(mo.month)}>
@@ -724,12 +747,25 @@ export default function Bets() {
                   </button>
                   {!moCollapsed && (
                     <div className="month-bets">
-                      {withDayHeaders(visible, renderCard, (day) => (
-                        <div key={'d-' + day} className="day-subhead">{formatDayLabel(day)}</div>
-                      ))}
-                      {mo.bets.length > BET_PREVIEW && (
+                      {dayGroups
+                        ? visibleDays.map(({ day, bets: dayBets }) => {
+                            const dk = mo.month + '|' + day;
+                            const dopen = openDays.has(dk);
+                            return (
+                              <div key={dk} className="day-group2">
+                                <button type="button" className="day-subhead" onClick={() => toggleDay(dk)}>
+                                  <span className="day-chevron" aria-hidden>{dopen ? '▾' : '▸'}</span>
+                                  {formatDayLabel(day)}
+                                  <span className="muted" style={{ fontWeight: 600 }}> · {countLabel(dayBets.length)}</span>
+                                </button>
+                                {dopen && dayBets.map(renderCard)}
+                              </div>
+                            );
+                          })
+                        : visibleFlat.map(renderCard)}
+                      {hasMore && (
                         <button type="button" className="day-more" onClick={() => toggleShowAll(mo.month)}>
-                          {showAll ? 'Show less' : `Show ${mo.bets.length - BET_PREVIEW} more`}
+                          {showAll ? 'Show less' : 'Show more'}
                         </button>
                       )}
                     </div>

@@ -715,10 +715,17 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 
 /* Redesigned bet card: a coloured status stripe + a tappable info row. */
 .month-bets { display: flex; flex-direction: column; gap: 8px; padding: 10px 0 4px; }
-/* Day sub-header inside a month, splitting that month's bets by day. */
-.day-subhead { font-size: 12px; font-weight: 800; color: var(--muted); letter-spacing: 0.02em; padding: 4px 2px 0; }
-.month-bets > .day-subhead:first-child { padding-top: 0; }
-.day-group-row td { font-weight: 700; color: var(--muted); font-size: 12.5px; }
+/* Collapsible day group inside a month — a header the user taps to reveal
+   that day's bets. */
+.day-group2 { display: flex; flex-direction: column; gap: 8px; }
+.day-subhead {
+  display: flex; align-items: center; gap: 6px; width: 100%; text-align: left;
+  background: transparent; border: 0; cursor: pointer; padding: 4px 2px;
+  font-size: 12.5px; font-weight: 800; color: var(--muted); letter-spacing: 0.02em;
+}
+.day-subhead .day-chevron { font-size: 10px; }
+.day-group-row td { font-weight: 700; color: var(--muted); font-size: 12.5px; cursor: pointer; }
+.day-group-row .day-chevron { font-size: 10px; margin-right: 2px; }
 .bet2 { background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--border); border-radius: 12px; overflow: hidden; }
 .bet2.sel { border-color: color-mix(in srgb, var(--primary) 55%, var(--border)); }
 .bet2.s-won { border-left-color: var(--primary); }
