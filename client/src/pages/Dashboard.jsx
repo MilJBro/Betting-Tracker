@@ -14,6 +14,7 @@ import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
 import { settlePayout } from '../settle.js';
 import { getCached, setCached, subscribeInvalidate } from '../dataCache.js';
+import { markAppReady } from '../boot.js';
 import { useAddBet } from '../context/AddBetContext.jsx';
 import { formatStake, formatOdds, formatDate, units, money } from '../format.js';
 
@@ -176,6 +177,12 @@ export default function Dashboard() {
       toast(`Marked ${status}`);
     } catch (e) { toast(e.message, 'error'); }
   }
+
+  // Dashboard is the default landing screen: once its first data is in, the
+  // boot splash can fade — so startup is one screen, not splash → spinner.
+  useEffect(() => {
+    if (settings && !loading && stats) markAppReady();
+  }, [settings, loading, stats]);
 
   if (!settings || loading || !stats) return <div className="main"><Spinner /></div>;
 
