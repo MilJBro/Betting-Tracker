@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AuthPanel from '../components/AuthPanel.jsx';
 import Logo from '../components/Logo.jsx';
+import PlanCards from '../components/PlanCards.jsx';
+import { api } from '../api.js';
 
 const FEATURES = [
   {
@@ -44,6 +46,9 @@ function FeatureIcon({ children }) {
 // the visitor to create an account or log in.
 export default function Login() {
   const [mode, setMode] = useState('login');
+  const [pricing, setPricing] = useState(null);
+
+  useEffect(() => { api.get('/pricing').then(setPricing).catch(() => {}); }, []);
 
   function goAuth(m) {
     setMode(m);
@@ -86,6 +91,19 @@ export default function Login() {
             <div key={i} className="lp-step"><div className="lp-n">{i + 1}</div><div className="lp-t">{s}</div></div>
           ))}
         </div>
+
+        <div className="section-title lp-h">Simple pricing</div>
+        <p className="muted" style={{ textAlign: 'center', fontSize: 13.5, margin: '-6px 0 4px' }}>
+          Start free — upgrade to Pro whenever you want more.
+        </p>
+        <PlanCards
+          priceLabel={pricing?.priceLabel || ''}
+          freeButton={<button className="btn-ghost plan-cta" onClick={() => goAuth('register')}>Start free</button>}
+          proButton={<button className="btn-primary plan-cta" onClick={() => goAuth('register')}>
+            {pricing?.trialDays > 0 ? `Start free — try Pro for ${pricing.trialDays} days` : 'Create free account'}
+          </button>}
+          proFine={<p className="muted plan-fine">Create a free account first — upgrade to Pro anytime from the app.</p>}
+        />
 
         <div className="section-title lp-h" id="get-started">Get started</div>
         <AuthPanel mode={mode} onMode={setMode} />

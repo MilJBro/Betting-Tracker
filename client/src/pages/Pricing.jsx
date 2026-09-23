@@ -2,30 +2,11 @@ import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Icon from '../components/Icon.jsx';
 import CheckoutModal from '../components/CheckoutModal.jsx';
+import PlanCards from '../components/PlanCards.jsx';
 import { usePlan } from '../usePlan.js';
 import { useToast } from '../context/ToastContext.jsx';
 import { api } from '../api.js';
 import { useState } from 'react';
-
-// What each plan includes. Free is deliberately generous (the habit-forming
-// core); Pro unlocks scale + deeper insight. Keep this in sync with the
-// server's PRO_FEATURES in server/src/lib/plan.js.
-const FREE = [
-  'Unlimited bet logging',
-  'Net profit, ROI & win rate',
-  'Profit chart & day-by-day history',
-  '5 AI bet scans every month',
-  'Themes & a dashboard you build',
-  '1 tracker',
-];
-const PRO = [
-  'Unlimited AI bet scans',
-  'Advanced analytics & breakdowns',
-  'Track by sport, bookmaker & tipster',
-  'Multiple trackers',
-  'CSV import & export',
-  'Custom share page — no badge',
-];
 
 export default function Pricing() {
   const navigate = useNavigate();
@@ -77,47 +58,18 @@ export default function Pricing() {
         </div>
       )}
 
-      <div className="plans">
-        {/* Free */}
-        <div className="plan">
-          <div className="plan-head">
-            <span className="plan-name">Free</span>
-            <div className="plan-price"><span className="pp-amt">£0</span><span className="pp-per">forever</span></div>
-          </div>
-          <p className="plan-tag muted">Everything you need to track your bets.</p>
-          <ul className="plan-list">
-            {FREE.map((f) => <li key={f}><span className="pl-check"><Icon name="check" size={13} /></span>{f}</li>)}
-          </ul>
-          <button className="btn-ghost plan-cta" disabled>{isPro ? 'Included' : 'Your current plan'}</button>
-        </div>
-
-        {/* Pro */}
-        <div className="plan pro">
-          <div className="plan-badge">Most popular</div>
-          <div className="plan-head">
-            <span className="plan-name">Pro</span>
-            <div className="plan-price">
-              {priceLabel
-                ? <><span className="pp-amt">{priceLabel.split(' ')[0]}</span><span className="pp-per">{priceLabel.replace(/^\S+\s*/, '') || 'per month'}</span></>
-                : <span className="pp-amt" style={{ fontSize: 26 }}>Coming soon</span>}
-            </div>
-          </div>
-          <p className="plan-tag" style={{ color: 'var(--primary)' }}>Everything in Free, plus:</p>
-          <ul className="plan-list">
-            {PRO.map((f) => <li key={f}><span className="pl-check on"><Icon name="check" size={13} /></span>{f}</li>)}
-          </ul>
-          {isPro ? (
-            <button className="btn-primary plan-cta" disabled>Current plan</button>
-          ) : (
-            <button className="btn-primary plan-cta" onClick={doUpgrade} disabled={busy || !ent}>
+      <PlanCards
+        priceLabel={priceLabel}
+        freeButton={<button className="btn-ghost plan-cta" disabled>{isPro ? 'Included' : 'Your current plan'}</button>}
+        proButton={isPro
+          ? <button className="btn-primary plan-cta" disabled>Current plan</button>
+          : <button className="btn-primary plan-cta" onClick={doUpgrade} disabled={busy || !ent}>
               {busy ? 'Working…' : trialDays > 0 ? `Start ${trialDays}-day free trial` : 'Upgrade to Pro'}
-            </button>
-          )}
-          {!isPro && trialDays > 0 && priceLabel && (
-            <p className="muted plan-fine">Free for {trialDays} days, then {priceLabel}. Cancel anytime.</p>
-          )}
-        </div>
-      </div>
+            </button>}
+        proFine={!isPro && trialDays > 0 && priceLabel
+          ? <p className="muted plan-fine">Free for {trialDays} days, then {priceLabel}. Cancel anytime.</p>
+          : null}
+      />
 
       <p className="muted" style={{ textAlign: 'center', fontSize: 12.5, marginTop: 18 }}>
         Cancel anytime · Please gamble responsibly · 18+

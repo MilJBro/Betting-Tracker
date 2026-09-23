@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
 
 import { config } from './lib/config.js';
+import { FREE_SCAN_LIMIT } from './lib/plan.js';
 import './lib/db.js';
 import authRoutes from './routes/auth.js';
 import betRoutes from './routes/bets.js';
@@ -69,6 +70,14 @@ const authLimiter = rateLimit({
 });
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+// Public pricing info so the logged-out landing page can show real plan prices.
+app.get('/api/pricing', (_req, res) => res.json({
+  billingEnabled: config.billingEnabled,
+  priceLabel: config.stripe.priceLabel || '',
+  trialDays: config.stripe.trialDays || 0,
+  freeScanLimit: FREE_SCAN_LIMIT,
+}));
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/bets', betRoutes);
 app.use('/api/trackers', trackerRoutes);
