@@ -12,7 +12,18 @@ export const billingEnabled = config.billingEnabled;
 export async function ensureCustomer(userId) {
   const row = db.prepare('SELECT id, email, username, stripe_customer_id FROM users WHERE id = ?').get(userId);
   if (!row) throw new Error('User not found');
-  if (row.stripe_customer_id) return row.stripe_customer_id;
+  if (row.stripe_customer_id) {
+    // A saved id can become stale — e.g. it was created under a different
+    // Stripe key/mode (test vs live) before the account went live, so the
+    // current key can't find it and checkout fails with "No such customer".
+    // Verify it still exists; if not, fall through and create a fresh one.
+    try {
+      const existing = await stripe.customers.retrieve(row.stripe_customer_id);
+      if (existing && !existing.deleted) return row.stripe_customer_id;
+    } catch (err) {
+      if (err?.code !== 'resource_missing') throw err;
+    }
+  }
   const customer = await stripe.customers.create({
     email: row.email,
     name: row.username,
