@@ -1,6 +1,7 @@
 // Minimal line-icon set (stroke, currentColor) for a clean, emoji-free UI.
 const PATHS = {
   dashboard: <path d="M4 13h6V4H4zM14 20h6v-9h-6zM14 4v4h6V4zM4 20h6v-4H4z" />,
+  zap: <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" />,
   house: (
     <>
       <path d="M4 12l8-7 8 7" />

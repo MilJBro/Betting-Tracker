@@ -16,6 +16,7 @@ import { settlePayout } from '../settle.js';
 import { getCached, setCached, subscribeInvalidate } from '../dataCache.js';
 import { markAppReady } from '../boot.js';
 import { useAddBet } from '../context/AddBetContext.jsx';
+import { usePlan } from '../usePlan.js';
 import { formatStake, formatOdds, formatDate, units, money } from '../format.js';
 
 // A stat value that shrinks its font-size to fit its tile, so long numbers
@@ -125,6 +126,7 @@ export default function Dashboard() {
   const toast = useToast();
   const navigate = useNavigate();
   const { openAddBet } = useAddBet();
+  const { ent } = usePlan();
   const [stats, setStats] = useState(() => getCached('dash:' + activeId)?.stats ?? null);
   const [bets, setBets] = useState(() => getCached('dash:' + activeId)?.bets ?? []);
   const [loading, setLoading] = useState(() => !getCached('dash:' + activeId));
@@ -316,6 +318,14 @@ export default function Dashboard() {
           <Icon name="chevron" size={14} />
         </label>
       </div>
+
+      {ent && !ent.pro && (
+        <Link to="/pricing" className="go-pro">
+          <span className="gp-ic"><Icon name="zap" size={18} /></span>
+          <span className="gp-txt"><strong>Unlock Pro</strong><span>Unlimited scans, advanced stats &amp; more</span></span>
+          <span className="gp-cta">See plans</span>
+        </Link>
+      )}
 
       <PendingReminder bets={bets} onReview={() => navigate('/bets')} reviewLabel="Show open bets" />
 

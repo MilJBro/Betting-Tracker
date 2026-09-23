@@ -15,6 +15,7 @@ import Bets from './pages/Bets.jsx';
 import Analytics from './pages/Analytics.jsx';
 import Customise from './pages/Customise.jsx';
 import Account from './pages/Account.jsx';
+import Pricing from './pages/Pricing.jsx';
 import Share from './pages/Share.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
 import Terms from './pages/Terms.jsx';
@@ -27,6 +28,7 @@ const NAV = [
   { to: '/bets', icon: 'bets', label: 'My bets', short: 'Bets' },
   { to: '/analytics', icon: 'analytics', label: 'Analytics', short: 'Stats' },
   { to: '/customise', icon: 'sliders', label: 'Customise', short: 'Style' },
+  { to: '/pricing', icon: 'zap', label: 'Plans', short: 'Plans' },
   { to: '/account', icon: 'account', label: 'Account', short: 'You' },
 ];
 
@@ -117,6 +119,7 @@ function ShellInner() {
               <Route path="/bets" element={<Bets />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/customise" element={<Customise />} />
+              <Route path="/pricing" element={<Pricing />} />
               <Route path="/account" element={<Account />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
