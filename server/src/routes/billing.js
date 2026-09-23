@@ -20,9 +20,9 @@ router.post('/checkout', async (req, res) => {
   try {
     const customer = await ensureCustomer(req.userId);
     const session = await stripe.checkout.sessions.create({
-      // Newer Stripe API versions renamed the embedded UI mode to
-      // 'embedded_page' (the old 'embedded' value is rejected).
-      ui_mode: 'embedded_page',
+      // Embedded Checkout — the form mounts in an iframe on our own page via
+      // stripe.initEmbeddedCheckout(). ui_mode must be exactly 'embedded'.
+      ui_mode: 'embedded',
       mode: 'subscription',
       customer,
       line_items: [{ price: config.stripe.priceId, quantity: 1 }],
