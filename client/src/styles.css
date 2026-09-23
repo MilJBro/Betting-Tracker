@@ -362,7 +362,9 @@ tr:last-child td { border-bottom: none; }
 .pro-banner > div { flex: 1; min-width: 0; }
 .pro-banner .btn-ghost { flex: none; }
 
-.plans { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
+/* Extra top margin leaves room for the "Most popular" badge, which sits above
+   the Pro card, so it never overlaps whatever is above the cards. */
+.plans { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
 .plan { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px 16px; display: flex; flex-direction: column; }
 .plan.pro { border-color: color-mix(in srgb, var(--primary) 55%, var(--border)); background: color-mix(in srgb, var(--primary) 7%, var(--surface)); }
 .plan-badge { position: absolute; top: -11px; left: 16px; background: var(--primary); color: #04120a; font-weight: 800; font-size: 11px; letter-spacing: .02em; padding: 4px 11px; border-radius: 999px; }

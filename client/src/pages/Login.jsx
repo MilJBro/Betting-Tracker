@@ -93,7 +93,7 @@ export default function Login() {
         </div>
 
         <div className="section-title lp-h">Simple pricing</div>
-        <p className="muted" style={{ textAlign: 'center', fontSize: 13.5, margin: '-6px 0 4px' }}>
+        <p className="muted" style={{ textAlign: 'center', fontSize: 13.5, margin: '2px 0 0' }}>
           Start free — upgrade to Pro whenever you want more.
         </p>
         <PlanCards
