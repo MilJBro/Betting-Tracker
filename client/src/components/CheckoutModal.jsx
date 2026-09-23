@@ -34,11 +34,16 @@ export default function CheckoutModal({ publishableKey, onClose }) {
       try {
         const stripe = await getStripe(publishableKey);
         if (!stripe) throw new Error('Could not load the payment form.');
+        // Create the checkout session up front so any server-side error (e.g. a
+        // Stripe misconfiguration) surfaces in our own error banner. If we let
+        // Stripe's fetchClientSecret callback make this call, a failure there is
+        // replaced by Stripe's generic "Something went wrong" and the real
+        // reason is lost.
+        const { clientSecret } = await api.post('/billing/checkout');
+        if (!clientSecret) throw new Error('Could not start checkout. Please try again.');
+        if (cancelled) return;
         const checkout = await stripe.initEmbeddedCheckout({
-          fetchClientSecret: async () => {
-            const d = await api.post('/billing/checkout');
-            return d.clientSecret;
-          },
+          fetchClientSecret: async () => clientSecret,
         });
         if (cancelled) { checkout.destroy(); return; }
         checkoutRef.current = checkout;
