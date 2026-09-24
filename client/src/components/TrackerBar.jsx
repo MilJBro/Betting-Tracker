@@ -23,7 +23,7 @@ export default function TrackerBar() {
   const [newName, setNewName] = useState('');
   const [newBankroll, setNewBankroll] = useState('');
   const [busy, setBusy] = useState(false);
-  const [confirmDel, setConfirmDel] = useState(false); // in-app delete confirmation
+  const [delTarget, setDelTarget] = useState(null); // tracker pending delete confirmation
 
   if (!active) return null;
   const sym = currencySymbol(settings?.currency || 'GBP');
@@ -66,16 +66,18 @@ export default function TrackerBar() {
   }
 
   // Native confirm() is unreliable in an installed PWA (iOS may suppress it),
-  // so we use an in-app confirmation dialog instead.
-  async function removeActive() {
+  // so we use an in-app confirmation dialog instead. Deletes whichever tracker
+  // was tapped (from the list) or the active one (from Manage).
+  async function removeTracker() {
+    if (!delTarget) return;
     setBusy(true);
     try {
-      await remove(active.id);
+      await remove(delTarget.id);
       toast('Tracker deleted');
-      setConfirmDel(false);
+      setDelTarget(null);
       finish();
       setDrawer(false);
-    } catch (e) { toast(e.message, 'error'); setConfirmDel(false); } finally { setBusy(false); }
+    } catch (e) { toast(e.message, 'error'); setDelTarget(null); } finally { setBusy(false); }
   }
 
   // Shared form bodies — used in the mobile drawer views and the desktop modal.
@@ -93,7 +95,7 @@ export default function TrackerBar() {
         <button className="btn-primary" onClick={saveActive} disabled={busy}>Save changes</button>
         <button
           className="btn-danger btn-sm"
-          onClick={() => setConfirmDel(true)}
+          onClick={() => setDelTarget(active)}
           disabled={busy || trackers.length <= 1}
           title={trackers.length <= 1 ? 'You need at least one tracker' : ''}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
@@ -170,15 +172,26 @@ export default function TrackerBar() {
                 <div className="drawer-label">Your trackers</div>
                 <div className="drawer-list">
                   {trackers.map((t) => (
-                    <button
-                      key={t.id}
-                      className={'drawer-item' + (t.id === activeId ? ' on' : '')}
-                      onClick={() => { switchTo(t.id); setDrawer(false); }}
-                    >
-                      <span className="di-ic"><Icon name="layers" size={18} /></span>
-                      <span className="di-name">{t.name}</span>
-                      {t.id === activeId && <span className="di-check" aria-hidden="true">✓</span>}
-                    </button>
+                    <div key={t.id} className="di-wrap">
+                      <button
+                        className={'drawer-item' + (t.id === activeId ? ' on' : '')}
+                        onClick={() => { switchTo(t.id); setDrawer(false); }}
+                      >
+                        <span className="di-ic"><Icon name="layers" size={18} /></span>
+                        <span className="di-name">{t.name}</span>
+                        {t.id === activeId && <span className="di-check" aria-hidden="true">✓</span>}
+                      </button>
+                      {trackers.length > 1 && (
+                        <button
+                          type="button"
+                          className="di-del"
+                          onClick={() => setDelTarget(t)}
+                          aria-label={`Delete ${t.name}`}
+                        >
+                          <Icon name="trash" size={17} />
+                        </button>
+                      )}
+                    </div>
                   ))}
                   <button className="drawer-item drawer-new" type="button" onClick={() => { prepNew(); setView('new'); }}>
                     <span className="di-ic di-ic-add" aria-hidden="true">+</span>
@@ -214,17 +227,17 @@ export default function TrackerBar() {
         </div>
       )}
 
-      {confirmDel && createPortal(
-        <div className="modal-overlay" onMouseDown={() => !busy && setConfirmDel(false)}>
+      {delTarget && createPortal(
+        <div className="modal-overlay" style={{ zIndex: 90, alignItems: 'center' }} onMouseDown={() => !busy && setDelTarget(null)}>
           <div className="modal tracker-confirm" onMouseDown={(e) => e.stopPropagation()}>
             <div className="tc-ic"><Icon name="trash" size={24} /></div>
-            <h2 style={{ margin: '0 0 6px', fontSize: 20 }}>Delete “{active.name}”?</h2>
+            <h2 style={{ margin: '0 0 6px', fontSize: 20 }}>Delete “{delTarget.name}”?</h2>
             <p className="muted" style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>
               This permanently deletes this tracker and every bet in it. You can’t get it back.
             </p>
             <div className="row" style={{ gap: 10, marginTop: 20 }}>
-              <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setConfirmDel(false)} disabled={busy}>Cancel</button>
-              <button className="btn-danger" style={{ flex: 1 }} onClick={removeActive} disabled={busy}>
+              <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setDelTarget(null)} disabled={busy}>Cancel</button>
+              <button className="btn-danger" style={{ flex: 1 }} onClick={removeTracker} disabled={busy}>
                 {busy ? 'Deleting…' : 'Delete tracker'}
               </button>
             </div>

@@ -206,6 +206,11 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6
 .di-ic { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; flex: none; background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary); }
 .di-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .di-check { color: var(--primary); font-weight: 800; flex: none; }
+.di-wrap { display: flex; align-items: center; gap: 6px; }
+.di-wrap .drawer-item { flex: 1; min-width: 0; }
+.di-del { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px;
+  border: 1px solid transparent; background: var(--surface-2); color: var(--muted); cursor: pointer; }
+.di-del:hover { color: var(--loss); border-color: color-mix(in srgb, var(--loss) 45%, var(--border)); background: color-mix(in srgb, var(--loss) 12%, var(--surface-2)); }
 /* "New tracker" tile: same shape as a tracker, dashed to read as an add action. */
 .drawer-new { background: transparent; border: 1px dashed color-mix(in srgb, var(--primary) 45%, var(--border)); color: var(--text); }
 .drawer-new:hover { border-color: var(--primary); border-style: dashed; background: color-mix(in srgb, var(--primary) 8%, transparent); }
