@@ -40,6 +40,14 @@ function fmtDuration(sec) {
   if (m) return `${m}m ${s}s`;
   return `${s}s`;
 }
+// 2-letter ISO country code → full name (e.g. "GB" → "United Kingdom").
+const REGION_NAMES = (() => {
+  try { return new Intl.DisplayNames(['en'], { type: 'region' }); } catch { return null; }
+})();
+const countryName = (code) => {
+  if (!code) return 'Unknown';
+  try { return (REGION_NAMES && REGION_NAMES.of(code)) || code; } catch { return code; }
+};
 const fmtDay = (d) => {
   const dt = new Date(d + 'T00:00:00');
   return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
@@ -99,6 +107,7 @@ export default function AdminStats() {
   const d = data || {};
   const series = d.series || [];
   const maxPage = Math.max(1, ...(d.topPages || []).map((p) => p.views));
+  const maxCountry = Math.max(1, ...(d.topCountries || []).map((c) => c.visitors));
 
   return (
     <div className="main">
@@ -197,6 +206,22 @@ export default function AdminStats() {
           </div>
         )) : (
           <p className="muted" style={{ fontSize: 13, padding: '8px 2px' }}>No page views recorded yet.</p>
+        )}
+      </div>
+
+      {/* Where visitors are from */}
+      <div className="card perf-card">
+        <div className="perf-card-head static">
+          <span className="pch-title"><Icon name="globe" size={18} /> Top countries</span>
+        </div>
+        {(d.topCountries?.length > 0) ? d.topCountries.map((c) => (
+          <div key={c.country} className="tp-row">
+            <span className="p">{countryName(c.country)}</span>
+            <span className="tp-bar"><i style={{ width: `${Math.max(4, (c.visitors / maxCountry) * 100)}%` }} /></span>
+            <span className="tp-n">{c.visitors}</span>
+          </div>
+        )) : (
+          <p className="muted" style={{ fontSize: 13, padding: '8px 2px' }}>No country data yet.</p>
         )}
       </div>
 

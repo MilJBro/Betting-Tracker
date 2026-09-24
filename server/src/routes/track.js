@@ -18,8 +18,17 @@ function cleanPath(p) {
 
 const KINDS = new Set(['view', 'ping']);
 const insert = db.prepare(
-  'INSERT INTO analytics_events (ts, session_id, user_id, path, kind) VALUES (?, ?, ?, ?, ?)'
+  'INSERT INTO analytics_events (ts, session_id, user_id, path, kind, country) VALUES (?, ?, ?, ?, ?, ?)'
 );
+
+// Cloudflare adds cf-ipcountry (a 2-letter ISO code) to origin requests. Ignore
+// its unknown/special markers ("XX" unknown, "T1" Tor) and anything malformed.
+function cleanCountry(header) {
+  if (typeof header !== 'string') return null;
+  const c = header.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(c) || c === 'XX' || c === 'T1') return null;
+  return c;
+}
 
 // Fire-and-forget usage beacon. Always responds 200 so a tracking failure never
 // affects the app; attaches the signed-in user when a token is present.
@@ -27,8 +36,9 @@ router.post('/', optionalAuth, (req, res) => {
   const { sid, path, kind } = req.body || {};
   if (sid && typeof sid === 'string') {
     const k = KINDS.has(kind) ? kind : 'view';
+    const country = cleanCountry(req.headers['cf-ipcountry']);
     try {
-      insert.run(Date.now(), sid.slice(0, 40), req.userId || null, cleanPath(path), k);
+      insert.run(Date.now(), sid.slice(0, 40), req.userId || null, cleanPath(path), k, country);
     } catch {
       /* ignore — never surface tracking errors */
     }
