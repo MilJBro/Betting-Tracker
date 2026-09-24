@@ -18,6 +18,7 @@ import Account from './pages/Account.jsx';
 import AdminStats from './pages/AdminStats.jsx';
 import Pricing from './pages/Pricing.jsx';
 import UsageTracker from './components/UsageTracker.jsx';
+import InsightsFab from './components/InsightsFab.jsx';
 import Share from './pages/Share.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
 import Terms from './pages/Terms.jsx';
@@ -135,6 +136,8 @@ function ShellInner() {
         </div>
         {/* Mobile-only: bottom tab bar with a centred add button */}
         <BottomNav />
+        {/* Admin-only floating link to the private Insights page (mobile). */}
+        <InsightsFab />
       </AddBetProvider>
     </TrackerProvider>
   );
