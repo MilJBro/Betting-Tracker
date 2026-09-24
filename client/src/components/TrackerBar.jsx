@@ -172,26 +172,15 @@ export default function TrackerBar() {
                 <div className="drawer-label">Your trackers</div>
                 <div className="drawer-list">
                   {trackers.map((t) => (
-                    <div key={t.id} className="di-wrap">
-                      <button
-                        className={'drawer-item' + (t.id === activeId ? ' on' : '')}
-                        onClick={() => { switchTo(t.id); setDrawer(false); }}
-                      >
-                        <span className="di-ic"><Icon name="layers" size={18} /></span>
-                        <span className="di-name">{t.name}</span>
-                        {t.id === activeId && <span className="di-check" aria-hidden="true">✓</span>}
-                      </button>
-                      {trackers.length > 1 && (
-                        <button
-                          type="button"
-                          className="di-del"
-                          onClick={() => setDelTarget(t)}
-                          aria-label={`Delete ${t.name}`}
-                        >
-                          <Icon name="trash" size={17} />
-                        </button>
-                      )}
-                    </div>
+                    <button
+                      key={t.id}
+                      className={'drawer-item' + (t.id === activeId ? ' on' : '')}
+                      onClick={() => { switchTo(t.id); setDrawer(false); }}
+                    >
+                      <span className="di-ic"><Icon name="layers" size={18} /></span>
+                      <span className="di-name">{t.name}</span>
+                      {t.id === activeId && <span className="di-check" aria-hidden="true">✓</span>}
+                    </button>
                   ))}
                   <button className="drawer-item drawer-new" type="button" onClick={() => { prepNew(); setView('new'); }}>
                     <span className="di-ic di-ic-add" aria-hidden="true">+</span>
