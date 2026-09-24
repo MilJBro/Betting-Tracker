@@ -11,6 +11,7 @@ import {
 import { DEFAULT_SETTINGS } from '../lib/defaults.js';
 import { config } from '../lib/config.js';
 import { entitlements } from '../lib/plan.js';
+import { isAdminEmail } from '../lib/admin.js';
 import { ensureDefaultTracker } from '../lib/trackers.js';
 import { sendMail, passwordResetEmail } from '../lib/mailer.js';
 import {
@@ -21,7 +22,7 @@ import {
 
 const router = Router();
 
-const publicUser = (row) => ({ id: row.id, email: row.email, username: row.username, created_at: row.created_at, plan: row.plan || 'free' });
+const publicUser = (row) => ({ id: row.id, email: row.email, username: row.username, created_at: row.created_at, plan: row.plan || 'free', isAdmin: isAdminEmail(row.email) });
 const hashToken = (t) => createHash('sha256').update(t).digest('hex');
 
 router.post('/register', (req, res) => {
@@ -69,7 +70,7 @@ router.get('/me', requireAuth, (req, res) => {
     .prepare('SELECT id, email, username, created_at, plan FROM users WHERE id = ?')
     .get(req.userId);
   if (!row) return res.status(404).json({ error: 'User not found' });
-  res.json({ user: row, entitlements: entitlements(req.userId) });
+  res.json({ user: { ...row, isAdmin: isAdminEmail(row.email) }, entitlements: entitlements(req.userId) });
 });
 
 // Change password (authenticated). Requires the current password and

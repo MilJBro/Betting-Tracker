@@ -45,6 +45,12 @@ export const config = {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean),
+  // Emails allowed to see the private admin Insights page (comma-separated,
+  // case-insensitive). Empty = nobody has admin access.
+  adminEmails: (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean),
   smtp: {
     host: process.env.SMTP_HOST || '',
     port: Number(process.env.SMTP_PORT) || 587,

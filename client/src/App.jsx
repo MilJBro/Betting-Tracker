@@ -15,7 +15,9 @@ import Bets from './pages/Bets.jsx';
 import Analytics from './pages/Analytics.jsx';
 import Customise from './pages/Customise.jsx';
 import Account from './pages/Account.jsx';
+import AdminStats from './pages/AdminStats.jsx';
 import Pricing from './pages/Pricing.jsx';
+import UsageTracker from './components/UsageTracker.jsx';
 import Share from './pages/Share.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
 import Terms from './pages/Terms.jsx';
@@ -55,6 +57,11 @@ function Sidebar() {
           <Icon name={n.icon} size={18} /> {n.label}
         </NavLink>
       ))}
+      {user?.isAdmin && (
+        <NavLink to="/admin" className={link}>
+          <Icon name="pulse" size={18} /> Insights
+        </NavLink>
+      )}
       <div className="nav-spacer" />
       <div className="nav-link" style={{ cursor: 'default', fontSize: 13 }}>{user?.username}</div>
       <div className="nav-link" onClick={() => { logout(); navigate('/'); }}>Log out</div>
@@ -121,6 +128,7 @@ function ShellInner() {
               <Route path="/customise" element={<Customise />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/account" element={<Account />} />
+              <Route path="/admin" element={<AdminStats />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
@@ -155,7 +163,9 @@ export default function App() {
   const { user, loading } = useAuth();
 
   return (
-    <Routes>
+    <>
+      <UsageTracker />
+      <Routes>
       {/* Public routes — accessible without a session. */}
       <Route path="/share/:publicId" element={<Share />} />
       <Route path="/reset-password" element={<ResetPassword />} />
@@ -176,6 +186,7 @@ export default function App() {
           )
         }
       />
-    </Routes>
+      </Routes>
+    </>
   );
 }

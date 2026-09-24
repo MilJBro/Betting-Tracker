@@ -22,6 +22,26 @@ export function signToken(user) {
   );
 }
 
+// Like requireAuth, but never rejects: sets req.userId when a valid token is
+// present and otherwise carries on anonymously. Used by usage tracking, which
+// records both logged-in and logged-out (landing page) activity.
+export function optionalAuth(req, _res, next) {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  if (token) {
+    try {
+      const payload = jwt.verify(token, config.jwtSecret);
+      const user = db
+        .prepare('SELECT id, token_version FROM users WHERE id = ?')
+        .get(payload.sub);
+      if (user && (payload.tv ?? 0) === user.token_version) req.userId = payload.sub;
+    } catch {
+      /* ignore — treat as anonymous */
+    }
+  }
+  next();
+}
+
 // Express middleware: require a valid, current bearer token.
 export function requireAuth(req, res, next) {
   const header = req.headers.authorization || '';
