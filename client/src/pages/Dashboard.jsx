@@ -448,34 +448,43 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Stats */}
+      {/* Quick Stats — deeper stats (Pro). Free accounts see a locked teaser. */}
       <div className="card perf-card">
         <div className="perf-card-head static"><span className="pch-title">Quick Stats</span></div>
-        <div className="qs-grid">
-          <div className="qs">
-            <span className="qs-ic"><Icon name="trophy" size={16} /></span>
-            <span className="qs-label">Best Win</span>
-            <span className="qs-val pos">{money(m.biggestWin, currency, { signed: true })}</span>
-            {showUnits && <span className="qs-sub">({unitsOf(m.biggestWin).replace('+', '')})</span>}
+        <div className={`qs-wrap${ent && !ent.pro ? ' locked' : ''}`}>
+          <div className="qs-grid" aria-hidden={ent && !ent.pro ? 'true' : undefined}>
+            <div className="qs">
+              <span className="qs-ic"><Icon name="trophy" size={16} /></span>
+              <span className="qs-label">Best Win</span>
+              <span className="qs-val pos">{money(m.biggestWin, currency, { signed: true })}</span>
+              {showUnits && <span className="qs-sub">({unitsOf(m.biggestWin).replace('+', '')})</span>}
+            </div>
+            <div className="qs">
+              <span className="qs-ic"><Icon name="target" size={16} /></span>
+              <span className="qs-label">Biggest Loss</span>
+              <span className="qs-val neg">{money(m.biggestLoss, currency, { signed: true })}</span>
+              {showUnits && <span className="qs-sub">({unitsOf(m.biggestLoss).replace('-', '')})</span>}
+            </div>
+            <div className="qs">
+              <span className="qs-ic"><Icon name="analytics" size={16} /></span>
+              <span className="qs-label">Longest Win Streak</span>
+              <span className="qs-val">{m.longestWin}</span>
+              <span className="qs-sub">(bets)</span>
+            </div>
+            <div className="qs">
+              <span className="qs-ic"><Icon name="calendar" size={16} /></span>
+              <span className="qs-label">Current Streak</span>
+              <span className={`qs-val ${m.currentType === 'won' ? 'pos' : m.currentType === 'lost' ? 'neg' : ''}`}>{m.current}</span>
+              <span className="qs-sub">({m.currentType === 'won' ? 'wins' : m.currentType === 'lost' ? 'losses' : '—'})</span>
+            </div>
           </div>
-          <div className="qs">
-            <span className="qs-ic"><Icon name="target" size={16} /></span>
-            <span className="qs-label">Biggest Loss</span>
-            <span className="qs-val neg">{money(m.biggestLoss, currency, { signed: true })}</span>
-            {showUnits && <span className="qs-sub">({unitsOf(m.biggestLoss).replace('-', '')})</span>}
-          </div>
-          <div className="qs">
-            <span className="qs-ic"><Icon name="analytics" size={16} /></span>
-            <span className="qs-label">Longest Win Streak</span>
-            <span className="qs-val">{m.longestWin}</span>
-            <span className="qs-sub">(bets)</span>
-          </div>
-          <div className="qs">
-            <span className="qs-ic"><Icon name="calendar" size={16} /></span>
-            <span className="qs-label">Current Streak</span>
-            <span className={`qs-val ${m.currentType === 'won' ? 'pos' : m.currentType === 'lost' ? 'neg' : ''}`}>{m.current}</span>
-            <span className="qs-sub">({m.currentType === 'won' ? 'wins' : m.currentType === 'lost' ? 'losses' : '—'})</span>
-          </div>
+          {ent && !ent.pro && (
+            <div className="qs-lock">
+              <span className="qs-lock-ic"><Icon name="lock" size={20} /></span>
+              <span className="qs-lock-txt">Deeper stats — best win, biggest loss &amp; streaks</span>
+              <Link to="/pricing" className="btn-primary btn-sm">Unlock with Pro</Link>
+            </div>
+          )}
         </div>
       </div>
 

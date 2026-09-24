@@ -430,6 +430,17 @@ tr:last-child td { border-bottom: none; }
 .qs-val { font-size: 16px; font-weight: 800; font-family: var(--font-head); white-space: nowrap; margin-top: 1px; }
 .qs-sub { font-size: 10.5px; color: var(--muted); font-weight: 600; }
 
+/* Locked Quick Stats teaser for free accounts. */
+.qs-wrap { position: relative; }
+.qs-wrap.locked .qs-grid { filter: blur(6px); opacity: 0.55; pointer-events: none; user-select: none; }
+.qs-lock { position: absolute; inset: -4px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 9px; text-align: center; padding: 12px; border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 45%, transparent); }
+.qs-lock-ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+  color: var(--primary); background: color-mix(in srgb, var(--primary) 15%, var(--surface)); }
+.qs-lock-txt { font-size: 13px; font-weight: 700; max-width: 240px; line-height: 1.35; }
+.qs-lock .btn-primary { display: inline-block; }
+
 /* Recent Activity */
 .act-list { display: flex; flex-direction: column; }
 .act-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 11px 2px; border-top: 1px solid var(--border); background: transparent; color: var(--text); }
