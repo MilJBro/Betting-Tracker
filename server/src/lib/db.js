@@ -115,6 +115,8 @@ ensureColumn('bets', 'ew_fraction', 'TEXT');
 ensureColumn('bets', 'ew_places', 'INTEGER');
 // Winnings boost applied to the return (e.g. 0.25 for a bookmaker's +25% offer).
 ensureColumn('bets', 'boost', 'REAL NOT NULL DEFAULT 0');
+// Analytics: visitor country (2-letter ISO code from Cloudflare's cf-ipcountry).
+ensureColumn('analytics_events', 'country', 'TEXT');
 
 // Notes were removed as a feature — wipe any stored notes so they're gone from
 // every tracked bet. Idempotent: a no-op once there are none left to clear.

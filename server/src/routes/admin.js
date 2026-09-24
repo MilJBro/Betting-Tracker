@@ -91,6 +91,14 @@ router.get('/stats', (req, res) => {
     since
   );
 
+  // Where visitors are from (2-letter ISO country codes), by unique visitors.
+  const topCountries = all(
+    `SELECT country, COUNT(DISTINCT session_id) visitors
+       FROM analytics_events WHERE ts >= ? AND country IS NOT NULL
+       GROUP BY country ORDER BY visitors DESC LIMIT 10`,
+    since
+  );
+
   res.json({
     generatedAt: now,
     days,
@@ -101,6 +109,7 @@ router.get('/stats', (req, res) => {
     totals,
     series: series.map((s) => ({ ...s, signups: signupByDay[s.d] || 0 })),
     topPages,
+    topCountries,
   });
 });
 
