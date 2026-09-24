@@ -1080,6 +1080,12 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
   .insights-fab.active { border-color: var(--primary); color: var(--primary); }
 }
 
+/* In-app delete confirmation (replaces the unreliable native confirm()). */
+.tracker-confirm { max-width: 380px; text-align: center; }
+.tc-ic { width: 52px; height: 52px; border-radius: 15px; margin: 2px auto 12px; display: grid; place-items: center;
+  color: var(--loss); background: color-mix(in srgb, var(--loss) 15%, transparent); }
+.tracker-confirm p { max-width: 300px; margin-left: auto; margin-right: auto; }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
