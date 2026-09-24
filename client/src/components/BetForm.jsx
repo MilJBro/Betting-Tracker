@@ -729,7 +729,14 @@ export default function BetForm({ initial, isEdit, onScan, fields, staking, curr
             <div className="grid-2 betgrid">
               {show('status') && (
                 <div className="field">
-                  <label>Status</label>
+                  <label>
+                    Status
+                    {form.status && (
+                      <span className={`status-sel st-${form.status}`}>
+                        {STATUS_BOXES.find((s) => s.key === form.status)?.label}
+                      </span>
+                    )}
+                  </label>
                   <div className="status-boxes" role="group" aria-label="Status">
                     {STATUS_BOXES.map((s) => (
                       <button
