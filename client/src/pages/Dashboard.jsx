@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 import { api } from '../api.js';
 import { useSettings } from '../context/SettingsContext.jsx';
@@ -125,6 +125,7 @@ export default function Dashboard() {
   const { active, activeId } = useTracker();
   const toast = useToast();
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const { openAddBet } = useAddBet();
   const { ent } = usePlan();
   const [stats, setStats] = useState(() => getCached('dash:' + activeId)?.stats ?? null);
@@ -153,6 +154,15 @@ export default function Dashboard() {
     load().finally(() => setLoading(false));
   }, [activeId, load]);
   useEffect(() => subscribeInvalidate(() => load()), [load]);
+
+  // Straight after onboarding ("Add my first bet"), open the Add-bet slip once.
+  useEffect(() => {
+    if (params.get('firstbet') === '1') {
+      openAddBet();
+      params.delete('firstbet');
+      setParams(params, { replace: true });
+    }
+  }, [params, setParams, openAddBet]);
 
   // Filter the bets to a range, and compute this-period + previous-period metrics.
   const windowFor = useCallback((key) => {

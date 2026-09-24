@@ -3,18 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { currencySymbol } from '../format.js';
 import Logo from '../components/Logo.jsx';
+import Icon from '../components/Icon.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
-// One-time questionnaire shown right after sign-up to learn what kind of
-// bettor someone is, then tailor Betbooks to them.
+// A short, friendly first-run flow: a warm welcome, a few questions that
+// actually tailor the app, a couple of quick preferences, one setup step for
+// bankroll, then a nudge to add the very first bet — the real "aha" moment.
 const SPORTS = ['Football', 'Horse Racing', 'Tennis', 'Basketball', 'Cricket', 'Golf', 'Esports', 'Other'];
 
-const STEPS = [
+// Only questions we do something with: how you bet (turns on the tipster
+// field), what you bet on (seeds sport suggestions), and your goal (sets the
+// tone). The old, unused frequency/experience questions were dropped.
+const QUESTIONS = [
   {
     key: 'trackingStyle',
     title: 'How do you bet?',
-    subtitle: 'Pick any that apply — you can choose both.',
-    type: 'multi',
+    subtitle: 'Pick any that apply.',
     options: [
       { value: 'own', label: 'I track my own bets' },
       { value: 'tipster', label: 'I follow tipsters' },
@@ -23,26 +28,13 @@ const STEPS = [
   {
     key: 'sports',
     title: 'What do you bet on?',
-    subtitle: 'Pick any that apply.',
-    type: 'multi',
+    subtitle: 'Pick any that apply — we’ll suggest these first.',
     options: SPORTS.map((s) => ({ value: s, label: s })),
   },
   {
-    key: 'frequency',
-    title: 'How often do you bet?',
-    subtitle: 'Pick the closest one.',
-    type: 'single',
-    options: [
-      { value: 'daily', label: 'Most days' },
-      { value: 'weekly', label: 'A few times a week' },
-      { value: 'occasional', label: 'Now and then' },
-    ],
-  },
-  {
     key: 'goal',
-    title: "What are your goals?",
+    title: 'What do you want from Betbooks?',
     subtitle: 'Pick any that apply.',
-    type: 'multi',
     options: [
       { value: 'profit', label: 'Make a long-term profit' },
       { value: 'discipline', label: 'Stay disciplined with my staking' },
@@ -50,48 +42,45 @@ const STEPS = [
       { value: 'fun', label: 'Just track it for fun' },
     ],
   },
-  {
-    key: 'experience',
-    title: 'How would you describe yourself?',
-    subtitle: 'Pick the closest one.',
-    type: 'single',
-    options: [
-      { value: 'new', label: 'New to betting' },
-      { value: 'casual', label: 'Casual bettor' },
-      { value: 'experienced', label: 'Experienced' },
-      { value: 'serious', label: 'Serious / semi-pro' },
-    ],
-  },
-  { key: 'prefs', title: 'Last thing — a couple of preferences', type: 'prefs' },
+];
+
+// The ordered screens. welcome + done bookend the "work" steps (the questions,
+// quick prefs and bankroll setup), which are the ones the progress bar counts.
+const PHASES = [
+  { type: 'welcome' },
+  ...QUESTIONS.map((q) => ({ type: 'question', q })),
+  { type: 'prefs' },
+  { type: 'setup' },
+  { type: 'done' },
+];
+const WORK = ['question', 'prefs', 'setup'];
+const totalWork = PHASES.filter((p) => WORK.includes(p.type)).length;
+const prefsIndex = PHASES.findIndex((p) => p.type === 'prefs');
+
+const WELCOME_POINTS = [
+  { icon: 'camera', title: 'Log a bet in seconds', body: 'Type it in, or snap a photo of the slip and we read it for you.' },
+  { icon: 'trend', title: 'See your real numbers', body: 'Profit, ROI and win rate worked out automatically — no spreadsheets.' },
+  { icon: 'sliders', title: 'Built around how you bet', body: 'Your sports, your stats, your dashboard.' },
 ];
 
 export default function Onboarding() {
   const { settings, save } = useSettings();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
-  // Track whether the prefs step was reached by skipping the questions, so its
-  // Back button returns to the first question rather than the last one.
-  const [skipped, setSkipped] = useState(false);
-  const [answers, setAnswers] = useState({
-    trackingStyle: [], sports: [], frequency: '', goal: [], experience: '',
-  });
+  const [i, setI] = useState(0);
+  const [answers, setAnswers] = useState({ trackingStyle: [], sports: [], goal: [] });
   const [prefs, setPrefs] = useState({
     currency: settings?.currency || 'GBP',
     oddsFormat: settings?.oddsFormat || 'decimal',
     bankroll: settings?.bankroll?.starting || '',
-    // Optional: only set if they already stake in units.
     unitSize: settings?.staking && settings.staking.mode !== 'currency' ? (settings.staking.unitSize ?? '') : '',
     trackerName: '',
   });
   const [saving, setSaving] = useState(false);
 
-  const s = STEPS[step];
-  const isLast = step === STEPS.length - 1;
+  const phase = PHASES[i];
+  const firstName = (user?.username || '').trim().split(/\s+/)[0];
 
-  // Selecting no longer jumps ahead — people choose, then tap Continue.
-  function pickSingle(key, value) {
-    setAnswers((a) => ({ ...a, [key]: a[key] === value ? '' : value }));
-  }
   function toggleMulti(key, value) {
     setAnswers((a) => {
       const cur = a[key] || [];
@@ -99,39 +88,34 @@ export default function Onboarding() {
     });
   }
 
-  async function finish(skip = false) {
+  // Save everything at the very end, then land on the dashboard — optionally
+  // opening the Add-bet slip so the first thing they do is log a bet.
+  async function complete(addFirstBet) {
     setSaving(true);
     const a = answers;
-    const style = Array.isArray(a.trackingStyle) ? a.trackingStyle : [a.trackingStyle];
-    const followsTipster = style.includes('tipster') || style.includes('both');
-    // Only switch on units if they actually set a unit size; otherwise leave
-    // staking as-is (money only).
+    const followsTipster = (a.trackingStyle || []).includes('tipster');
     const unit = Number(prefs.unitSize);
-    const usesUnits = !skip && prefs.unitSize !== '' && unit > 0;
+    const usesUnits = prefs.unitSize !== '' && unit > 0;
     const next = {
       ...settings,
-      currency: skip ? settings.currency : prefs.currency,
-      oddsFormat: skip ? settings.oddsFormat : prefs.oddsFormat,
-      bankroll: { ...settings.bankroll, starting: skip ? (settings.bankroll?.starting || 0) : (Number(prefs.bankroll) || 0) },
+      currency: prefs.currency,
+      oddsFormat: prefs.oddsFormat,
+      bankroll: { ...settings.bankroll, starting: Number(prefs.bankroll) || 0 },
       staking: usesUnits ? { ...settings.staking, mode: 'both', unitSize: unit } : settings.staking,
-      // Turn the tipster field on automatically for people who follow tipsters.
       fields: { ...settings.fields, tipster: followsTipster || settings.fields.tipster },
       profile: {
         ...settings.profile,
         onboarded: true,
         trackingStyle: a.trackingStyle,
         sports: a.sports,
-        frequency: a.frequency,
         goal: a.goal,
-        experience: a.experience,
       },
     };
     try {
-      // Seed the first (default) tracker with the name and bankroll BEFORE
-      // marking onboarding done — that flip mounts the tracker bar, which then
-      // loads the already-renamed tracker instead of the stale default.
-      const bk = skip ? 0 : (Number(prefs.bankroll) || 0);
-      const trackerName = skip ? '' : prefs.trackerName.trim();
+      // Seed the first tracker (name + bankroll) BEFORE flipping onboarded —
+      // that flip mounts the tracker bar, which then loads the renamed tracker.
+      const bk = Number(prefs.bankroll) || 0;
+      const trackerName = prefs.trackerName.trim();
       if (bk > 0 || trackerName) {
         const d = await api.get('/trackers').catch(() => null);
         const first = d?.trackers?.[0];
@@ -143,18 +127,16 @@ export default function Onboarding() {
         }
       }
       await save(next);
-      // Always land on the Welcome dashboard once onboarding is done — even if
-      // the questionnaire was retaken from another page.
-      navigate('/', { replace: true });
+      navigate('/' + (addFirstBet ? '?firstbet=1' : ''), { replace: true });
     } finally {
       setSaving(false);
     }
   }
 
-  const canContinue =
-    s.type === 'multi' ? (answers[s.key] || []).length > 0
-      : s.type === 'single' ? !!answers[s.key]
-      : true;
+  // Which "work" step number we're on (for the progress bar); 0 on welcome/done.
+  const workNo = WORK.includes(phase.type)
+    ? PHASES.slice(0, i + 1).filter((p) => WORK.includes(p.type)).length
+    : 0;
 
   return (
     <div className="auth-wrap">
@@ -163,55 +145,62 @@ export default function Onboarding() {
           <Logo />
         </div>
 
-        <div className="onboard-progress">
-          {STEPS.map((_, i) => (
-            <span key={i} className={`dot ${i <= step ? 'on' : ''}`} />
-          ))}
-        </div>
-
-        <div className="card">
-          <div className="muted" style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Step {step + 1} of {STEPS.length}
+        {workNo > 0 && (
+          <div className="onboard-progress">
+            {Array.from({ length: totalWork }).map((_, k) => (
+              <span key={k} className={`dot ${k < workNo ? 'on' : ''}`} />
+            ))}
           </div>
-          <h2 style={{ margin: '6px 0 4px', fontSize: 22 }}>{s.title}</h2>
-          {s.subtitle && <p className="muted" style={{ margin: '0 0 16px', fontSize: 14 }}>{s.subtitle}</p>}
-          {!s.subtitle && <div style={{ height: 10 }} />}
+        )}
 
-          {s.type === 'single' && (
-            <div className="stack" style={{ gap: 10 }}>
-              {s.options.map((o) => (
-                <button
-                  key={o.value}
-                  className={`opt-btn ${answers[s.key] === o.value ? 'sel' : ''}`}
-                  onClick={() => pickSingle(s.key, o.value)}
-                >
-                  <span className="opt-label">{o.label}</span>
-                  {o.desc && <span className="opt-desc">{o.desc}</span>}
-                </button>
+        {/* ---- Welcome ---- */}
+        {phase.type === 'welcome' && (
+          <div className="card onb-welcome">
+            <h2>Welcome{firstName ? `, ${firstName}` : ''}.</h2>
+            <p className="muted onb-lead">Let’s set Betbooks up around how you bet. Takes about a minute.</p>
+            <div className="onb-vps">
+              {WELCOME_POINTS.map((p) => (
+                <div key={p.title} className="onb-vp">
+                  <span className="onb-vp-ic"><Icon name={p.icon} size={18} /></span>
+                  <div><strong>{p.title}</strong><span className="muted">{p.body}</span></div>
+                </div>
               ))}
             </div>
-          )}
+            <button className="btn-primary" style={{ width: '100%' }} onClick={() => setI(1)}>Get started</button>
+          </div>
+        )}
 
-          {s.type === 'multi' && (
+        {/* ---- Questions ---- */}
+        {phase.type === 'question' && (
+          <div className="card">
+            <div className="onb-step">Step {workNo} of {totalWork}</div>
+            <h2 style={{ margin: '6px 0 4px', fontSize: 22 }}>{phase.q.title}</h2>
+            <p className="muted" style={{ margin: '0 0 16px', fontSize: 14 }}>{phase.q.subtitle}</p>
             <div className="chip-grid">
-              {s.options.map((o) => {
-                const on = (answers[s.key] || []).includes(o.value);
+              {phase.q.options.map((o) => {
+                const on = (answers[phase.q.key] || []).includes(o.value);
                 return (
-                  <button key={o.value} className={`chip-btn ${on ? 'sel' : ''}`} onClick={() => toggleMulti(s.key, o.value)}>
+                  <button key={o.value} className={`chip-btn ${on ? 'sel' : ''}`} onClick={() => toggleMulti(phase.q.key, o.value)}>
                     {o.label}
                   </button>
                 );
               })}
             </div>
-          )}
+            <div className="row spread" style={{ marginTop: 20 }}>
+              <button className="btn-ghost btn-sm" onClick={() => setI(i - 1)}>← Back</button>
+              <button className="btn-primary" onClick={() => setI(i + 1)}>Continue</button>
+            </div>
+            <button className="onb-skip" onClick={() => setI(prefsIndex)}>Skip these questions</button>
+          </div>
+        )}
 
-          {s.type === 'prefs' && (
+        {/* ---- Quick preferences ---- */}
+        {phase.type === 'prefs' && (
+          <div className="card">
+            <div className="onb-step">Step {workNo} of {totalWork}</div>
+            <h2 style={{ margin: '6px 0 4px', fontSize: 22 }}>Quick preferences</h2>
+            <p className="muted" style={{ margin: '0 0 16px', fontSize: 14 }}>You can change these any time in settings.</p>
             <div className="grid-2 onb-prefs">
-              <div className="field" style={{ gridColumn: '1 / -1' }}>
-                <label htmlFor="onb-tracker-name">Tracker name <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
-                <input id="onb-tracker-name" value={prefs.trackerName} placeholder="e.g. My bets, Football tips" maxLength={60} onChange={(e) => setPrefs({ ...prefs, trackerName: e.target.value })} />
-                <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>Name your first tracker — add more later.</div>
-              </div>
               <div className="field">
                 <label htmlFor="onb-currency">Currency</label>
                 <select id="onb-currency" value={prefs.currency} onChange={(e) => setPrefs({ ...prefs, currency: e.target.value })}>
@@ -226,9 +215,33 @@ export default function Onboarding() {
                   <option value="american">American (+150)</option>
                 </select>
               </div>
+            </div>
+            <div className="row spread" style={{ marginTop: 20 }}>
+              <button className="btn-ghost btn-sm" onClick={() => setI(i - 1)}>← Back</button>
+              <button className="btn-primary" onClick={() => setI(i + 1)}>Continue</button>
+            </div>
+          </div>
+        )}
+
+        {/* ---- One last thing: bankroll setup ---- */}
+        {phase.type === 'setup' && (
+          <div className="card">
+            <div className="onb-step">Step {workNo} of {totalWork}</div>
+            <h2 style={{ margin: '6px 0 4px', fontSize: 22 }}>One last thing — set up your tracker</h2>
+            <p className="muted" style={{ margin: '0 0 16px', fontSize: 14 }}>
+              Your bankroll powers your growth and staking stats. You can skip and add it later.
+            </p>
+            <div className="grid-2 onb-prefs">
+              <div className="field" style={{ gridColumn: '1 / -1' }}>
+                <label htmlFor="onb-tracker-name">Tracker name <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
+                <input id="onb-tracker-name" value={prefs.trackerName} placeholder="e.g. My bets, Football tips" maxLength={60} onChange={(e) => setPrefs({ ...prefs, trackerName: e.target.value })} />
+              </div>
               <div className="field">
-                <label htmlFor="onb-bankroll">Bankroll <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
-                <input id="onb-bankroll" type="number" min="0" step="0.01" value={prefs.bankroll} placeholder="e.g. 500" onChange={(e) => setPrefs({ ...prefs, bankroll: e.target.value })} />
+                <label htmlFor="onb-bankroll">Starting bankroll <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
+                <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+                  <span className="muted" style={{ fontWeight: 700 }}>{currencySymbol(prefs.currency)}</span>
+                  <input id="onb-bankroll" type="number" min="0" step="0.01" value={prefs.bankroll} placeholder="e.g. 500" onChange={(e) => setPrefs({ ...prefs, bankroll: e.target.value })} />
+                </div>
               </div>
               <div className="field">
                 <label htmlFor="onb-unit">Unit size <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
@@ -241,31 +254,29 @@ export default function Onboarding() {
                 Unit size is what 1 unit is worth — leave blank if you don’t stake in units.
               </div>
             </div>
-          )}
-
-          <div className="row spread" style={{ marginTop: 20 }}>
-            {/* Skipping the questions is fine, but everyone still sets their
-                preferences — so "Skip" jumps to the final preferences step. */}
-            <button
-              className="btn-ghost btn-sm"
-              onClick={() => {
-                if (step === 0) { setSkipped(true); setStep(STEPS.length - 1); }
-                else if (isLast && skipped) { setSkipped(false); setStep(0); }
-                else setStep(step - 1);
-              }}
-              disabled={saving}
-            >
-              {step === 0 ? 'Skip questions' : '← Back'}
-            </button>
-            {isLast ? (
-              <button className="btn-primary" onClick={() => finish(false)} disabled={saving}>
-                {saving ? 'Setting up…' : 'Finish'}
-              </button>
-            ) : (
-              <button className="btn-primary" onClick={() => { setSkipped(false); setStep(step + 1); }} disabled={!canContinue}>Continue</button>
-            )}
+            <div className="row spread" style={{ marginTop: 20 }}>
+              <button className="btn-ghost btn-sm" onClick={() => setI(i - 1)}>← Back</button>
+              <button className="btn-primary" onClick={() => setI(i + 1)}>Continue</button>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* ---- Done: nudge the first bet ---- */}
+        {phase.type === 'done' && (
+          <div className="card onb-done">
+            <div className="onb-done-ic"><Icon name="check" size={30} /></div>
+            <h2>You’re all set{firstName ? `, ${firstName}` : ''}!</h2>
+            <p className="muted onb-lead">
+              Add your first bet to see your numbers come to life. Snap a photo of a slip or add one by hand — it only takes a moment.
+            </p>
+            <button className="btn-primary" style={{ width: '100%' }} onClick={() => complete(true)} disabled={saving}>
+              {saving ? 'Setting up…' : 'Add my first bet'}
+            </button>
+            <button className="btn-ghost" style={{ width: '100%', marginTop: 10 }} onClick={() => complete(false)} disabled={saving}>
+              I’ll explore first
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
