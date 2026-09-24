@@ -388,7 +388,7 @@ export default function Bets() {
     if (sortBy === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else { setSortBy(key); setSortDir(key === 'date' ? 'desc' : 'desc'); }
   }
-  const sortArrow = (key) => (sortBy === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '');
+  const sortArrow = (key) => (sortBy === key ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '');
 
   // Desktop table row for one bet.
   const renderRow = (b) => {
@@ -500,7 +500,9 @@ export default function Bets() {
   // Group-header helpers (used for both month and day headers).
   const countLabel = (n) => `${n} bet${n !== 1 ? 's' : ''}`;
   const profitClass = (v) => (v > 0 ? 'pos' : v < 0 ? 'neg' : 'muted');
-  const signedProfit = (v) => formatStake(v, currency, staking, { signed: true });
+  // Month-header profit: money only, so the header stays on one line (the full
+  // money · units figure lives in the summary card above).
+  const signedProfit = (v) => money(v, currency, { signed: true });
 
   return (
     <div className="main">
@@ -633,9 +635,9 @@ export default function Bets() {
           <span className="bs-label">Net profit{status !== 'all' ? ` · ${statusFilterLabel(status)}` : ''}</span>
           <span className="bs-figures">
             <span className={`bs-profit ${summary.profit > 0 ? 'pos' : summary.profit < 0 ? 'neg' : ''}`}>
-              {formatStake(summary.profit, currency, staking, { signed: true })}
+              {money(summary.profit, currency, { signed: true })}
             </span>
-            {(staking?.mode || 'currency') === 'currency' && Number(staking?.unitSize) > 0 && (
+            {Number(staking?.unitSize) > 0 && (
               <span className={`bs-units ${summary.profit > 0 ? 'pos' : summary.profit < 0 ? 'neg' : 'muted'}`}>
                 {units(summary.profit / Number(staking.unitSize), { signed: true })}
               </span>
@@ -645,7 +647,7 @@ export default function Bets() {
         <div className="bs-stats">
           <div><span className="bs-k">ROI</span><span className={`bs-v ${summary.roi > 0 ? 'pos' : summary.roi < 0 ? 'neg' : ''}`}>{summary.roi}%</span></div>
           <div><span className="bs-k">Win rate</span><span className="bs-v">{summary.winRate == null ? '—' : summary.winRate + '%'}</span></div>
-          <div><span className="bs-k">Staked</span><span className="bs-v">{formatStake(summary.staked, currency, staking)}</span></div>
+          <div><span className="bs-k">Staked</span><span className="bs-v">{money(summary.staked, currency)}</span></div>
           <div><span className="bs-k">Bets</span><span className="bs-v">{summary.count}</span></div>
         </div>
       </div>

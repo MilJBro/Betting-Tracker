@@ -331,22 +331,6 @@ tr:last-child td { border-bottom: none; }
 .seg-group .seg { flex: 1; padding: 9px; border-radius: calc(var(--radius-sm) - 3px); background: transparent; color: var(--muted); font-weight: 700; font-size: 13.5px; }
 .seg-group .seg.on { background: var(--primary); color: #04120a; }
 
-/* ============ Add automatically (scan / paste) ============ */
-.auto-add {
-  margin-bottom: 12px; padding: 9px; border-radius: 12px;
-  background: color-mix(in srgb, var(--primary) 8%, var(--surface-2));
-  border: 1px solid color-mix(in srgb, var(--primary) 32%, var(--border));
-}
-.auto-add-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.auto-add-btns:has(> :only-child) { grid-template-columns: 1fr; }
-.auto-add-btn {
-  display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
-  padding: 8px 8px; border-radius: 10px; background: var(--surface); color: var(--primary);
-  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border)); font-weight: 700; font-size: 13px;
-}
-.auto-add-btn span { color: var(--text); }
-.auto-add-btn:active { transform: translateY(1px); }
-
 .scan-loading { display: flex; flex-direction: column; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px 34px; color: var(--text); font-weight: 700; }
 
 /* ============ Plans / pricing ============ */
@@ -760,7 +744,7 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 .howto-list li { margin-bottom: 12px; font-size: 14px; line-height: 1.5; }
 .howto-list li:last-child { margin-bottom: 0; }
 .day-head.day-sub .day-chevron { font-size: 9px; }
-.day-head-l { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.day-head-l { display: flex; align-items: center; gap: 7px; min-width: 0; white-space: nowrap; }
 .day-chevron { color: var(--muted); font-size: 10px; width: 10px; flex: none; }
 .month-group-row td { background: color-mix(in srgb, var(--primary) 8%, var(--surface-2)); cursor: pointer; padding: 9px 12px; font-weight: 800; }
 .day-group-row td { background: var(--surface-2); cursor: pointer; padding: 7px 12px 7px 22px; }
