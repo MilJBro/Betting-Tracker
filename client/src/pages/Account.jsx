@@ -249,6 +249,16 @@ export default function Account() {
         </div>
       </div>
 
+      {/* Admin-only: entry point to the private Insights page (the desktop
+          sidebar has its own link; this covers mobile where there's no sidebar). */}
+      {user?.isAdmin && (
+        <button type="button" className="set-row card" onClick={() => navigate('/admin')} style={{ marginBottom: 16 }}>
+          <span className="sr-ic"><Icon name="pulse" size={18} /></span>
+          <div className="sr-txt"><strong>Insights</strong><span className="muted">Live app usage, visitors & top pages</span></div>
+          <Icon name="chevron" size={16} className="sr-chev" style={{ transform: 'rotate(-90deg)' }} />
+        </button>
+      )}
+
       {/* Account settings */}
       <div className="card set-card">
         <div className="set-head">

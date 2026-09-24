@@ -18,6 +18,8 @@ import { stripeWebhook } from './routes/stripeWebhook.js';
 import trackerRoutes from './routes/trackers.js';
 import settingsRoutes from './routes/settings.js';
 import shareRoutes from './routes/share.js';
+import trackRoutes from './routes/track.js';
+import adminRoutes from './routes/admin.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -85,6 +87,18 @@ app.use('/api/plan', planRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/share', shareRoutes);
+
+// Usage tracking beacon — high-frequency (a heartbeat per open tab), so give it
+// a generous but bounded rate limit to blunt abuse.
+const trackLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 400,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests.' },
+});
+app.use('/api/track', trackLimiter, trackRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Serve the built client (production) with SPA fallback.
 const clientDist = join(__dirname, '..', '..', 'client', 'dist');

@@ -68,6 +68,21 @@ CREATE TABLE IF NOT EXISTS trackers (
   created_at     TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_trackers_user ON trackers(user_id);
+
+-- Lightweight, first-party usage analytics for the private admin Insights page.
+-- No personal data: just a random per-browser session id, the (optional) signed
+-- in user, the path, and a timestamp. 'view' = a page view, 'ping' = a heartbeat
+-- while the tab is open (used for live-visitor and time-on-app figures).
+CREATE TABLE IF NOT EXISTS analytics_events (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts          INTEGER NOT NULL,
+  session_id  TEXT NOT NULL,
+  user_id     TEXT,
+  path        TEXT NOT NULL,
+  kind        TEXT NOT NULL DEFAULT 'view'
+);
+CREATE INDEX IF NOT EXISTS idx_analytics_ts ON analytics_events(ts);
+CREATE INDEX IF NOT EXISTS idx_analytics_session ON analytics_events(session_id, ts);
 `);
 
 // --- Lightweight migrations -------------------------------------------------
@@ -104,6 +119,9 @@ ensureColumn('bets', 'boost', 'REAL NOT NULL DEFAULT 0');
 // Notes were removed as a feature — wipe any stored notes so they're gone from
 // every tracked bet. Idempotent: a no-op once there are none left to clear.
 db.prepare("UPDATE bets SET notes = NULL WHERE notes IS NOT NULL AND notes <> ''").run();
+
+// Analytics retention: keep ~90 days so the table can't grow without bound.
+db.prepare('DELETE FROM analytics_events WHERE ts < ?').run(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
 // --- One-off data migration: give every user a default tracker and adopt any
 // bets that predate trackers. Idempotent — safe to run on every boot.
