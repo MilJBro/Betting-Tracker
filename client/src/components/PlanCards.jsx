@@ -5,16 +5,16 @@ import Icon from './Icon.jsx';
 // server/src/lib/plan.js. Shared by the in-app Plans page and the landing page.
 export const FREE_FEATURES = [
   'Unlimited bet logging',
-  'Net profit, ROI & win rate',
-  'Profit chart & day-by-day history',
+  'Dashboard stats — profit, ROI & win rate',
+  'Profit chart & bet history',
   '5 AI bet scans every month',
   'Themes & a dashboard you build',
   '1 tracker',
 ];
 export const PRO_FEATURES = [
+  'Full stats & analytics',
+  'Breakdowns by sport, bookmaker & tipster',
   'Unlimited AI bet scans',
-  'Advanced analytics & breakdowns',
-  'Track by sport, bookmaker & tipster',
   'Multiple trackers',
   'CSV import & export',
   'Custom share page — no badge',
