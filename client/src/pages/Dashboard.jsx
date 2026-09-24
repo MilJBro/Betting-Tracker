@@ -6,6 +6,7 @@ import { api } from '../api.js';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { useTracker } from '../context/TrackerContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import StatCard from '../components/StatCard.jsx';
 import SettleControls from '../components/SettleControls.jsx';
 import PendingReminder from '../components/PendingReminder.jsx';
@@ -124,6 +125,7 @@ export default function Dashboard() {
   const { settings, update } = useSettings();
   const { active, activeId } = useTracker();
   const toast = useToast();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const { openAddBet } = useAddBet();
@@ -207,29 +209,39 @@ export default function Dashboard() {
 
   // First-run onboarding: guide brand-new accounts before there's any data.
   if (stats.totalBets === 0) {
+    const firstName = (user?.username || settings.sharing?.displayName || '').trim().split(/\s+/)[0];
     return (
       <div className="main">
         <div className="page-head">
           <div>
-            <h1>Welcome{settings.sharing?.displayName ? `, ${settings.sharing.displayName}` : ''}</h1>
-            <p>Let's get your tracker set up.</p>
+            <h1>Welcome{firstName ? `, ${firstName}` : ''}</h1>
+            <p>Get your first bet in — everything fills in from there.</p>
           </div>
         </div>
+
+        {/* Hero: the one action that matters first — log (or scan) a bet. */}
+        <div className="card gs-hero">
+          <div className="gs-hero-ic"><Icon name="camera" size={22} /></div>
+          <h3>Add your first bet</h3>
+          <p>Snap a photo of your slip and we’ll read it for you, or add it by hand. We work out your profit, ROI and win rate automatically.</p>
+          <button type="button" onClick={() => openAddBet()} className="btn-primary">+ Add a bet</button>
+        </div>
+
         <div className="gs-list">
           <div className="gs-card">
             <div className="gs-num">1</div>
             <div className="gs-content">
-              <h4>Log your first bet</h4>
-              <p>Add the stake, odds and result — we work out your profit and win rate for you.</p>
-              <button type="button" onClick={() => openAddBet()} className="btn-ghost btn-sm">+ Add a bet</button>
+              <h4>Make it yours</h4>
+              <p>Pick your currency and odds format, then choose the stats you want front and centre on your dashboard.</p>
+              <Link to="/customise" className="btn-ghost btn-sm">Customise</Link>
             </div>
           </div>
           <div className="gs-card">
             <div className="gs-num">2</div>
             <div className="gs-content">
-              <h4>Make it yours</h4>
-              <p>Choose your currency and odds format, then pick the stats you want on your dashboard.</p>
-              <Link to="/customise" className="btn-ghost btn-sm">Customise</Link>
+              <h4>Track by the day</h4>
+              <p>Log a few bets and your profit chart, win rate and streaks build up automatically — no spreadsheets.</p>
+              <Link to="/analytics" className="btn-ghost btn-sm">See your stats</Link>
             </div>
           </div>
           <div className="gs-card">
