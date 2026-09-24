@@ -515,8 +515,8 @@ export default function Bets() {
           <button className="btn-primary" onClick={openNew}>+ Add bet</button>
           {dataMenu && (
             <>
-              <div className="menu-backdrop" onClick={() => setDataMenu(false)} />
-              <div className="data-menu">
+              <div className="csv-menu-backdrop" onClick={() => setDataMenu(false)} />
+              <div className="csv-menu">
                 <button type="button" onClick={exportCsv}>
                   <Icon name="log" size={15} /> Export to CSV{!isPro && <span className="pro-pill">Pro</span>}
                 </button>
