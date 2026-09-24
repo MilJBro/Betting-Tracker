@@ -1,4 +1,5 @@
 // Small, dependency-free CSV helpers for exporting and importing bets.
+import { saveFile } from './download.js';
 
 const EXPORT_COLUMNS = [
   ['placed_at', 'Date'],
@@ -151,15 +152,7 @@ export function csvToBets(text) {
   return { bets, skipped, headers };
 }
 
-// Trigger a client-side file download of a CSV string.
+// Save a CSV string as a file (share sheet on iOS, download elsewhere).
 export function downloadCsv(filename, csv) {
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return saveFile(filename, csv, 'text/csv;charset=utf-8');
 }

@@ -7,6 +7,7 @@ import { useTracker } from '../context/TrackerContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { usePlan } from '../usePlan.js';
 import { getCached, setCached } from '../dataCache.js';
+import { saveFile } from '../download.js';
 import { formatDate, formatStake, money } from '../format.js';
 import Icon from '../components/Icon.jsx';
 import CheckoutModal from '../components/CheckoutModal.jsx';
@@ -197,14 +198,14 @@ export default function Account() {
     signOut();
   }
   async function exportData() {
-    const res = await fetch('/api/auth/export', { headers: { Authorization: `Bearer ${getToken()}` } });
-    if (!res.ok) return alert('Export failed. Please try again.');
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'betbooks-export.json';
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
+    try {
+      const res = await fetch('/api/auth/export', { headers: { Authorization: `Bearer ${getToken()}` } });
+      if (!res.ok) return toast('Export failed. Please try again.', 'error');
+      const blob = await res.blob();
+      await saveFile('betbooks-export.json', blob, 'application/json');
+    } catch {
+      toast('Export failed. Please try again.', 'error');
+    }
   }
   async function deleteAccount(e) {
     e.preventDefault();
