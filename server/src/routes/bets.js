@@ -120,17 +120,19 @@ router.get('/stats', (req, res) => {
   res.json({ stats: computeStats(rows) });
 });
 
-// Deeper analytics for the Insights page. Pro accounts may filter by date
-// range, sport and tipster; free accounts always get the all-time view (the
-// filter controls are Pro-gated on the client and ignored here for free users).
+// Deeper analytics (the Performance page) is a Pro feature — the dashboard's
+// headline numbers (net profit, ROI, win rate, chart) stay free via /stats.
+// Free accounts get a locked response so the client can show the upgrade wall.
 router.get('/analytics', (req, res) => {
+  const pro = isPro(req.userId);
+  if (!pro) return res.json({ pro: false, locked: true });
+
   const trackerId = resolveTrackerId(req.userId, req.query.tracker);
   const all = db
     .prepare('SELECT * FROM bets WHERE user_id = ? AND tracker_id = ?')
     .all(req.userId, trackerId)
     .map(rowToBet);
 
-  const pro = isPro(req.userId);
   const applied = {};
   let rows = all;
   if (pro) {

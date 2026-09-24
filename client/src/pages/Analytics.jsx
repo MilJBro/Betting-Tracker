@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
 } from 'recharts';
@@ -10,6 +10,7 @@ import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
 import { getCached, setCached, subscribeInvalidate } from '../dataCache.js';
 import { useAddBet } from '../context/AddBetContext.jsx';
+import { usePlan } from '../usePlan.js';
 import { money, units, formatStake } from '../format.js';
 
 const BLANK_FILTERS = { from: '', to: '', sport: '', tipster: '' };
@@ -59,6 +60,8 @@ export default function Analytics() {
   const { settings } = useSettings();
   const { activeId } = useTracker();
   const { openAddBet } = useAddBet();
+  const { ent } = usePlan();
+  const navigate = useNavigate();
   // Open on the user's preferred default window (You → App preferences), Pro only.
   const defaultRange = settings?.defaultRange || 'all';
   const [filters, setFilters] = useState(() => rangeToFilters(defaultRange));
@@ -93,10 +96,11 @@ export default function Analytics() {
 
   useEffect(() => {
     if (!activeId) return;
+    if (ent && !ent.pro) { setLoading(false); return; } // locked — don't fetch
     const cached = getCached(cacheKey);
     if (cached) { setA(cached.a); setMeta(cached.meta); }
     load().finally(() => setLoading(false));
-  }, [load, activeId, cacheKey]);
+  }, [load, activeId, cacheKey, ent]);
   useEffect(() => subscribeInvalidate(() => load()), [load]);
 
   const setFilter = (k, v) => setFilters((f) => ({ ...f, [k]: v }));
@@ -105,6 +109,31 @@ export default function Analytics() {
     const r = rangeToFilters(key);
     setFilters((f) => ({ ...f, from: r.from, to: r.to }));
   };
+
+  // Analytics is a Pro feature — free accounts see an upgrade wall. The
+  // dashboard's headline numbers (profit, ROI, win rate, chart) stay free.
+  if (ent && !ent.pro) {
+    return (
+      <div className="main">
+        <div className="perf-head"><h1>Performance</h1></div>
+        <div className="card analytics-lock">
+          <div className="al-ic"><Icon name="lock" size={26} /></div>
+          <h2>Unlock your full stats</h2>
+          <p className="muted">Go beyond the dashboard headlines and see exactly where your edge is.</p>
+          <ul className="al-list">
+            <li><Icon name="check" size={14} /> Profit &amp; win rate by sport, bookmaker &amp; tipster</li>
+            <li><Icon name="check" size={14} /> Date-range filters &amp; custom windows</li>
+            <li><Icon name="check" size={14} /> Winning &amp; losing streaks and biggest moves</li>
+            <li><Icon name="check" size={14} /> Bankroll growth over time</li>
+          </ul>
+          <button type="button" className="btn-primary" onClick={() => navigate('/pricing')}>See Pro plans</button>
+          <p className="muted" style={{ fontSize: 12, marginTop: 12, marginBottom: 0 }}>
+            Your profit, ROI &amp; win rate on the dashboard stay free.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) return <div className="main"><Spinner /></div>;
 

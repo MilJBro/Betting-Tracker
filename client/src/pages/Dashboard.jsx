@@ -11,6 +11,7 @@ import StatCard from '../components/StatCard.jsx';
 import SettleControls from '../components/SettleControls.jsx';
 import PendingReminder from '../components/PendingReminder.jsx';
 import BetPreview from '../components/BetPreview.jsx';
+import InstallBanner from '../components/InstallBanner.jsx';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
 import { settlePayout } from '../settle.js';
@@ -212,6 +213,7 @@ export default function Dashboard() {
     const firstName = (user?.username || settings.sharing?.displayName || '').trim().split(/\s+/)[0];
     return (
       <div className="main">
+        <InstallBanner />
         <div className="page-head">
           <div>
             <h1>Welcome{firstName ? `, ${firstName}` : ''}</h1>
@@ -327,6 +329,7 @@ export default function Dashboard() {
 
   return (
     <div className="main">
+      <InstallBanner />
       <div className="page-head" style={{ marginBottom: 14 }}>
         <div>
           <h1>Dashboard</h1>
