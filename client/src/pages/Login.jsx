@@ -71,7 +71,7 @@ export default function Login() {
             <button className="btn-primary" onClick={() => goAuth('register')}>Create free account</button>
             <button className="btn-outline" onClick={() => goAuth('login')}>Log in</button>
           </div>
-          <div className="lp-trust">Free to use · Please gamble responsibly</div>
+          <div className="lp-trust">No ads · No gambling promotions · Free to use</div>
         </div>
 
         <div className="section-title lp-h">Why Betbooks</div>

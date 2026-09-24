@@ -72,7 +72,7 @@ export default function Pricing() {
       />
 
       <p className="muted" style={{ textAlign: 'center', fontSize: 12.5, marginTop: 18 }}>
-        Cancel anytime · Please gamble responsibly · 18+
+        No ads · Cancel anytime · Please gamble responsibly · 18+
       </p>
 
       {showCheckout && <CheckoutModal publishableKey={billing?.publishableKey} onClose={() => setShowCheckout(false)} />}
