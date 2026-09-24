@@ -14,9 +14,10 @@ import InstallAppCard from '../components/InstallAppCard.jsx';
 import PasswordInput from '../components/PasswordInput.jsx';
 
 const PRO_FEATURE_LABELS = [
+  'Full stats & analytics — breakdowns, filters & streaks',
+  'Unlimited AI bet scans',
   'Multiple trackers (one per tipster or strategy)',
-  'Advanced analytics (date ranges, filters, bankroll growth)',
-  'Custom share page (no badge)',
+  'CSV export & custom share page',
 ];
 
 const RANGE_OPTS = [
