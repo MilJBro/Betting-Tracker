@@ -508,11 +508,31 @@ export default function Bets() {
         <div>
           <h1>My bets</h1>
         </div>
-        <div className="row" style={{ gap: 8 }}>
-          {/* CSV import/export is parked for now — the Data button is hidden
-              until the feature ships. The handlers below stay in place so it's
-              a one-line change to bring it back. */}
+        <div className="row" style={{ gap: 8, position: 'relative' }}>
+          <button className="btn-ghost" onClick={() => setDataMenu((v) => !v)} aria-haspopup="true" aria-expanded={dataMenu} disabled={importing}>
+            <Icon name="log" size={15} /> {importing ? 'Importing…' : 'Data'}
+          </button>
           <button className="btn-primary" onClick={openNew}>+ Add bet</button>
+          {dataMenu && (
+            <>
+              <div className="menu-backdrop" onClick={() => setDataMenu(false)} />
+              <div className="data-menu">
+                <button type="button" onClick={exportCsv}>
+                  <Icon name="log" size={15} /> Export to CSV{!isPro && <span className="pro-pill">Pro</span>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDataMenu(false);
+                    if (!isPro) { toast('Importing from CSV is a Pro feature', 'info'); navigate('/account'); return; }
+                    csvRef.current?.click();
+                  }}
+                >
+                  <Icon name="log" size={15} /> Import from CSV{!isPro && <span className="pro-pill">Pro</span>}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

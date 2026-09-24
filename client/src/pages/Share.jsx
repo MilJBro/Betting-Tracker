@@ -140,9 +140,12 @@ export default function Share() {
         </div>
       )}
 
-      <p className="muted" style={{ textAlign: 'center', fontSize: 12, marginTop: 30 }}>
-        Powered by Betbooks
-      </p>
+      {/* The "Powered by Betbooks" badge is removed on Pro accounts. */}
+      {!profile.pro && (
+        <p className="muted" style={{ textAlign: 'center', fontSize: 12, marginTop: 30 }}>
+          <a href="/" style={{ color: 'inherit', textDecoration: 'none' }}>Powered by Betbooks</a>
+        </p>
+      )}
     </div>
   );
 }

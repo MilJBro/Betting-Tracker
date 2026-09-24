@@ -1110,6 +1110,17 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
   width: 28px; height: 28px; border-radius: 8px; cursor: pointer; }
 .ib-x:hover { background: var(--surface-2); color: var(--text); }
 
+/* Bets "Data" (CSV export/import) dropdown menu. */
+.menu-backdrop { position: fixed; inset: 0; z-index: 45; }
+.data-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 46; min-width: 200px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 6px;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45); display: flex; flex-direction: column; }
+.data-menu button { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  background: transparent; border: 0; color: var(--text); font-size: 14px; font-weight: 600;
+  padding: 10px; border-radius: 8px; cursor: pointer; }
+.data-menu button:hover { background: var(--surface-2); }
+.data-menu .pro-pill { margin-left: auto; }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }

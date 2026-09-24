@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { nanoid } from 'nanoid';
 import { db } from '../lib/db.js';
 import { requireAuth } from '../lib/auth.js';
+import { isPro } from '../lib/plan.js';
 import { mergeSettings } from '../lib/defaults.js';
 import { computeStats } from '../lib/stats.js';
 import { resolveTrackerId, getTracker } from '../lib/trackers.js';
@@ -99,6 +100,8 @@ router.get('/public/:publicId', (req, res) => {
   res.json({
     profile: {
       displayName: sharing.displayName || user?.username || 'Anonymous',
+      // Pro removes the "Powered by Betbooks" badge on the public page.
+      pro: isPro(share.user_id),
       theme: settings.theme,
       currency: settings.currency,
       staking: settings.staking,
