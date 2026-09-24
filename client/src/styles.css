@@ -119,6 +119,12 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6
 .st-box.st-cashout { --c: #2563eb; }
 .st-box.on { background: var(--c); border-color: var(--c); color: #fff; box-shadow: 0 2px 8px color-mix(in srgb, var(--c) 38%, transparent); }
 .st-box:active { transform: translateY(1px); }
+/* Selected status name shown next to the "Status" label, colour-matched. */
+.status-sel { margin-left: 7px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.status-sel.st-won { color: #16a34a; }
+.status-sel.st-pending { color: #d97706; }
+.status-sel.st-lost { color: #dc2626; }
+.status-sel.st-cashout { color: #2563eb; }
 /* Selection (needs room) paired with the short Odds field. */
 .betform .sel-odds { grid-template-columns: 1.7fr 1fr; gap: 10px; }
 
