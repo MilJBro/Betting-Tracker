@@ -1006,6 +1006,23 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 }
 .chip-btn.sel { background: var(--primary); border-color: var(--primary); color: #04120a; }
 
+/* Onboarding: step label, welcome & done screens, skip link. */
+.onb-step { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.onb-welcome h2, .onb-done h2 { margin: 4px 0 6px; font-size: 24px; letter-spacing: -0.02em; }
+.onb-lead { font-size: 14.5px; line-height: 1.5; margin: 0 0 18px; }
+.onb-vps { display: flex; flex-direction: column; gap: 14px; margin-bottom: 22px; }
+.onb-vp { display: flex; gap: 12px; align-items: flex-start; }
+.onb-vp-ic { flex: none; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary); }
+.onb-vp strong { display: block; font-size: 15px; }
+.onb-vp .muted { display: block; font-size: 13px; line-height: 1.4; margin-top: 1px; }
+.onb-skip { display: block; margin: 14px auto 0; background: none; border: 0; color: var(--muted);
+  font-size: 13px; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.onb-done { text-align: center; }
+.onb-done-ic { width: 60px; height: 60px; border-radius: 50%; margin: 4px auto 10px; display: grid; place-items: center;
+  color: var(--primary); background: color-mix(in srgb, var(--primary) 15%, transparent); }
+.onb-done .onb-lead { max-width: 340px; margin-left: auto; margin-right: auto; }
+
 /* On touch devices iOS Safari zooms in whenever you focus a form control whose
    font-size is under 16px. Bump every field to 16px there so tapping a box on
    the add-bet form (any bet type) never zooms the page. Desktop keeps the
