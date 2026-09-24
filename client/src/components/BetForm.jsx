@@ -102,7 +102,7 @@ const EDITABLE_FIELDS = [
   { key: 'tags', label: 'Tags' },
 ];
 
-export default function BetForm({ initial, isEdit, onScan, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], defaultDate, onSetUnitSize, onToggleField, onSave, onClose }) {
+export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], defaultDate, onSetUnitSize, onToggleField, onSave, onClose }) {
   const unitSize = Number(staking?.unitSize) || 0;
   const [editUnit, setEditUnit] = useState(false);
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
@@ -408,6 +408,15 @@ export default function BetForm({ initial, isEdit, onScan, fields, staking, curr
             <button className="btn-ghost btn-sm" type="button" onClick={onClose} aria-label="Close">✕</button>
           </div>
         </div>
+
+        {/* AI scan quota for free accounts (Pro is unlimited, so no line). */}
+        {!isEdit && onScan && scanQuota && !scanQuota.unlimited && (
+          <div className={`scan-quota${scanQuota.remaining <= 0 ? ' out' : ''}`}>
+            {scanQuota.remaining > 0
+              ? `${scanQuota.remaining} of ${scanQuota.limit} AI scans left this month`
+              : 'No AI scans left this month — upgrade to Pro for unlimited'}
+          </div>
+        )}
 
         {fieldsEditing && onToggleField && (
           <div className="field-editor">

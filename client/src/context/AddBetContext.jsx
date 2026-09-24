@@ -30,7 +30,7 @@ export function AddBetProvider({ children }) {
   const { activeId } = useTracker();
   const toast = useToast();
   const navigate = useNavigate();
-  const { ent } = usePlan();
+  const { ent, refresh: refreshPlan } = usePlan();
   const aiEnabled = ent?.ai?.enabled !== false; // show unless the server says it's off
 
   const [open, setOpen] = useState(false);
@@ -134,10 +134,12 @@ export function AddBetProvider({ children }) {
       }
       applyParsed(res.bet);
       toast('Scan A Bet', 'success');
+      refreshPlan(); // update the remaining-scans counter
     } catch (err) {
       if (err?.data?.upgrade || err?.status === 402) {
-        close(); navigate('/account');
-        toast(err.message || 'You’ve used all your free reads this month.', 'error');
+        close(); navigate('/pricing');
+        toast(err.message || 'You’ve used all your free scans this month.', 'error');
+        refreshPlan(); // refresh usage so the counter shows 0 left
       } else if (err?.timeout) {
         toast('That took too long — give it another go.', 'error');
       } else if (!err?.status || /load failed|failed to fetch|network/i.test(err?.message || '')) {
@@ -193,6 +195,7 @@ export function AddBetProvider({ children }) {
           initial={initialBet}
           isEdit={false}
           onScan={aiEnabled ? triggerScan : undefined}
+          scanQuota={ent?.scans}
           fields={settings.fields || {}}
           staking={settings.staking}
           currency={settings.currency}
