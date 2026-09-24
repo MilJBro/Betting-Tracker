@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Logo from './components/Logo.jsx';
 import { markAppReady } from './boot.js';
 import { useAuth } from './context/AuthContext.jsx';
@@ -99,6 +99,7 @@ function BottomNav() {
 
 function ShellInner() {
   const { settings } = useSettings();
+  const location = useLocation();
   const showApp = !!settings && !(settings.profile && !settings.profile.onboarded);
 
   // Lock the document to the viewport only while the app shell is on screen, so
@@ -109,6 +110,14 @@ function ShellInner() {
     document.body.classList.add('app-view');
     return () => document.body.classList.remove('app-view');
   }, [showApp]);
+
+  // The Dashboard dismisses the boot splash once its own data is in (to avoid a
+  // splash → spinner flash). Every other route has its own loading UI, so if a
+  // reload lands there (e.g. returning to the installed app), dismiss the splash
+  // as soon as the shell is shown rather than leaving it spinning.
+  useEffect(() => {
+    if (showApp && location.pathname !== '/') markAppReady();
+  }, [showApp, location.pathname]);
 
   // Wait for settings, then send brand-new accounts through the questionnaire.
   // While settings load, the #boot splash overlay stays up.
