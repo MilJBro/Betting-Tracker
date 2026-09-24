@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useTracker } from '../context/TrackerContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
@@ -22,6 +23,7 @@ export default function TrackerBar() {
   const [newName, setNewName] = useState('');
   const [newBankroll, setNewBankroll] = useState('');
   const [busy, setBusy] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false); // in-app delete confirmation
 
   if (!active) return null;
   const sym = currencySymbol(settings?.currency || 'GBP');
@@ -63,14 +65,17 @@ export default function TrackerBar() {
     } finally { setBusy(false); }
   }
 
+  // Native confirm() is unreliable in an installed PWA (iOS may suppress it),
+  // so we use an in-app confirmation dialog instead.
   async function removeActive() {
-    if (!confirm(`Delete "${active.name}" and all its bets? This cannot be undone.`)) return;
     setBusy(true);
     try {
       await remove(active.id);
       toast('Tracker deleted');
+      setConfirmDel(false);
       finish();
-    } catch (e) { toast(e.message, 'error'); } finally { setBusy(false); }
+      setDrawer(false);
+    } catch (e) { toast(e.message, 'error'); setConfirmDel(false); } finally { setBusy(false); }
   }
 
   // Shared form bodies — used in the mobile drawer views and the desktop modal.
@@ -86,8 +91,21 @@ export default function TrackerBar() {
       </div>
       <div className="row" style={{ gap: 8, marginTop: 4 }}>
         <button className="btn-primary" onClick={saveActive} disabled={busy}>Save changes</button>
-        <button className="btn-danger btn-sm" onClick={removeActive} disabled={busy || trackers.length <= 1} title={trackers.length <= 1 ? 'You need at least one tracker' : ''}>Delete</button>
+        <button
+          className="btn-danger btn-sm"
+          onClick={() => setConfirmDel(true)}
+          disabled={busy || trackers.length <= 1}
+          title={trackers.length <= 1 ? 'You need at least one tracker' : ''}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+        >
+          <Icon name="trash" size={15} /> Delete
+        </button>
       </div>
+      {trackers.length <= 1 && (
+        <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>
+          You always keep at least one tracker — create another before deleting this one.
+        </p>
+      )}
     </>
   );
 
@@ -194,6 +212,25 @@ export default function TrackerBar() {
             )}
           </aside>
         </div>
+      )}
+
+      {confirmDel && createPortal(
+        <div className="modal-overlay" onMouseDown={() => !busy && setConfirmDel(false)}>
+          <div className="modal tracker-confirm" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="tc-ic"><Icon name="trash" size={24} /></div>
+            <h2 style={{ margin: '0 0 6px', fontSize: 20 }}>Delete “{active.name}”?</h2>
+            <p className="muted" style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>
+              This permanently deletes this tracker and every bet in it. You can’t get it back.
+            </p>
+            <div className="row" style={{ gap: 10, marginTop: 20 }}>
+              <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setConfirmDel(false)} disabled={busy}>Cancel</button>
+              <button className="btn-danger" style={{ flex: 1 }} onClick={removeActive} disabled={busy}>
+                {busy ? 'Deleting…' : 'Delete tracker'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {manage && (

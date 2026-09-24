@@ -167,6 +167,14 @@ const PATHS = {
   ),
   check: <path d="M5 12.5l4.5 4.5L19 6.5" />,
   pulse: <path d="M3 12h4l2.5-6 4 12L16 12h5" />,
+  trash: (
+    <>
+      <path d="M4 7h16" />
+      <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+      <path d="M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12" />
+      <path d="M10 11v6M14 11v6" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 20, className, style }) {
