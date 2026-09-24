@@ -37,7 +37,7 @@ export default function TrackerBar() {
   function finish() { setManage(false); setView('list'); }
 
   function openDrawer() { setView('list'); setDrawer(true); }
-  function goSettings() { setDrawer(false); navigate('/customise'); }
+  function goSettings() { setDrawer(false); navigate('/account'); }
   function signOut() { setDrawer(false); logout(); navigate('/'); }
 
   async function saveActive() {
