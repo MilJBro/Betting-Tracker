@@ -1121,6 +1121,9 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 .data-menu button:hover { background: var(--surface-2); }
 .data-menu .pro-pill { margin-left: auto; }
 
+/* Small camera icon button for scanning a bet slip, in the Add-bet header. */
+.scan-icon-btn { padding: 0; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }

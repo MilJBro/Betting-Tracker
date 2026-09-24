@@ -327,8 +327,19 @@ export default function BetForm({ initial, isEdit, onScan, fields, staking, curr
     const apply = () => {
       const el = overlayRef.current;
       if (!el) return;
-      el.style.height = `${vv.height}px`;
-      el.style.top = `${vv.offsetTop}px`;
+      // Only shrink/offset the sheet when the on-screen keyboard is actually up
+      // (the visible viewport is much shorter than the window). Otherwise clear
+      // the inline sizing and let the CSS full-screen overlay govern — sizing to
+      // visualViewport at open could otherwise wrongly place the sheet in the
+      // top half on some devices.
+      const keyboardOpen = window.innerHeight - vv.height > 120;
+      if (keyboardOpen) {
+        el.style.height = `${vv.height}px`;
+        el.style.top = `${vv.offsetTop}px`;
+      } else {
+        el.style.height = '';
+        el.style.top = '';
+      }
     };
     apply();
     vv.addEventListener('resize', apply);
@@ -374,6 +385,17 @@ export default function BetForm({ initial, isEdit, onScan, fields, staking, curr
         <div className="row spread" style={{ marginBottom: 12 }}>
           <h2 style={{ margin: 0, fontSize: 20 }}>{isEdit ? 'Edit bet' : 'Add a bet'}</h2>
           <div className="row" style={{ gap: 6 }}>
+            {!isEdit && onScan && (
+              <button
+                className="btn-ghost btn-sm scan-icon-btn"
+                type="button"
+                onClick={onScan}
+                aria-label="Scan a bet slip"
+                title="Scan a bet slip"
+              >
+                <Icon name="camera" size={18} />
+              </button>
+            )}
             {onToggleField && (
               <button
                 className={fieldsEditing ? 'btn-accent btn-sm' : 'btn-ghost btn-sm'}
@@ -386,17 +408,6 @@ export default function BetForm({ initial, isEdit, onScan, fields, staking, curr
             <button className="btn-ghost btn-sm" type="button" onClick={onClose} aria-label="Close">✕</button>
           </div>
         </div>
-
-        {!isEdit && onScan && (
-          <div className="auto-add">
-            <div className="auto-add-btns">
-              <button type="button" className="auto-add-btn" onClick={onScan}>
-                <Icon name="camera" size={15} />
-                <span>Scan A Bet</span>
-              </button>
-            </div>
-          </div>
-        )}
 
         {fieldsEditing && onToggleField && (
           <div className="field-editor">
