@@ -138,7 +138,7 @@ export function AddBetProvider({ children }) {
     } catch (err) {
       if (err?.data?.upgrade || err?.status === 402) {
         close(); navigate('/pricing');
-        toast(err.message || 'You’ve used all your free scans this month.', 'error');
+        toast(err.message || 'You’ve used all your free scans this month. Head to Plans to go unlimited.', 'error');
         refreshPlan(); // refresh usage so the counter shows 0 left
       } else if (err?.timeout) {
         toast('That took too long — give it another go.', 'error');

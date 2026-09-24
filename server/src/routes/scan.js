@@ -121,7 +121,7 @@ router.post('/', async (req, res) => {
   if (!canScan(req.userId)) {
     const e = entitlements(req.userId);
     return res.status(402).json({
-      error: `You've used all ${e.scans.limit} free scans this month. Upgrade to Pro for unlimited scanning.`,
+      error: `You've used all ${e.scans.limit} free scans this month. Head to Plans to go unlimited with Pro.`,
       upgrade: true,
       scans: e.scans,
     });
