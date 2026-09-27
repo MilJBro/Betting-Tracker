@@ -72,6 +72,19 @@ export default function Login() {
             <button className="btn-outline" onClick={() => goAuth('login')}>Log in</button>
           </div>
           <div className="lp-trust">No ads · No gambling promotions · Free to use</div>
+
+          {/* Real screenshot of the app, so visitors see exactly what they get. */}
+          <div className="lp-shot">
+            <div className="phone">
+              <img
+                src="/shots/dashboard.png"
+                width="1170"
+                height="2532"
+                alt="The Betbooks dashboard showing net profit, ROI, win rate and a profit-over-time chart."
+                loading="eager"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="section-title lp-h">Why Betbooks</div>
