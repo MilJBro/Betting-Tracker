@@ -34,10 +34,19 @@ export function fileToScaledImage(file, maxDim = 1400, quality = 0.78) {
   });
 }
 
-// Upload a bet-slip screenshot and get back the extracted bet fields.
-export async function scanBetSlip(file) {
-  const { image, mediaType } = await fileToScaledImage(file);
-  // Hard 35s cap so a stalled request fails cleanly instead of hanging the
-  // scan overlay forever (the server itself fails fast at ~30s).
-  return api.post('/bets/scan', { image, mediaType }, { timeoutMs: 35000 }); // { bet, confidence, currency }
+// Upload one or more bet-slip screenshots and get back the extracted bet.
+// Accepts a single File or an array — a long slip (10+ selections) rarely fits
+// one screenshot, so the user can snap it in parts (top, middle, bottom) and the
+// server stitches them into one bet. Capped at 4 images to keep it fast/cheap.
+export async function scanBetSlip(files) {
+  const list = (Array.isArray(files) ? files : [files]).filter(Boolean).slice(0, 4);
+  const images = [];
+  for (const f of list) {
+    const { image, mediaType } = await fileToScaledImage(f);
+    images.push({ data: image, mediaType });
+  }
+  // Hard cap so a stalled request fails cleanly instead of hanging the scan
+  // overlay forever; a little longer when several images are sent.
+  const timeoutMs = images.length > 1 ? 55000 : 35000;
+  return api.post('/bets/scan', { images }, { timeoutMs }); // { bet, confidence, currency }
 }

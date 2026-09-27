@@ -112,14 +112,15 @@ export function AddBetProvider({ children }) {
     scanInputRef.current?.click();
   };
   async function onScanFile(e) {
-    const file = e.target.files?.[0];
-    e.target.value = ''; // allow picking the same file again later
-    if (!file) return;
+    // Several screenshots may be picked for one long slip — they're merged.
+    const files = Array.from(e.target.files || []);
+    e.target.value = ''; // allow picking the same file(s) again later
+    if (!files.length) return;
     setScanning(true);
     try {
       let res;
       try {
-        res = await scanBetSlip(file);
+        res = await scanBetSlip(files);
       } catch (err) {
         // Transient failure — a connection drop, a timeout, or the server
         // waking up / briefly overloaded (502/503/504). Try once more before
@@ -127,7 +128,7 @@ export function AddBetProvider({ children }) {
         const transient = err?.timeout || !err?.status || [502, 503, 504].includes(err?.status);
         if (transient) {
           await new Promise((r) => setTimeout(r, 1500));
-          res = await scanBetSlip(file);
+          res = await scanBetSlip(files);
         } else {
           throw err;
         }
@@ -212,8 +213,9 @@ export function AddBetProvider({ children }) {
         />
       )}
       {/* Hidden picker for "Scan a photo" — no `capture` so iOS offers Photo
-          Library (for saved tipster screenshots) as well as the camera. */}
-      <input ref={scanInputRef} type="file" accept="image/*" onChange={onScanFile} hidden />
+          Library (for saved tipster screenshots) as well as the camera.
+          `multiple` lets a long slip be captured across several screenshots. */}
+      <input ref={scanInputRef} type="file" accept="image/*" multiple onChange={onScanFile} hidden />
       {scanning && createPortal(
         <div className="modal-overlay" style={{ alignItems: 'center' }}>
           <div className="scan-loading"><Spinner /><span>Reading your bet slip…</span></div>
