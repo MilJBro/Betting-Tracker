@@ -49,7 +49,16 @@ export default function TrackerBar() {
     } catch (e) { toast(e.message, 'error'); } finally { setBusy(false); }
   }
 
+  // Multiple trackers is a Pro feature — send free accounts to Plans instead.
+  function goPlansForTracker() {
+    finish();
+    setDrawer(false);
+    toast('Multiple trackers is a Pro feature', 'info');
+    navigate('/pricing');
+  }
+
   async function createTracker() {
+    if (!pro) { goPlansForTracker(); return; }
     setBusy(true);
     try {
       await create(newName.trim() || 'New tracker', Number(newBankroll) || 0);
@@ -57,10 +66,7 @@ export default function TrackerBar() {
       finish();
     } catch (e) {
       if (e.status === 402 || e.data?.upgrade) {
-        finish();
-        setDrawer(false);
-        toast('Multiple trackers is a Pro feature', 'info');
-        navigate('/account');
+        goPlansForTracker();
       } else { toast(e.message, 'error'); }
     } finally { setBusy(false); }
   }
@@ -182,9 +188,13 @@ export default function TrackerBar() {
                       {t.id === activeId && <span className="di-check" aria-hidden="true">✓</span>}
                     </button>
                   ))}
-                  <button className="drawer-item drawer-new" type="button" onClick={() => { prepNew(); setView('new'); }}>
+                  <button
+                    className="drawer-item drawer-new"
+                    type="button"
+                    onClick={() => { if (!pro) { goPlansForTracker(); return; } prepNew(); setView('new'); }}
+                  >
                     <span className="di-ic di-ic-add" aria-hidden="true">+</span>
-                    <span className="di-name">New tracker</span>
+                    <span className="di-name">New tracker{!pro && <span className="pro-pill" style={{ marginLeft: 8 }}>Pro</span>}</span>
                   </button>
                 </div>
 
