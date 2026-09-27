@@ -7,24 +7,19 @@ import { api } from '../api.js';
 
 const FEATURES = [
   {
-    title: 'Tailored to you',
-    body: 'Show the stats you care about, hide the rest, and reorder your dashboard to suit you.',
-    icon: <><path d="M4 8h16M4 16h16" /><circle cx="9" cy="8" r="2.3" /><circle cx="15" cy="16" r="2.3" /></>,
+    title: 'Track every bet',
+    body: 'Log your bets in seconds and keep everything in one place.',
+    icon: <><circle cx="12" cy="12" r="7.5" /><circle cx="12" cy="12" r="3" /><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3" /></>,
   },
   {
-    title: 'Multiple trackers',
-    body: 'Keep a separate tracker for each tipster or strategy, so their results never mix.',
-    icon: <path d="M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5" />,
+    title: 'See your real performance',
+    body: 'Understand your ROI, win rate and profit at a glance.',
+    icon: <><path d="M4 20h16" /><path d="M7 20v-4M12 20v-8M17 20v-5" /><path d="M14.4 6.6L17 4l2.6 2.6" /><path d="M17 4v6" /></>,
   },
   {
-    title: 'Share your record',
-    body: 'Publish a clean, read-only page of your results — show people how you’re getting on.',
-    icon: <><circle cx="6" cy="12" r="2.4" /><circle cx="18" cy="6" r="2.4" /><circle cx="18" cy="18" r="2.4" /><path d="M8 11l8-4M8 13l8 4" /></>,
-  },
-  {
-    title: 'See your real numbers',
-    body: 'Profit over time, ROI and win rate — broken down by sport, bookie and tipster.',
-    icon: <path d="M4 19V5M4 19h16M8 16v-5M12 16V8M16 16v-6" />,
+    title: 'Build your record',
+    body: 'Stay consistent, spot trends and improve over time.',
+    icon: <><rect x="3.5" y="5" width="17" height="15.5" rx="2.5" /><path d="M3.5 9.5h17M8 3v3.5M16 3v3.5" /></>,
   },
 ];
 
@@ -58,23 +53,32 @@ export default function Login() {
   return (
     <div className="landing-wrap">
       <div className="landing">
+        <div className="lp-topbar">
+          <Logo />
+          <button className="btn-ghost btn-sm lp-top-login" onClick={() => goAuth('login')}>Log in</button>
+        </div>
+
         <div className="lp-hero">
-          <div className="brand" style={{ justifyContent: 'center', fontSize: 22 }}>
-            <Logo />
-          </div>
-          <h1>Know if you’re<br />really winning.</h1>
+          <div className="lp-eyebrow">Betting Tracker</div>
+          <h1>Track your bets.<br /><span className="lp-h-accent">Know your numbers.</span></h1>
           <p className="sub">
-            The betting tracker you shape around how you actually bet. Log a bet in seconds
-            and see exactly where you stand — no spreadsheets, no guesswork. Free to start.
+            Betbooks helps you log, track and understand your betting performance — so you
+            can make smarter decisions and improve over time.
           </p>
           <div className="lp-cta">
-            <button className="btn-primary" onClick={() => goAuth('register')}>Create free account</button>
+            <button className="btn-primary" onClick={() => goAuth('register')}>
+              Create free account <span aria-hidden="true">→</span>
+            </button>
             <button className="btn-outline" onClick={() => goAuth('login')}>Log in</button>
           </div>
           <div className="lp-trust">No ads · No gambling promotions · Free to use</div>
 
           {/* Real screenshot of the app, so visitors see exactly what they get. */}
           <div className="lp-shot">
+            <svg className="lp-shot-lines" viewBox="0 0 400 520" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M-30 400 C 120 320, 280 380, 440 250" />
+              <path d="M-30 320 C 150 250, 300 320, 440 170" />
+            </svg>
             <div className="phone">
               <div className="phone-screen">
                 <span className="phone-notch" aria-hidden="true" />
@@ -90,12 +94,11 @@ export default function Login() {
           </div>
         </div>
 
-        <div className="section-title lp-h">Why Betbooks</div>
-        <div className="lp-features">
+        <div className="lp-featrow">
           {FEATURES.map((f) => (
-            <div key={f.title} className="card lp-feat">
-              <div className="lp-chip"><FeatureIcon>{f.icon}</FeatureIcon></div>
-              <h3>{f.title}{f.tag && <span className="lp-tag">{f.tag}</span>}</h3>
+            <div key={f.title} className="lp-feat3">
+              <div className="lp-feat3-ic"><FeatureIcon>{f.icon}</FeatureIcon></div>
+              <h3>{f.title}</h3>
               <p>{f.body}</p>
             </div>
           ))}
