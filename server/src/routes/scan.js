@@ -127,33 +127,53 @@ router.post('/', async (req, res) => {
     });
   }
 
-  const { image, mediaType } = req.body || {};
-  const media = ALLOWED_MEDIA.includes(mediaType) ? mediaType : 'image/jpeg';
-  if (!image || typeof image !== 'string') {
+  // Accept either one image ({ image, mediaType }) or several
+  // ({ images: [{ data, mediaType }] }) — a long slip is often captured in parts.
+  const body = req.body || {};
+  let rawImages = [];
+  if (Array.isArray(body.images)) rawImages = body.images;
+  else if (typeof body.image === 'string') rawImages = [{ data: body.image, mediaType: body.mediaType }];
+
+  const images = rawImages
+    .filter((x) => x && typeof x.data === 'string')
+    .slice(0, 4) // cap the number of screenshots per scan
+    .map((x) => ({ data: x.data, media: ALLOWED_MEDIA.includes(x.mediaType) ? x.mediaType : 'image/jpeg' }));
+
+  if (!images.length) {
     return res.status(400).json({ error: 'No image provided.' });
   }
-  // base64 payload guard (~8MB of base64 ≈ 6MB image).
-  if (image.length > 8_000_000) {
-    return res.status(413).json({ error: 'Image is too large — try a smaller screenshot.' });
+  // base64 payload guard across all images (~16MB base64 ≈ 12MB of images).
+  const totalBytes = images.reduce((sum, x) => sum + x.data.length, 0);
+  if (totalBytes > 16_000_000) {
+    return res.status(413).json({ error: 'Those images are too large — try fewer or smaller screenshots.' });
   }
 
   try {
     // Bound the upstream call so a slow/overloaded model returns a clean error
     // instead of leaving the request hanging until the platform drops it (which
-    // the browser surfaces as an opaque "Load failed").
-    const client = new Anthropic({ apiKey: config.anthropic.apiKey, timeout: 30000, maxRetries: 0 });
+    // the browser surfaces as an opaque "Load failed"). Allow a little longer
+    // when several images have to be read together.
+    const client = new Anthropic({
+      apiKey: config.anthropic.apiKey,
+      timeout: images.length > 1 ? 45000 : 30000,
+      maxRetries: 0,
+    });
+    const imageBlocks = images.map((im) => ({
+      type: 'image',
+      source: { type: 'base64', media_type: im.media, data: im.data },
+    }));
+    const instruction = images.length > 1
+      ? `These ${images.length} images are screenshots of the SAME bet slip, captured in parts because it was too long to fit one screen (roughly top to bottom, possibly overlapping). Combine them into ONE bet: merge every selection/leg across all the images, in order, and do NOT duplicate a leg that appears in more than one image. Return a single JSON object as instructed.`
+      : 'Extract the bet from this slip.';
     const message = await client.messages.create({
       model: config.anthropic.model,
-      max_tokens: 2000,
+      max_tokens: 3000,
       ...modelOptions(),
       system: SYSTEM_PROMPT,
       messages: [
         {
           role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: media, data: image } },
-            { type: 'text', text: 'Extract the bet from this slip.' },
-          ],
+          content: [...imageBlocks, { type: 'text', text: instruction }],
         },
       ],
     });
