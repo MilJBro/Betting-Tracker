@@ -867,6 +867,22 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 .lp-cta { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .lp-cta > button { padding: 12px 22px; font-size: 15px; }
 .lp-trust { color: var(--muted); font-size: 12.5px; text-align: center; margin-top: 14px; }
+
+/* Framed product screenshot in the hero. */
+.lp-shot { position: relative; display: flex; justify-content: center; margin: 34px auto 6px; }
+.lp-shot::before {
+  content: ''; position: absolute; inset: 6% 12% 10%; z-index: 0;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--primary) 32%, transparent), transparent);
+  filter: blur(46px); opacity: 0.7;
+}
+.phone {
+  position: relative; z-index: 1; width: min(72vw, 272px); padding: 9px;
+  background: linear-gradient(160deg, #182234, #0b1120);
+  border: 1px solid color-mix(in srgb, #ffffff 12%, transparent);
+  border-radius: 40px;
+  box-shadow: 0 34px 70px -22px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.phone img { display: block; width: 100%; height: auto; border-radius: 31px; }
 .lp-h { text-align: center; margin: 36px 0 16px; }
 .lp-features { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .lp-feat { padding: 16px; }
