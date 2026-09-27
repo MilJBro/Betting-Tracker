@@ -3,25 +3,24 @@
 // rendered at each iPhone's exact device resolution. iOS ignores the manifest
 // background_color for the launch screen and shows white unless an
 // apple-touch-startup-image matches the device exactly — these make the native
-// launch screen show the same branded splash as the in-app boot screen, so the
-// app opens straight into the splash with no white (or blank navy) flash.
+// launch screen show the same branded splash as the in-app boot screen.
 //
-// The layout mirrors #boot in index.html exactly (same markup, sizes and gap)
-// so the static launch image and the live boot splash line up pixel-for-pixel;
-// the progress bar is drawn as an empty track to match the first animation
-// frame (the fill slides in from off-screen left once the web view mounts).
+// Rendered via the DevTools protocol with true mobile device metrics so the
+// content is correctly centred at every size. (An earlier version used
+// `chrome --headless --screenshot --force-device-scale-factor`, which laid the
+// page out at the wrong viewport and pushed the splash off-centre.)
 //
-// Rendered with headless Chrome (no native image deps). Point CHROME_BIN at a
-// Chrome/Chromium binary, or rely on the common paths below.
-// Run: node scripts/gen-splash.mjs   (writes to public/splash/)
-import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+// Start Chrome with remote debugging first, then run this:
+//   chrome --headless --no-sandbox --disable-gpu \
+//     --remote-debugging-port=9222 --user-data-dir=/tmp/splashgen about:blank &
+//   node scripts/gen-splash.mjs
+// Override the port with CDP_PORT. Writes to public/splash-v2/.
+import { writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const outDir = join(root, 'public', 'splash');
+const PORT = process.env.CDP_PORT || 9222;
+const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'splash-v2');
 
 // [deviceW, deviceH, cssW, cssH, ratio] — portrait iPhones, SE → 16 Pro Max.
 const SIZES = [
@@ -31,8 +30,8 @@ const SIZES = [
   [1284, 2778, 428, 926, 3], [1290, 2796, 430, 932, 3], [1320, 2868, 440, 956, 3],
 ];
 
-// Mirrors #boot in index.html. No web font is loaded (a launch image is a fixed
-// raster); the bold system fallback matches the wordmark closely enough.
+// Mirrors #boot in index.html; the progress bar is an empty track to match the
+// first frame of the in-app splash animation.
 const HTML = `<!doctype html><html><head><meta charset="utf-8"><style>
 html,body{margin:0;height:100%;background:#0b1120}
 .wrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
@@ -45,34 +44,28 @@ html,body{margin:0;height:100%;background:#0b1120}
 <span class="bword">Bet<b>books</b></span>
 <span class="bbar"></span>
 </div></body></html>`;
+const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(HTML);
 
-function findChrome() {
-  const candidates = [
-    process.env.CHROME_BIN,
-    '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
-    '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser',
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  ].filter(Boolean);
-  for (const c of candidates) if (existsSync(c)) return c;
-  throw new Error('No Chrome/Chromium found. Set CHROME_BIN to a Chrome binary.');
-}
+const ver = await (await fetch(`http://127.0.0.1:${PORT}/json/version`)).json();
+const ws = new WebSocket(ver.webSocketDebuggerUrl);
+await new Promise((r) => (ws.onopen = r));
+let idc = 0; const pending = new Map();
+const send = (m, p = {}, s) => new Promise((res, rej) => { const id = ++idc; pending.set(id, { res, rej }); ws.send(JSON.stringify({ id, method: m, params: p, sessionId: s })); });
+ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.id && pending.has(m.id)) { const { res, rej } = pending.get(m.id); pending.delete(m.id); m.error ? rej(new Error(m.error.message)) : res(m.result); } };
 
-const chrome = findChrome();
+const { targetId } = await send('Target.createTarget', { url: 'about:blank' });
+const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
+const S = (m, p) => send(m, p, sessionId);
+await S('Page.enable');
 mkdirSync(outDir, { recursive: true });
-const htmlPath = join(tmpdir(), 'bt-splash.html');
-writeFileSync(htmlPath, HTML);
 
 for (const [dw, dh, cw, ch, ratio] of SIZES) {
-  const out = join(outDir, `splash-${dw}x${dh}.png`);
-  const profile = join(tmpdir(), `bt-splash-profile-${dw}x${dh}`);
-  execFileSync(chrome, [
-    '--headless', '--no-sandbox', '--disable-gpu', '--hide-scrollbars',
-    `--force-device-scale-factor=${ratio}`, `--window-size=${cw},${ch}`,
-    '--virtual-time-budget=600', `--user-data-dir=${profile}`,
-    `--screenshot=${out}`, `file://${htmlPath}`,
-  ], { stdio: ['ignore', 'ignore', 'ignore'] });
-  rmSync(profile, { recursive: true, force: true });
+  await S('Emulation.setDeviceMetricsOverride', { width: cw, height: ch, deviceScaleFactor: ratio, mobile: true, screenWidth: cw, screenHeight: ch });
+  await S('Page.navigate', { url: dataUrl });
+  await new Promise((r) => setTimeout(r, 500));
+  const { data } = await S('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+  writeFileSync(join(outDir, `splash-${dw}x${dh}.png`), Buffer.from(data, 'base64'));
   console.log(`splash-${dw}x${dh}.png`);
 }
-rmSync(htmlPath, { force: true });
 console.log('done');
+ws.close(); process.exit(0);
