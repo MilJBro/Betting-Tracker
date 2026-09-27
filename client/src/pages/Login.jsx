@@ -76,13 +76,16 @@ export default function Login() {
           {/* Real screenshot of the app, so visitors see exactly what they get. */}
           <div className="lp-shot">
             <div className="phone">
-              <img
-                src="/shots/dashboard.png"
-                width="1170"
-                height="2532"
-                alt="The Betbooks dashboard showing net profit, ROI, win rate and a profit-over-time chart."
-                loading="eager"
-              />
+              <div className="phone-screen">
+                <span className="phone-notch" aria-hidden="true" />
+                <img
+                  src="/shots/dashboard.png"
+                  width="1170"
+                  height="2532"
+                  alt="The Betbooks dashboard showing net profit, ROI, win rate and a profit-over-time chart."
+                  loading="eager"
+                />
+              </div>
             </div>
           </div>
         </div>
