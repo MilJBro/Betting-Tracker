@@ -213,7 +213,8 @@ export default function Bets() {
   const toggleMonth = toggleIn(setOpenMonths);
   const toggleShowAll = toggleIn(setShowAllMonths);
   const toggleDay = toggleIn(setOpenDays);
-  // Bucket a month's (date-sorted) bets into [{ day, bets }] in order.
+  // Bucket a month's (date-sorted) bets into [{ day, bets, profit }] in order.
+  // Each day carries its net profit so the collapsed row can show up/down.
   const bucketByDay = (list) => {
     const out = [];
     for (const b of list) {
@@ -222,7 +223,10 @@ export default function Bets() {
       if (last && last.day === day) last.bets.push(b);
       else out.push({ day, bets: [b] });
     }
-    return out;
+    return out.map((d) => ({
+      ...d,
+      profit: d.bets.reduce((s, b) => s + (profitOf(b) || 0), 0),
+    }));
   };
 
   const formatMonth = (key) => {
@@ -720,14 +724,17 @@ export default function Bets() {
                       {!moCollapsed && (
                         <>
                           {dayGroups
-                            ? visibleDays.map(({ day, bets: dayBets }) => {
+                            ? visibleDays.map(({ day, bets: dayBets, profit: dayProfit }) => {
                                 const dk = mo.month + '|' + day;
                                 const dopen = openDays.has(dk);
                                 return (
                                   <Fragment key={dk}>
                                     <tr className="day-group-row" onClick={() => toggleDay(dk)}>
                                       <td colSpan={20}>
-                                        <span className="day-chevron" aria-hidden>{dopen ? '▾' : '▸'}</span> {formatDayLabel(day)} · {countLabel(dayBets.length)}
+                                        <div className="day-head-inner">
+                                          <span><span className="day-chevron" aria-hidden>{dopen ? '▾' : '▸'}</span> {formatDayLabel(day)} · {countLabel(dayBets.length)}</span>
+                                          <span className={profitClass(dayProfit)}>{signedProfit(dayProfit)}</span>
+                                        </div>
                                       </td>
                                     </tr>
                                     {dopen && dayBets.map(renderRow)}
@@ -770,15 +777,18 @@ export default function Bets() {
                   {!moCollapsed && (
                     <div className="month-bets">
                       {dayGroups
-                        ? visibleDays.map(({ day, bets: dayBets }) => {
+                        ? visibleDays.map(({ day, bets: dayBets, profit: dayProfit }) => {
                             const dk = mo.month + '|' + day;
                             const dopen = openDays.has(dk);
                             return (
                               <div key={dk} className="day-group2">
                                 <button type="button" className="day-subhead" onClick={() => toggleDay(dk)}>
-                                  <span className="day-chevron" aria-hidden>{dopen ? '▾' : '▸'}</span>
-                                  {formatDayLabel(day)}
-                                  <span className="muted" style={{ fontWeight: 600 }}> · {countLabel(dayBets.length)}</span>
+                                  <span className="day-subhead-l">
+                                    <span className="day-chevron" aria-hidden>{dopen ? '▾' : '▸'}</span>
+                                    {formatDayLabel(day)}
+                                    <span className="muted" style={{ fontWeight: 600 }}> · {countLabel(dayBets.length)}</span>
+                                  </span>
+                                  <span className={profitClass(dayProfit)} style={{ fontWeight: 700 }}>{signedProfit(dayProfit)}</span>
                                 </button>
                                 {dopen && dayBets.map(renderCard)}
                               </div>
