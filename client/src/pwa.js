@@ -2,6 +2,8 @@
 // listener is attached before the browser fires it (it fires early, often
 // before any React component mounts).
 
+import { markAppReady } from './boot.js';
+
 let deferredPrompt = null;
 const subscribers = new Set();
 const notify = () => subscribers.forEach((fn) => { try { fn(); } catch {} });
@@ -42,12 +44,17 @@ if (typeof window !== 'undefined') {
     deferredPrompt = null;
     notify();
   });
-  // iOS can restore the page from the back/forward cache as a frozen, blank
-  // shell when it's reopened after being suspended, showing a white screen
-  // until it's force-quit. When the page is restored from that cache
-  // (event.persisted), reload it so the app boots fresh instead of blank.
+  // The INSTALLED (standalone) app on iOS can restore from the back/forward
+  // cache as a frozen, blank shell after being suspended, so there we reload to
+  // boot fresh. A normal browser tab restores from bfcache correctly, so
+  // reloading it just throws away the live page, re-shows the boot splash and
+  // can hang on a waking server — which looked like the app "stuck loading" on
+  // return. So only reload in standalone; in the browser, just make sure no
+  // stale boot splash is left covering the restored page.
   window.addEventListener('pageshow', (e) => {
-    if (e.persisted) window.location.reload();
+    if (!e.persisted) return;
+    if (isStandalone()) window.location.reload();
+    else markAppReady();
   });
 }
 
