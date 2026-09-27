@@ -1,68 +1,78 @@
-// Generates iOS PWA launch ("startup") images: solid brand-navy PNGs at each
-// iPhone's exact device resolution. iOS ignores the manifest background_color
-// for the launch screen and shows white unless an apple-touch-startup-image
-// matches the device exactly — these remove that white flash so the native
-// launch screen is the same #0b1120 as the in-app boot splash.
+// Generates iOS PWA launch ("startup") images: the Betbooks boot splash
+// (brand-navy background, green book mark, wordmark, empty progress track)
+// rendered at each iPhone's exact device resolution. iOS ignores the manifest
+// background_color for the launch screen and shows white unless an
+// apple-touch-startup-image matches the device exactly — these make the native
+// launch screen show the same branded splash as the in-app boot screen, so the
+// app opens straight into the splash with no white (or blank navy) flash.
 //
-// Solid colour compresses to a couple of KB regardless of pixel dimensions.
+// The layout mirrors #boot in index.html exactly (same markup, sizes and gap)
+// so the static launch image and the live boot splash line up pixel-for-pixel;
+// the progress bar is drawn as an empty track to match the first animation
+// frame (the fill slides in from off-screen left once the web view mounts).
+//
+// Rendered with headless Chrome (no native image deps). Point CHROME_BIN at a
+// Chrome/Chromium binary, or rely on the common paths below.
 // Run: node scripts/gen-splash.mjs   (writes to public/splash/)
-import { deflateSync } from 'node:zlib';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 
-const BG = [0x0b, 0x11, 0x20]; // #0b1120
-const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'splash');
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const outDir = join(root, 'public', 'splash');
 
-// device px [w, h] for portrait iPhones, current through iPhone 16 Pro Max.
+// [deviceW, deviceH, cssW, cssH, ratio] — portrait iPhones, SE → 16 Pro Max.
 const SIZES = [
-  [640, 1136], [750, 1334], [828, 1792], [1125, 2436], [1170, 2532],
-  [1179, 2556], [1206, 2622], [1242, 2208], [1242, 2688], [1284, 2778],
-  [1290, 2796], [1320, 2868],
+  [640, 1136, 320, 568, 2], [750, 1334, 375, 667, 2], [828, 1792, 414, 896, 2],
+  [1125, 2436, 375, 812, 3], [1170, 2532, 390, 844, 3], [1179, 2556, 393, 852, 3],
+  [1206, 2622, 402, 874, 3], [1242, 2208, 414, 736, 3], [1242, 2688, 414, 896, 3],
+  [1284, 2778, 428, 926, 3], [1290, 2796, 430, 932, 3], [1320, 2868, 440, 956, 3],
 ];
 
-// --- minimal PNG encoder (CRC32 + IHDR/IDAT/IEND) ---
-const crcTable = (() => {
-  const t = new Uint32Array(256);
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    t[n] = c >>> 0;
-  }
-  return t;
-})();
-function crc32(buf) {
-  let c = 0xffffffff;
-  for (let i = 0; i < buf.length; i++) c = crcTable[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
-  return (c ^ 0xffffffff) >>> 0;
-}
-function chunk(type, data) {
-  const len = Buffer.alloc(4);
-  len.writeUInt32BE(data.length, 0);
-  const typeBuf = Buffer.from(type, 'ascii');
-  const crcBuf = Buffer.alloc(4);
-  crcBuf.writeUInt32BE(crc32(Buffer.concat([typeBuf, data])), 0);
-  return Buffer.concat([len, typeBuf, data, crcBuf]);
-}
-function solidPng(w, h, [r, g, b]) {
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(w, 0);
-  ihdr.writeUInt32BE(h, 4);
-  ihdr[8] = 8;  // bit depth
-  ihdr[9] = 2;  // colour type: truecolour RGB
-  // raw scanlines: each row = filter byte (0) + w*3 colour bytes
-  const row = Buffer.alloc(1 + w * 3);
-  for (let x = 0; x < w; x++) { row[1 + x * 3] = r; row[2 + x * 3] = g; row[3 + x * 3] = b; }
-  const raw = Buffer.concat(Array.from({ length: h }, () => row));
-  const idat = deflateSync(raw, { level: 9 });
-  const sig = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-  return Buffer.concat([sig, chunk('IHDR', ihdr), chunk('IDAT', idat), chunk('IEND', Buffer.alloc(0))]);
+// Mirrors #boot in index.html. No web font is loaded (a launch image is a fixed
+// raster); the bold system fallback matches the wordmark closely enough.
+const HTML = `<!doctype html><html><head><meta charset="utf-8"><style>
+html,body{margin:0;height:100%;background:#0b1120}
+.wrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+.bmark{color:#22c55e;display:flex}
+.bword{font-weight:800;font-size:27px;letter-spacing:-0.02em;color:#f8fafc}
+.bword b{color:#22c55e;font-weight:800}
+.bbar{width:116px;height:3px;border-radius:3px;background:rgba(255,255,255,0.14)}
+</style></head><body><div class="wrap">
+<span class="bmark"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.4C10.3 5 7.7 4.5 3.8 5.1v12.7c3.9-0.6 6.5-0.1 8.2 1.3 1.7-1.4 4.3-1.9 8.2-1.3V5.1C16.3 4.5 13.7 5 12 6.4z"/><path d="M12 6.4v12.7"/></svg></span>
+<span class="bword">Bet<b>books</b></span>
+<span class="bbar"></span>
+</div></body></html>`;
+
+function findChrome() {
+  const candidates = [
+    process.env.CHROME_BIN,
+    '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+    '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser',
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  ].filter(Boolean);
+  for (const c of candidates) if (existsSync(c)) return c;
+  throw new Error('No Chrome/Chromium found. Set CHROME_BIN to a Chrome binary.');
 }
 
+const chrome = findChrome();
 mkdirSync(outDir, { recursive: true });
-for (const [w, h] of SIZES) {
-  const png = solidPng(w, h, BG);
-  writeFileSync(join(outDir, `splash-${w}x${h}.png`), png);
-  console.log(`splash-${w}x${h}.png  ${(png.length / 1024).toFixed(1)} KB`);
+const htmlPath = join(tmpdir(), 'bt-splash.html');
+writeFileSync(htmlPath, HTML);
+
+for (const [dw, dh, cw, ch, ratio] of SIZES) {
+  const out = join(outDir, `splash-${dw}x${dh}.png`);
+  const profile = join(tmpdir(), `bt-splash-profile-${dw}x${dh}`);
+  execFileSync(chrome, [
+    '--headless', '--no-sandbox', '--disable-gpu', '--hide-scrollbars',
+    `--force-device-scale-factor=${ratio}`, `--window-size=${cw},${ch}`,
+    '--virtual-time-budget=600', `--user-data-dir=${profile}`,
+    `--screenshot=${out}`, `file://${htmlPath}`,
+  ], { stdio: ['ignore', 'ignore', 'ignore'] });
+  rmSync(profile, { recursive: true, force: true });
+  console.log(`splash-${dw}x${dh}.png`);
 }
+rmSync(htmlPath, { force: true });
 console.log('done');
