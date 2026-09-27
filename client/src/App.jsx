@@ -8,6 +8,7 @@ import { TrackerProvider } from './context/TrackerContext.jsx';
 import { AddBetProvider, useAddBet } from './context/AddBetContext.jsx';
 import TrackerBar from './components/TrackerBar.jsx';
 import Icon from './components/Icon.jsx';
+import Spinner from './components/Spinner.jsx';
 import Login from './pages/Login.jsx';
 import Onboarding from './pages/Onboarding.jsx';
 import Dashboard from './pages/Dashboard.jsx';
@@ -120,8 +121,9 @@ function ShellInner() {
   }, [showApp, location.pathname]);
 
   // Wait for settings, then send brand-new accounts through the questionnaire.
-  // While settings load, the #boot splash overlay stays up.
-  if (!settings) return null;
+  // While settings load, the #boot splash overlay stays up; if that safety
+  // timer has already cleared it (a slow load), show a spinner, never a blank.
+  if (!settings) return <div className="main"><Spinner /></div>;
   if (settings.profile && !settings.profile.onboarded) return <OnboardingReady />;
 
   return (
@@ -189,8 +191,9 @@ export default function App() {
         path="*"
         element={
           loading ? (
-            // The #boot splash overlay covers this until a screen is ready.
-            null
+            // The #boot splash overlay covers this until a screen is ready; if
+            // the splash safety timer fires first, show a spinner, not a blank.
+            <div className="main"><Spinner /></div>
           ) : user ? (
             <AppShell />
           ) : (

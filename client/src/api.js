@@ -13,20 +13,22 @@ export function getToken() {
   return token;
 }
 
-async function request(path, { method = 'GET', body, timeoutMs } = {}) {
+async function request(path, { method = 'GET', body, timeoutMs = 20000 } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
-  // Optional hard timeout so a stalled request never hangs the UI forever
-  // (the scan overlay used to get stuck, forcing an app restart).
-  const ctrl = timeoutMs ? new AbortController() : null;
-  const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
+  // Hard timeout so a stalled request never hangs the UI forever. Every request
+  // gets one by default (iOS can hand a resumed page a dead socket that never
+  // settles, which used to wedge the app on the boot splash); callers can pass
+  // their own timeoutMs to lengthen it (e.g. the multi-image scan).
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   let res;
   try {
     res = await fetch(BASE + path, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
-      signal: ctrl?.signal,
+      signal: ctrl.signal,
     });
   } catch (err) {
     if (err?.name === 'AbortError') {
@@ -36,7 +38,7 @@ async function request(path, { method = 'GET', body, timeoutMs } = {}) {
     }
     throw err;
   } finally {
-    if (timer) clearTimeout(timer);
+    clearTimeout(timer);
   }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {

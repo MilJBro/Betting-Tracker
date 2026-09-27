@@ -61,11 +61,27 @@ export function SettingsProvider({ children }) {
       setSettings(null);
       return;
     }
-    api.get('/settings').then((d) => {
-      const theme = resolveTheme(d.settings);
-      setSettings({ ...d.settings, theme });
-      applyTheme(theme);
-    });
+    let cancelled = false;
+    (async () => {
+      // Keep retrying until settings load. Without this a single transient
+      // failure (e.g. a dead socket on resume) left `settings` null forever and
+      // the app wedged on the boot splash — the "stuck loading" bug. Backs off,
+      // and self-heals as soon as the network is back.
+      for (let attempt = 0; !cancelled; attempt++) {
+        try {
+          const d = await api.get('/settings', { timeoutMs: 10000 });
+          if (cancelled) return;
+          const theme = resolveTheme(d.settings);
+          setSettings({ ...d.settings, theme });
+          applyTheme(theme);
+          return;
+        } catch {
+          if (cancelled) return;
+          await new Promise((r) => setTimeout(r, Math.min(5000, 800 * (attempt + 1))));
+        }
+      }
+    })();
+    return () => { cancelled = true; };
   }, [user]);
 
   // Optimistic local update + persist. The whole design stays locked to the
