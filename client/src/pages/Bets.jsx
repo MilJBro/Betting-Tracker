@@ -733,7 +733,7 @@ export default function Bets() {
                                       <td colSpan={20}>
                                         <div className="day-head-inner">
                                           <span><span className="day-chevron" aria-hidden>{dopen ? '▾' : '▸'}</span> {formatDayLabel(day)} · {countLabel(dayBets.length)}</span>
-                                          <span className={profitClass(dayProfit)}>{signedProfit(dayProfit)}</span>
+                                          {isPro && <span className={profitClass(dayProfit)}>{signedProfit(dayProfit)}</span>}
                                         </div>
                                       </td>
                                     </tr>
@@ -788,7 +788,7 @@ export default function Bets() {
                                     {formatDayLabel(day)}
                                     <span className="muted" style={{ fontWeight: 600 }}> · {countLabel(dayBets.length)}</span>
                                   </span>
-                                  <span className={profitClass(dayProfit)} style={{ fontWeight: 700 }}>{signedProfit(dayProfit)}</span>
+                                  {isPro && <span className={profitClass(dayProfit)} style={{ fontWeight: 700 }}>{signedProfit(dayProfit)}</span>}
                                 </button>
                                 {dopen && dayBets.map(renderCard)}
                               </div>
