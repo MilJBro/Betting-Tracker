@@ -13,16 +13,29 @@ export function AuthProvider({ children }) {
       setLoading(false);
       return;
     }
-    api
-      .get('/auth/me')
-      .then((d) => setUser(d.user))
-      .catch((err) => {
-        // Only sign out on a genuine auth rejection (401). A transient failure
-        // — a flaky network on resume, or a request aborted by a reload — must
-        // NOT wipe the token, or the user gets logged out for no reason.
-        if (err?.status === 401) setToken(null);
-      })
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      // Retry transient failures a few times before giving up, so a flaky
+      // network on resume doesn't bounce a signed-in user to the landing page
+      // (or leave the app wedged on the boot splash).
+      for (let attempt = 0; !cancelled; attempt++) {
+        try {
+          const d = await api.get('/auth/me', { timeoutMs: 10000 });
+          if (!cancelled) setUser(d.user);
+          break;
+        } catch (err) {
+          if (cancelled) return;
+          // Only sign out on a genuine auth rejection (401). A transient failure
+          // (timeout, flaky network on resume, a request aborted by a reload)
+          // must NOT wipe the token, or the user gets logged out for no reason.
+          if (err?.status === 401) { setToken(null); break; }
+          if (attempt >= 3) break;
+          await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+        }
+      }
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   async function login(email, password) {
