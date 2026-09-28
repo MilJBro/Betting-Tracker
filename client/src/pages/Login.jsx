@@ -81,12 +81,11 @@ export default function Login() {
             </svg>
             <div className="phone">
               <div className="phone-screen">
-                <span className="phone-notch" aria-hidden="true" />
                 <img
-                  src="/shots/dashboard-v3.png"
+                  src="/shots/dashboard-v4.png"
                   width="1170"
                   height="2532"
-                  alt="The Betbooks dashboard showing net profit, ROI, win rate and a profit-over-time chart."
+                  alt="The Betbooks dashboard showing net profit, ROI, win rate, a profit chart and the app's bottom navigation."
                   loading="eager"
                 />
               </div>
