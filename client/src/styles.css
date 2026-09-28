@@ -898,19 +898,12 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
     0 4px 14px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
-/* Screen with a thin status-bar strip (same navy as the app) so the notch has
-   somewhere to sit above the app header. */
+/* The app screenshot fills the whole screen, edge to edge, clipped to the
+   rounded screen corners. */
 .phone-screen {
-  position: relative; border-radius: 36px; overflow: hidden;
-  background: #0b1120; padding-top: 18px;
+  position: relative; border-radius: 36px; overflow: hidden; background: #0b1120;
 }
 .phone-screen img { display: block; width: 100%; height: auto; }
-/* Subtle dynamic-island style notch. */
-.phone-notch {
-  position: absolute; z-index: 2; top: 6px; left: 50%; transform: translateX(-50%);
-  width: 30%; height: 15px; border-radius: 10px;
-  background: #05070d; box-shadow: inset 0 -1px 1px rgba(255, 255, 255, 0.05);
-}
 
 /* Icon feature row under the hero (matches the three benefits in the mockup). */
 .lp-featrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 34px 0 8px; }
