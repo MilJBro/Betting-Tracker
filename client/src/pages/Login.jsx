@@ -82,7 +82,7 @@ export default function Login() {
             <div className="phone">
               <div className="phone-screen">
                 <img
-                  src="/shots/dashboard-v4.png"
+                  src="/shots/dashboard-v5.png"
                   width="1170"
                   height="2532"
                   alt="The Betbooks dashboard showing net profit, ROI, win rate, a profit chart and the app's bottom navigation."
