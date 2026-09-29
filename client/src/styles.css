@@ -868,7 +868,7 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 
 .lp-hero { text-align: left; }
 .lp-eyebrow { text-transform: uppercase; letter-spacing: 0.22em; font-size: 12px; font-weight: 800; color: var(--muted); margin-bottom: 12px; }
-.lp-hero h1 { font-size: clamp(34px, 9.5vw, 52px); line-height: 1.03; letter-spacing: -0.02em; margin: 0 0 18px; font-weight: 800; }
+.lp-hero h1 { font-size: clamp(29px, 8vw, 46px); line-height: 1.06; letter-spacing: -0.02em; margin: 0 0 18px; font-weight: 800; }
 .lp-h-accent { color: var(--primary); }
 .lp-hero .sub { color: var(--muted); font-size: 16.5px; line-height: 1.55; max-width: 42ch; margin: 0 0 26px; }
 .lp-cta { display: flex; flex-direction: column; gap: 12px; }
@@ -918,6 +918,29 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 /* Make the Pro card pop within the band. */
 .lp-pricing .plan.pro {
   box-shadow: 0 0 34px -8px color-mix(in srgb, var(--primary) 34%, transparent);
+}
+
+/* Founder note — a personal, human voice on the page. */
+.lp-founder {
+  margin: 48px 0 10px; padding: 26px 22px 24px; border-radius: 20px;
+  background: color-mix(in srgb, var(--primary) 5%, var(--surface));
+  border: 1px solid var(--border); text-align: center;
+}
+.lp-founder-badge {
+  width: 48px; height: 48px; margin: 0 auto 15px; border-radius: 50%;
+  display: grid; place-items: center; font-family: var(--font-head);
+  font-weight: 800; font-size: 21px; color: #04120a; background: var(--primary);
+  box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--primary) 60%, transparent);
+}
+.lp-founder-note {
+  font-size: 15.5px; line-height: 1.62; color: var(--text); margin: 0 auto 14px; max-width: 48ch;
+}
+.lp-founder-sign { font-family: var(--font-head); font-weight: 700; font-size: 14px; color: var(--muted); }
+
+/* Scroll-in reveal — only animates when the visitor is fine with motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 0.7, 0.2, 1); }
+  .reveal.in { opacity: 1; transform: none; }
 }
 .lp-features { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .lp-feat { padding: 16px; }

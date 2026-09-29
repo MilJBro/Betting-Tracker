@@ -45,6 +45,20 @@ export default function Login() {
 
   useEffect(() => { api.get('/pricing').then(setPricing).catch(() => {}); }, []);
 
+  // Reveal sections as they scroll into view (skipped for reduced-motion users
+  // via CSS — the hidden state only applies under prefers-reduced-motion: no-preference).
+  useEffect(() => {
+    const els = document.querySelectorAll('.reveal');
+    if (!els.length || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      }
+    }, { threshold: 0.1, rootMargin: '0px 0px -6% 0px' });
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+
   function goAuth(m) {
     setMode(m);
     document.getElementById('get-started')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -58,12 +72,13 @@ export default function Login() {
           <button className="btn-ghost btn-sm lp-top-login" onClick={() => goAuth('login')}>Log in</button>
         </div>
 
-        <div className="lp-hero">
+        <div className="lp-hero reveal">
           <div className="lp-eyebrow">Betting Tracker</div>
-          <h1>Track your bets.<br /><span className="lp-h-accent">Know your numbers.</span></h1>
+          <h1>The bookie knows its numbers.<br /><span className="lp-h-accent">Time you knew yours.</span></h1>
           <p className="sub">
-            Betbooks helps you log, track and understand your betting performance — so you
-            can make smarter decisions and improve over time.
+            Every bet in one place. See what’s really winning, what’s quietly leaking money,
+            and whether you’re actually up over the year — no spreadsheets, no bookie hiding
+            your history.
           </p>
           <div className="lp-cta">
             <button className="btn-primary" onClick={() => goAuth('register')}>
@@ -75,8 +90,8 @@ export default function Login() {
         </div>
 
         <div className="lp-featrow">
-          {FEATURES.map((f) => (
-            <div key={f.title} className="lp-feat3">
+          {FEATURES.map((f, i) => (
+            <div key={f.title} className="lp-feat3 reveal" style={{ transitionDelay: `${i * 0.08}s` }}>
               <div className="lp-feat3-ic"><FeatureIcon>{f.icon}</FeatureIcon></div>
               <h3>{f.title}</h3>
               <p>{f.body}</p>
@@ -84,14 +99,29 @@ export default function Login() {
           ))}
         </div>
 
-        <div className="section-title lp-h">How it works</div>
-        <div className="lp-steps">
-          {STEPS.map((s, i) => (
-            <div key={i} className="lp-step"><div className="lp-n">{i + 1}</div><div className="lp-t">{s}</div></div>
-          ))}
+        <div className="reveal">
+          <div className="section-title lp-h">How it works</div>
+          <div className="lp-steps">
+            {STEPS.map((s, i) => (
+              <div key={i} className="lp-step"><div className="lp-n">{i + 1}</div><div className="lp-t">{s}</div></div>
+            ))}
+          </div>
         </div>
 
-        <div className="lp-pricing">
+        {/* Founder note — a real, human voice. Miles: edit this to be genuinely yours. */}
+        <div className="lp-founder reveal">
+          <div className="lp-founder-badge" aria-hidden="true">M</div>
+          <p className="lp-founder-note">
+            I built Betbooks because I was sick of not knowing. Good month, bad month — and no
+            real idea if I was actually up over the year. The bookies were never going to tell
+            me, and my spreadsheets never lasted a week. So I made the tracker I actually
+            wanted: log a bet in seconds, and see the truth. No ads, no selling your data, no
+            catch.
+          </p>
+          <div className="lp-founder-sign">— Miles, founder of Betbooks</div>
+        </div>
+
+        <div className="lp-pricing reveal">
           <div className="lp-pricing-eyebrow">Pricing</div>
           <h2 className="lp-pricing-h">Start free. <span className="lp-h-accent">Go Pro</span> when you want more.</h2>
           <p className="lp-pricing-sub">
