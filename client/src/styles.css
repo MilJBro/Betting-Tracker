@@ -919,6 +919,35 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 @media (max-width: 460px) { .lp-featrow { gap: 10px; } .lp-feat3 h3 { font-size: 13.5px; } .lp-feat3 p { font-size: 12px; } }
 
 .lp-h { text-align: center; margin: 36px 0 16px; }
+
+/* Standout pricing band — a distinct glowing panel that pulls the eye in. */
+.lp-pricing {
+  position: relative; margin: 50px 0 10px; padding: 30px 18px 26px;
+  border-radius: 24px;
+  background:
+    radial-gradient(130% 90% at 50% -8%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 62%),
+    color-mix(in srgb, var(--primary) 4%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--primary) 32%, var(--border));
+  box-shadow:
+    0 22px 60px -34px rgba(0, 0, 0, 0.7),
+    0 0 70px -24px color-mix(in srgb, var(--primary) 30%, transparent);
+}
+.lp-pricing-eyebrow {
+  text-align: center; text-transform: uppercase; letter-spacing: 0.2em;
+  font-size: 12px; font-weight: 800; color: var(--primary); margin-bottom: 8px;
+}
+.lp-pricing-h {
+  text-align: center; font-size: clamp(24px, 6.5vw, 32px); line-height: 1.1;
+  font-weight: 800; letter-spacing: -0.01em; margin: 0 0 8px;
+}
+.lp-pricing-sub {
+  text-align: center; color: var(--muted); font-size: 14.5px; line-height: 1.5;
+  max-width: 40ch; margin: 0 auto;
+}
+/* Make the Pro card pop within the band. */
+.lp-pricing .plan.pro {
+  box-shadow: 0 0 34px -8px color-mix(in srgb, var(--primary) 34%, transparent);
+}
 .lp-features { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .lp-feat { padding: 16px; }
 .lp-feat .lp-chip { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary); margin-bottom: 11px; }

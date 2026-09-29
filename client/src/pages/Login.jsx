@@ -110,18 +110,22 @@ export default function Login() {
           ))}
         </div>
 
-        <div className="section-title lp-h">Simple pricing</div>
-        <p className="muted" style={{ textAlign: 'center', fontSize: 13.5, margin: '2px 0 0' }}>
-          Start free — upgrade to Pro whenever you want more.
-        </p>
-        <PlanCards
-          priceLabel={pricing?.priceLabel || ''}
-          freeButton={<button className="btn-ghost plan-cta" onClick={() => goAuth('register')}>Start free</button>}
-          proButton={<button className="btn-primary plan-cta" onClick={() => goAuth('register')}>
-            {pricing?.trialDays > 0 ? `Start free — try Pro for ${pricing.trialDays} days` : 'Create free account'}
-          </button>}
-          proFine={<p className="muted plan-fine">Create a free account first — upgrade to Pro anytime from the app.</p>}
-        />
+        <div className="lp-pricing">
+          <div className="lp-pricing-eyebrow">Pricing</div>
+          <h2 className="lp-pricing-h">Start free. <span className="lp-h-accent">Go Pro</span> when you want more.</h2>
+          <p className="lp-pricing-sub">
+            Free forever for the essentials{pricing?.trialDays > 0 ? ` — or try Pro free for ${pricing.trialDays} days` : ''}.
+            Upgrade any time for full stats, unlimited scans and more.
+          </p>
+          <PlanCards
+            priceLabel={pricing?.priceLabel || ''}
+            freeButton={<button className="btn-ghost plan-cta" onClick={() => goAuth('register')}>Start free</button>}
+            proButton={<button className="btn-primary plan-cta" onClick={() => goAuth('register')}>
+              {pricing?.trialDays > 0 ? `Start free — try Pro for ${pricing.trialDays} days` : 'Create free account'}
+            </button>}
+            proFine={<p className="muted plan-fine">Create a free account first — upgrade to Pro anytime from the app.</p>}
+          />
+        </div>
 
         <div className="section-title lp-h" id="get-started">Get started</div>
         <AuthPanel mode={mode} onMode={setMode} />
