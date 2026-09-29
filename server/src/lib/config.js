@@ -76,11 +76,12 @@ export const config = {
     priceId: process.env.STRIPE_PRICE_ID || '',
     // Human-readable price for the upgrade button, e.g. "£3.99 / month".
     priceLabel: process.env.STRIPE_PRICE_LABEL || '',
-    // Optional yearly plan. Set these once the annual price exists in Stripe.
+    // Yearly plan. The price ID must come from Stripe (empty until created);
+    // the shown label/badge default so the site displays a price now and are
+    // overridable via env. Change these to match once the Stripe price exists.
     priceIdAnnual: process.env.STRIPE_PRICE_ID_ANNUAL || '',
-    priceLabelAnnual: process.env.STRIPE_PRICE_LABEL_ANNUAL || '', // e.g. "£39.99 / year"
-    // Small badge shown on the Annual toggle, e.g. "Save 17%" or "2 months free".
-    annualSave: process.env.STRIPE_ANNUAL_SAVE || '',
+    priceLabelAnnual: process.env.STRIPE_PRICE_LABEL_ANNUAL || '£39.99 / year',
+    annualSave: process.env.STRIPE_ANNUAL_SAVE || '2 months free',
     // Free-trial length in days before the first charge. Defaults to 7; set
     // STRIPE_TRIAL_DAYS=0 to disable the trial (charge immediately).
     trialDays:
