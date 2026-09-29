@@ -56,12 +56,14 @@ export default function PlanCards({
   return (
     <>
     <div className="plan-toggle" role="tablist" aria-label="Billing period">
+      {/* Monthly/Yearly changes the Pro price. On the mobile carousel, bring the
+          Pro card into view so the change is visible (no-op on desktop grid). */}
       <button type="button" role="tab" aria-selected={interval === 'monthly'}
-        className={interval === 'monthly' ? 'on' : ''} onClick={() => onInterval?.('monthly')}>
+        className={interval === 'monthly' ? 'on' : ''} onClick={() => { onInterval?.('monthly'); goTo(1); }}>
         Monthly
       </button>
       <button type="button" role="tab" aria-selected={interval === 'annual'}
-        className={interval === 'annual' ? 'on' : ''} onClick={() => onInterval?.('annual')}>
+        className={interval === 'annual' ? 'on' : ''} onClick={() => { onInterval?.('annual'); goTo(1); }}>
         Yearly<span className="plan-save">{annualSave || 'Best value'}</span>
       </button>
     </div>
