@@ -876,35 +876,6 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 .lp-cta .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
 .lp-trust { color: var(--muted); font-size: 12.5px; text-align: center; margin-top: 16px; }
 
-/* Framed product screenshot in the hero. */
-.lp-shot { position: relative; display: flex; justify-content: center; margin: 44px auto 8px; }
-/* Subtle green sweep lines behind the device. */
-.lp-shot-lines { position: absolute; inset: -6% -14%; width: 128%; height: 112%; z-index: 0; overflow: visible; }
-.lp-shot-lines path { fill: none; stroke: var(--primary); stroke-width: 1.4; opacity: 0.28; }
-.lp-shot::before {
-  content: ''; position: absolute; inset: -4% -6% 0; z-index: 0;
-  background:
-    radial-gradient(closest-side at 50% 46%, color-mix(in srgb, var(--primary) 42%, transparent), transparent 72%),
-    radial-gradient(closest-side at 50% 82%, color-mix(in srgb, var(--primary) 20%, transparent), transparent 70%);
-  filter: blur(60px); opacity: 0.72;
-}
-.phone {
-  position: relative; z-index: 1; width: min(78vw, 300px); padding: 11px;
-  background: linear-gradient(158deg, #1b2740, #0b1120 62%);
-  border: 1px solid color-mix(in srgb, #ffffff 14%, transparent);
-  border-radius: 46px;
-  box-shadow:
-    0 38px 80px -24px rgba(0, 0, 0, 0.8),
-    0 4px 14px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-/* The app screenshot fills the whole screen, edge to edge, clipped to the
-   rounded screen corners. */
-.phone-screen {
-  position: relative; border-radius: 36px; overflow: hidden; background: #0b1120;
-}
-.phone-screen img { display: block; width: 100%; height: auto; }
-
 /* Icon feature row under the hero (matches the three benefits in the mockup). */
 .lp-featrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 34px 0 8px; }
 .lp-feat3 { text-align: center; }
