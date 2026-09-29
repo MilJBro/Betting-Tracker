@@ -68,6 +68,10 @@ export function entitlements(userId) {
     billing: {
       enabled: config.billingEnabled,
       priceLabel: config.stripe.priceLabel || '',
+      priceLabelAnnual: config.stripe.priceLabelAnnual || '',
+      annualSave: config.stripe.annualSave || '',
+      // Whether the yearly plan can actually be checked out yet.
+      annualEnabled: !!config.stripe.priceIdAnnual,
       // Public key so the client can load Stripe.js for the on-site checkout.
       // Never expose the secret key here.
       publishableKey: config.stripe.publishableKey || '',

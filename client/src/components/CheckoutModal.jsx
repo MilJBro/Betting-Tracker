@@ -16,7 +16,7 @@ function getStripe(pk) {
 // Portalled to <body> so the overlay scrolls reliably on iOS, like our other
 // sheets. On success Stripe redirects the top window to the return_url, which
 // the Account page handles (?upgrade=success).
-export default function CheckoutModal({ publishableKey, onClose }) {
+export default function CheckoutModal({ publishableKey, interval = 'monthly', onClose }) {
   const mountRef = useRef(null);
   const checkoutRef = useRef(null);
   const [loading, setLoading] = useState(true);
@@ -39,7 +39,7 @@ export default function CheckoutModal({ publishableKey, onClose }) {
         // Stripe's fetchClientSecret callback make this call, a failure there is
         // replaced by Stripe's generic "Something went wrong" and the real
         // reason is lost.
-        const { clientSecret } = await api.post('/billing/checkout');
+        const { clientSecret } = await api.post('/billing/checkout', { interval });
         if (!clientSecret) throw new Error('Could not start checkout. Please try again.');
         if (cancelled) return;
         const checkout = await stripe.initEmbeddedCheckout({

@@ -15,6 +15,7 @@ export default function Pricing() {
   const [params, setParams] = useSearchParams();
   const [busy, setBusy] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
+  const [billingInterval, setBillingInterval] = useState('monthly');
 
   const isPro = ent?.pro;
   const billing = ent?.billing;
@@ -39,7 +40,10 @@ export default function Pricing() {
   }
 
   const priceLabel = billing?.priceLabel || '';
+  const priceLabelAnnual = billing?.priceLabelAnnual || '';
+  const annualSave = billing?.annualSave || '';
   const trialDays = billing?.trialDays || 0;
+  const activePrice = billingInterval === 'annual' ? priceLabelAnnual : priceLabel;
 
   return (
     <div className="main">
@@ -60,14 +64,18 @@ export default function Pricing() {
 
       <PlanCards
         priceLabel={priceLabel}
+        priceLabelAnnual={priceLabelAnnual}
+        annualSave={annualSave}
+        interval={billingInterval}
+        onInterval={setBillingInterval}
         freeButton={<button className="btn-ghost plan-cta" disabled>{isPro ? 'Included' : 'Your current plan'}</button>}
         proButton={isPro
           ? <button className="btn-primary plan-cta" disabled>Current plan</button>
           : <button className="btn-primary plan-cta" onClick={doUpgrade} disabled={busy || !ent}>
               {busy ? 'Working…' : trialDays > 0 ? `Start ${trialDays}-day free trial` : 'Upgrade to Pro'}
             </button>}
-        proFine={!isPro && trialDays > 0 && priceLabel
-          ? <p className="muted plan-fine">Free for {trialDays} days, then {priceLabel}. Cancel anytime.</p>
+        proFine={!isPro && trialDays > 0 && activePrice
+          ? <p className="muted plan-fine">Free for {trialDays} days, then {activePrice}. Cancel anytime.</p>
           : null}
       />
 
@@ -75,7 +83,7 @@ export default function Pricing() {
         No ads · Cancel anytime · Please gamble responsibly · 18+
       </p>
 
-      {showCheckout && <CheckoutModal publishableKey={billing?.publishableKey} onClose={() => setShowCheckout(false)} />}
+      {showCheckout && <CheckoutModal publishableKey={billing?.publishableKey} interval={billingInterval} onClose={() => setShowCheckout(false)} />}
     </div>
   );
 }

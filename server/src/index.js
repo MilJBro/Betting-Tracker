@@ -77,6 +77,8 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.get('/api/pricing', (_req, res) => res.json({
   billingEnabled: config.billingEnabled,
   priceLabel: config.stripe.priceLabel || '',
+  priceLabelAnnual: config.stripe.priceLabelAnnual || '',
+  annualSave: config.stripe.annualSave || '',
   trialDays: config.stripe.trialDays || 0,
   freeScanLimit: FREE_SCAN_LIMIT,
 }));

@@ -354,7 +354,23 @@ tr:last-child td { border-bottom: none; }
 
 /* Extra top margin leaves room for the "Most popular" badge, which sits above
    the Pro card, so it never overlaps whatever is above the cards. */
-.plans { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
+/* Monthly / Yearly billing toggle above the plan cards. */
+.plan-toggle {
+  display: flex; width: fit-content; margin: 22px auto 2px; padding: 4px; gap: 4px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px;
+}
+.plan-toggle button {
+  display: inline-flex; align-items: center; gap: 7px; border: 0; background: transparent;
+  color: var(--muted); font-family: var(--font-head); font-weight: 700; font-size: 13.5px;
+  padding: 8px 16px; border-radius: 999px; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.plan-toggle button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35); }
+.plan-save {
+  font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;
+  color: #04120a; background: var(--primary); padding: 2px 7px; border-radius: 999px; line-height: 1.4;
+}
+
+.plans { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
 .plan { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px 16px; display: flex; flex-direction: column; }
 .plan.pro { border-color: color-mix(in srgb, var(--primary) 55%, var(--border)); background: color-mix(in srgb, var(--primary) 7%, var(--surface)); }
 .plan-badge { position: absolute; top: -11px; left: 16px; background: var(--primary); color: #04120a; font-weight: 800; font-size: 11px; letter-spacing: .02em; padding: 4px 11px; border-radius: 999px; }
