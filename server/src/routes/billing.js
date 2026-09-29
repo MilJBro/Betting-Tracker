@@ -17,11 +17,14 @@ function notConfigured(res) {
 router.post('/checkout', async (req, res) => {
   if (!billingEnabled) return notConfigured(res);
   if (isPro(req.userId)) return res.status(400).json({ error: 'You already have Pro.' });
-  // Yearly plan when requested (and configured); otherwise the monthly price.
+  // Yearly plan when requested. The label may show a yearly price before the
+  // Stripe annual price exists — block checkout in that window rather than
+  // silently charging the monthly price.
   const wantAnnual = (req.body?.interval || '') === 'annual';
-  const price = wantAnnual && config.stripe.priceIdAnnual
-    ? config.stripe.priceIdAnnual
-    : config.stripe.priceId;
+  if (wantAnnual && !config.stripe.priceIdAnnual) {
+    return res.status(400).json({ error: 'The yearly plan isn’t quite ready yet — please choose monthly for now.' });
+  }
+  const price = wantAnnual ? config.stripe.priceIdAnnual : config.stripe.priceId;
   try {
     const customer = await ensureCustomer(req.userId);
     const session = await stripe.checkout.sessions.create({
