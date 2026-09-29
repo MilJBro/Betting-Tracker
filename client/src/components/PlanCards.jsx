@@ -24,7 +24,12 @@ export const PRO_FEATURES = [
 // Presentational Free vs Pro comparison. The parent supplies the CTA buttons
 // (`freeButton` / `proButton`) so it works both in-app (upgrade) and on the
 // landing page (sign up). `priceLabel` shows the Pro price when known.
-export default function PlanCards({ priceLabel = '', freeButton, proButton, proFine }) {
+export default function PlanCards({
+  priceLabel = '', priceLabelAnnual = '', annualSave = '',
+  interval = 'monthly', onInterval, freeButton, proButton, proFine,
+}) {
+  const proPrice = interval === 'annual' ? priceLabelAnnual : priceLabel;
+  const perFallback = interval === 'annual' ? 'per year' : 'per month';
   // On phones the two cards become a swipeable carousel (one per screen) so the
   // whole comparison fits without scrolling. On desktop it stays a 2-col grid
   // and the dots are hidden via CSS.
@@ -50,6 +55,16 @@ export default function PlanCards({ priceLabel = '', freeButton, proButton, proF
 
   return (
     <>
+    <div className="plan-toggle" role="tablist" aria-label="Billing period">
+      <button type="button" role="tab" aria-selected={interval === 'monthly'}
+        className={interval === 'monthly' ? 'on' : ''} onClick={() => onInterval?.('monthly')}>
+        Monthly
+      </button>
+      <button type="button" role="tab" aria-selected={interval === 'annual'}
+        className={interval === 'annual' ? 'on' : ''} onClick={() => onInterval?.('annual')}>
+        Yearly<span className="plan-save">{annualSave || 'Best value'}</span>
+      </button>
+    </div>
     <div className="plans" ref={scroller} onScroll={onScroll}>
       <div className="plan">
         <div className="plan-head">
@@ -68,8 +83,8 @@ export default function PlanCards({ priceLabel = '', freeButton, proButton, proF
         <div className="plan-head">
           <span className="plan-name">Pro</span>
           <div className="plan-price">
-            {priceLabel
-              ? <><span className="pp-amt">{priceLabel.split(' ')[0]}</span><span className="pp-per">{priceLabel.replace(/^\S+\s*/, '') || 'per month'}</span></>
+            {proPrice
+              ? <><span className="pp-amt">{proPrice.split(' ')[0]}</span><span className="pp-per">{proPrice.replace(/^\S+\s*/, '') || perFallback}</span></>
               : <span className="pp-amt" style={{ fontSize: 26 }}>Coming soon</span>}
           </div>
         </div>

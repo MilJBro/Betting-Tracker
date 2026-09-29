@@ -42,6 +42,7 @@ function FeatureIcon({ children }) {
 export default function Login() {
   const [mode, setMode] = useState('login');
   const [pricing, setPricing] = useState(null);
+  const [billingInterval, setBillingInterval] = useState('monthly');
 
   useEffect(() => { api.get('/pricing').then(setPricing).catch(() => {}); }, []);
 
@@ -130,6 +131,10 @@ export default function Login() {
           </p>
           <PlanCards
             priceLabel={pricing?.priceLabel || ''}
+            priceLabelAnnual={pricing?.priceLabelAnnual || ''}
+            annualSave={pricing?.annualSave || ''}
+            interval={billingInterval}
+            onInterval={setBillingInterval}
             freeButton={<button className="btn-ghost plan-cta" onClick={() => goAuth('register')}>Start free</button>}
             proButton={<button className="btn-primary plan-cta" onClick={() => goAuth('register')}>
               {pricing?.trialDays > 0 ? `Start free — try Pro for ${pricing.trialDays} days` : 'Create free account'}

@@ -17,6 +17,11 @@ function notConfigured(res) {
 router.post('/checkout', async (req, res) => {
   if (!billingEnabled) return notConfigured(res);
   if (isPro(req.userId)) return res.status(400).json({ error: 'You already have Pro.' });
+  // Yearly plan when requested (and configured); otherwise the monthly price.
+  const wantAnnual = (req.body?.interval || '') === 'annual';
+  const price = wantAnnual && config.stripe.priceIdAnnual
+    ? config.stripe.priceIdAnnual
+    : config.stripe.priceId;
   try {
     const customer = await ensureCustomer(req.userId);
     const session = await stripe.checkout.sessions.create({
@@ -25,7 +30,7 @@ router.post('/checkout', async (req, res) => {
       ui_mode: 'embedded',
       mode: 'subscription',
       customer,
-      line_items: [{ price: config.stripe.priceId, quantity: 1 }],
+      line_items: [{ price, quantity: 1 }],
       client_reference_id: req.userId,
       allow_promotion_codes: true,
       // Free trial before the first charge (card still collected up front, then
