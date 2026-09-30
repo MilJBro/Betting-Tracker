@@ -34,13 +34,13 @@ const SIZES = [
 // first frame of the in-app splash animation.
 const HTML = `<!doctype html><html><head><meta charset="utf-8"><style>
 html,body{margin:0;height:100%;background:#0b1120}
-.wrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+.wrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
 .bmark{color:#22c55e;display:flex}
-.bword{font-weight:800;font-size:27px;letter-spacing:-0.02em;color:#f8fafc}
+.bword{font-weight:800;font-size:40px;letter-spacing:-0.02em;color:#f8fafc}
 .bword b{color:#22c55e;font-weight:800}
-.bbar{width:116px;height:3px;border-radius:3px;background:rgba(255,255,255,0.14)}
+.bbar{width:150px;height:3px;border-radius:3px;background:rgba(255,255,255,0.14)}
 </style></head><body><div class="wrap">
-<span class="bmark"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.4C10.3 5 7.7 4.5 3.8 5.1v12.7c3.9-0.6 6.5-0.1 8.2 1.3 1.7-1.4 4.3-1.9 8.2-1.3V5.1C16.3 4.5 13.7 5 12 6.4z"/><path d="M12 6.4v12.7"/></svg></span>
+<span class="bmark"><svg viewBox="0 0 24 24" width="58" height="58" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.4C10.3 5 7.7 4.5 3.8 5.1v12.7c3.9-0.6 6.5-0.1 8.2 1.3 1.7-1.4 4.3-1.9 8.2-1.3V5.1C16.3 4.5 13.7 5 12 6.4z"/><path d="M12 6.4v12.7"/></svg></span>
 <span class="bword">Bet<b>books</b></span>
 <span class="bbar"></span>
 </div></body></html>`;
