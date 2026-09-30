@@ -2,8 +2,6 @@
 // listener is attached before the browser fires it (it fires early, often
 // before any React component mounts).
 
-import { markAppReady } from './boot.js';
-
 let deferredPrompt = null;
 const subscribers = new Set();
 const notify = () => subscribers.forEach((fn) => { try { fn(); } catch {} });
@@ -44,18 +42,46 @@ if (typeof window !== 'undefined') {
     deferredPrompt = null;
     notify();
   });
+  // Recover a page that iOS froze/suspended MID-boot. When we return to the app
+  // and the boot splash is STILL up, the first load never finished and any
+  // in-flight startup requests are now dead sockets that will never settle — so
+  // reload once to re-issue them. A fully-loaded page has no #boot element, so
+  // this never throws away a good live page; a sessionStorage guard stops it
+  // looping on a genuinely slow/cold server, and it clears once the app loads
+  // so a later stuck resume can retry. A short delay first lets a page that was
+  // simply mid-load finish booting on its own.
+  let bootRecoveryTimer = null;
+  function armBootRecovery() {
+    if (typeof document === 'undefined') return;
+    if (document.visibilityState !== 'visible') return;
+    if (!document.getElementById('boot')) {
+      try { sessionStorage.removeItem('bt_boot_reload'); } catch {}
+      return;
+    }
+    if (bootRecoveryTimer) return;
+    bootRecoveryTimer = setTimeout(() => {
+      bootRecoveryTimer = null;
+      if (document.visibilityState !== 'visible' || !document.getElementById('boot')) return;
+      try {
+        if (sessionStorage.getItem('bt_boot_reload')) return; // already retried this episode
+        sessionStorage.setItem('bt_boot_reload', '1');
+      } catch {}
+      window.location.reload();
+    }, 2500);
+  }
+
   // The INSTALLED (standalone) app on iOS can restore from the back/forward
   // cache as a frozen, blank shell after being suspended, so there we reload to
-  // boot fresh. A normal browser tab restores from bfcache correctly, so
-  // reloading it just throws away the live page, re-shows the boot splash and
-  // can hang on a waking server — which looked like the app "stuck loading" on
-  // return. So only reload in standalone; in the browser, just make sure no
-  // stale boot splash is left covering the restored page.
+  // boot fresh. A browser tab usually restores correctly, so we only step in
+  // when it comes back visibly stuck on the boot splash (armBootRecovery).
   window.addEventListener('pageshow', (e) => {
     if (!e.persisted) return;
     if (isStandalone()) window.location.reload();
-    else markAppReady();
+    else armBootRecovery();
   });
+  // iOS can also FREEZE a tab (without a bfcache pageshow) and resume it later;
+  // a visibility change is the signal we get for that. Harmless once loaded.
+  document.addEventListener('visibilitychange', armBootRecovery);
 }
 
 // Register the (no-op) service worker so browsers consider the app installable.
