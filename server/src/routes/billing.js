@@ -28,10 +28,12 @@ router.post('/checkout', async (req, res) => {
   try {
     const customer = await ensureCustomer(req.userId);
     const session = await stripe.checkout.sessions.create({
-      // Stripe-hosted Checkout: Stripe serves the payment page and redirects the
-      // customer back to success_url / cancel_url. This is stable across Stripe
-      // API versions and needs no Stripe.js on our side (newer API versions
-      // renamed the embedded mode, which broke the old in-page form).
+      // Embedded Checkout mounts the payment form inside our own page (card
+      // details go straight to Stripe in an iframe, never our server), so the
+      // customer stays in the app. Stripe's newer API versions renamed this mode
+      // 'embedded' -> 'embedded_page', paired with stripe.createEmbeddedCheckoutPage()
+      // on the client.
+      ui_mode: 'embedded_page',
       mode: 'subscription',
       customer,
       line_items: [{ price, quantity: 1 }],
@@ -42,12 +44,11 @@ router.post('/checkout', async (req, res) => {
       ...(config.stripe.trialDays > 0
         ? { subscription_data: { trial_period_days: config.stripe.trialDays } }
         : {}),
-      // Stripe returns the customer here. The Account page reads ?upgrade to show
-      // the confirmation (and refresh the plan) or the "cancelled" notice.
-      success_url: `${config.appUrl}/account?upgrade=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${config.appUrl}/account?upgrade=cancelled`,
+      // After a successful payment Stripe redirects the top window here; the
+      // Account page reads ?upgrade=success to confirm and refresh the plan.
+      return_url: `${config.appUrl}/account?upgrade=success&session_id={CHECKOUT_SESSION_ID}`,
     });
-    res.json({ url: session.url });
+    res.json({ clientSecret: session.client_secret });
   } catch (err) {
     console.error('checkout error', err.type, err.message);
     // Surface Stripe's own request-validation message (safe, user-facing text)
