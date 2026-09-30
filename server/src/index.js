@@ -79,6 +79,9 @@ app.get('/api/pricing', (_req, res) => res.json({
   priceLabel: config.stripe.priceLabel || '',
   priceLabelAnnual: config.stripe.priceLabelAnnual || '',
   annualSave: config.stripe.annualSave || '',
+  // Whether the yearly plan can actually be checked out (a Stripe annual price
+  // ID is configured). The label above shows regardless; this confirms wiring.
+  annualEnabled: !!config.stripe.priceIdAnnual,
   trialDays: config.stripe.trialDays || 0,
   freeScanLimit: FREE_SCAN_LIMIT,
 }));
