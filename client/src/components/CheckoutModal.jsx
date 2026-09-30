@@ -69,20 +69,22 @@ export default function CheckoutModal({ publishableKey, interval = 'monthly', on
   }, [publishableKey]);
 
   return createPortal(
-    <div className="modal-overlay" onMouseDown={onClose}>
-      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
+    <div className="modal-overlay checkout-overlay" onMouseDown={onClose}>
+      <div className="modal checkout-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="row spread" style={{ marginBottom: 14 }}>
           <h2 style={{ margin: 0, fontSize: 20 }}>Upgrade to Pro</h2>
           <button className="btn-ghost btn-sm" type="button" onClick={onClose} aria-label="Close">✕</button>
         </div>
-        {error ? (
-          <div className="error-banner">{error}</div>
-        ) : (
-          <>
-            {loading && <div className="muted" style={{ padding: '24px 0', textAlign: 'center' }}>Loading payment form…</div>}
-            <div ref={mountRef} />
-          </>
-        )}
+        <div className="checkout-body">
+          {error ? (
+            <div className="error-banner">{error}</div>
+          ) : (
+            <>
+              {loading && <div className="muted" style={{ padding: '24px 0', textAlign: 'center' }}>Loading payment form…</div>}
+              <div ref={mountRef} />
+            </>
+          )}
+        </div>
       </div>
     </div>,
     document.body
