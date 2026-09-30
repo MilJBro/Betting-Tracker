@@ -1,37 +1,72 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { loadStripe } from '@stripe/stripe-js';
 import { api } from '../api.js';
 
-// Starts Stripe-hosted Checkout. We ask the server to create a Checkout Session
-// and send the browser to Stripe's secure payment page; Stripe redirects back
-// to the Account page (?upgrade=success|cancelled) when it's done. Card details
-// never touch our server. Shown as a small overlay so there's clear feedback
-// during the hop out to Stripe. `publishableKey` is accepted (and ignored) so
-// existing call sites keep working — hosted Checkout needs no Stripe.js.
-export default function CheckoutModal({ interval = 'monthly', onClose }) {
-  const started = useRef(false);
+// Stripe.js is loaded once (from js.stripe.com) and reused. loadStripe returns
+// a promise, so we keep the promise, not the resolved value.
+let stripePromise = null;
+function getStripe(pk) {
+  if (!stripePromise) stripePromise = loadStripe(pk);
+  return stripePromise;
+}
+
+// The Pro upgrade checkout, rendered inside our own page. Stripe's embedded
+// Checkout mounts a secure iframe here (card details never touch our server),
+// so the customer never leaves the app. Portalled to <body> so the overlay
+// scrolls reliably on iOS, like our other sheets. On a successful payment
+// Stripe redirects the top window to the return_url, which the Account page
+// handles (?upgrade=success).
+export default function CheckoutModal({ publishableKey, interval = 'monthly', onClose }) {
+  const mountRef = useRef(null);
+  const checkoutRef = useRef(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Guard against React StrictMode's double-invoke so we only create one
-    // Checkout Session and redirect once.
-    if (started.current) return;
-    started.current = true;
     let cancelled = false;
 
-    (async () => {
-      try {
-        const { url } = await api.post('/billing/checkout', { interval });
-        if (cancelled) return;
-        if (!url) throw new Error('Could not start checkout. Please try again.');
-        window.location.assign(url);
-      } catch (err) {
-        if (!cancelled) setError(err.message || 'Could not start checkout. Please try again.');
+    async function start() {
+      if (!publishableKey) {
+        setError('Payments aren’t fully configured yet. Please try again later.');
+        setLoading(false);
+        return;
       }
-    })();
+      try {
+        const stripe = await getStripe(publishableKey);
+        if (!stripe) throw new Error('Could not load the payment form.');
+        // Create the checkout session up front so any server-side error (e.g. a
+        // Stripe misconfiguration) surfaces in our own error banner. If we let
+        // Stripe's fetchClientSecret callback make this call, a failure there is
+        // replaced by Stripe's generic "Something went wrong" and the real
+        // reason is lost.
+        const { clientSecret } = await api.post('/billing/checkout', { interval });
+        if (!clientSecret) throw new Error('Could not start checkout. Please try again.');
+        if (cancelled) return;
+        // Newer Stripe API: embedded Checkout is created with
+        // createEmbeddedCheckoutPage (this pairs with the server's
+        // ui_mode: 'embedded_page'). It replaces the older initEmbeddedCheckout.
+        const checkout = await stripe.createEmbeddedCheckoutPage({
+          fetchClientSecret: async () => clientSecret,
+        });
+        if (cancelled) { checkout.destroy(); return; }
+        checkoutRef.current = checkout;
+        checkout.mount(mountRef.current);
+        setLoading(false);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || 'Could not start checkout. Please try again.');
+          setLoading(false);
+        }
+      }
+    }
 
-    return () => { cancelled = true; };
-  }, [interval]);
+    start();
+    return () => {
+      cancelled = true;
+      try { checkoutRef.current?.destroy(); } catch {}
+    };
+  }, [publishableKey]);
 
   return createPortal(
     <div className="modal-overlay" onMouseDown={onClose}>
@@ -43,9 +78,10 @@ export default function CheckoutModal({ interval = 'monthly', onClose }) {
         {error ? (
           <div className="error-banner">{error}</div>
         ) : (
-          <div className="muted" style={{ padding: '24px 0', textAlign: 'center' }}>
-            Taking you to secure checkout…
-          </div>
+          <>
+            {loading && <div className="muted" style={{ padding: '24px 0', textAlign: 'center' }}>Loading payment form…</div>}
+            <div ref={mountRef} />
+          </>
         )}
       </div>
     </div>,
