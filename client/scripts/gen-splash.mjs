@@ -14,13 +14,13 @@
 //   chrome --headless --no-sandbox --disable-gpu \
 //     --remote-debugging-port=9222 --user-data-dir=/tmp/splashgen about:blank &
 //   node scripts/gen-splash.mjs
-// Override the port with CDP_PORT. Writes to public/splash-v2/.
+// Override the port with CDP_PORT. Writes to public/splash-v3/.
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const PORT = process.env.CDP_PORT || 9222;
-const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'splash-v2');
+const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'splash-v3');
 
 // [deviceW, deviceH, cssW, cssH, ratio] — portrait iPhones, SE → 16 Pro Max.
 const SIZES = [
