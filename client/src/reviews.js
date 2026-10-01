@@ -21,4 +21,9 @@ export const REVIEWS = [
     name: 'Andrew',
     detail: 'Early tester',
   },
+  {
+    quote: 'Being up to date with my data shows me where my bad habits are in the long run. Betbooks has helped me cut these out for more consistent wins.',
+    name: 'Darren',
+    detail: 'Early tester',
+  },
 ];
