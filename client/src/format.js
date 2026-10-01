@@ -36,6 +36,22 @@ export function formatStake(amount, currency = 'GBP', staking, opts = {}) {
   return `${money(amount, currency, opts)} · ${u}`;
 }
 
+// An amount split into a main figure and an optional smaller second figure,
+// following the user's "Show stakes & profit as" setting:
+//   Money -> money only        Units -> units first, money second
+//   Both  -> money first, units second
+// With no unit size set it is always money. Every screen uses this so changing
+// the setting (or the unit size) changes them all together.
+export function amountParts(amount, currency = 'GBP', staking, opts = {}) {
+  if (amount == null) return { main: '—', sub: null };
+  const mode = staking?.mode || 'currency';
+  const size = Number(staking?.unitSize) || 0;
+  const m = money(amount, currency, opts);
+  if (mode === 'currency' || size <= 0) return { main: m, sub: null };
+  const u = units(amount / size, opts);
+  return mode === 'units' ? { main: u, sub: m } : { main: m, sub: u };
+}
+
 // Convert a stored decimal odds value into the user's preferred format.
 export function formatOdds(decimal, format = 'decimal') {
   const d = Number(decimal);

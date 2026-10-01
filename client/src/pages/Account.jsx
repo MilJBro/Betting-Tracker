@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { api, setToken, getToken } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -8,7 +8,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import { usePlan } from '../usePlan.js';
 import { getCached, setCached } from '../dataCache.js';
 import { saveFile } from '../download.js';
-import { formatDate, formatStake, money } from '../format.js';
+import { amountParts, currencySymbol, formatDate, formatStake, money, units } from '../format.js';
 import Icon from '../components/Icon.jsx';
 import CheckoutModal from '../components/CheckoutModal.jsx';
 import InstallAppCard from '../components/InstallAppCard.jsx';
@@ -54,6 +54,9 @@ const STAKE_OPTS = [
   { key: 'units', label: 'Units' },
   { key: 'both', label: 'Both' },
 ];
+// Quick picks for what 1 unit is worth (in the account currency).
+const UNIT_PRESETS = [1, 5, 10, 20, 25, 50, 100];
+
 const ODDS_OPTS = [
   { key: 'decimal', label: 'Decimal' },
   { key: 'fractional', label: 'Fractional' },
@@ -92,6 +95,40 @@ export default function Account() {
 
   const currency = settings?.currency || 'GBP';
   const staking = settings?.staking;
+
+  // ---- Units ----------------------------------------------------------------
+  // The unit size is edited as text so typing feels natural ("1.", "12.5"); a
+  // valid positive number is saved after a short pause, on blur, or on Enter.
+  // Saving updates the shared settings straight away, so every stake and profit
+  // figure in the app re-renders in the new unit size without a reload.
+  const [unitText, setUnitText] = useState(() => String(staking?.unitSize ?? ''));
+  const unitFocused = useRef(false);
+  const unitTimer = useRef(null);
+  const latest = useRef({});
+  latest.current = { staking, update };
+  useEffect(() => { if (!unitFocused.current) setUnitText(String(staking?.unitSize ?? '')); }, [staking?.unitSize]);
+  useEffect(() => () => clearTimeout(unitTimer.current), []);
+  const unitNumber = (text) => { const n = Number(text); return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null; };
+  const commitUnit = (text) => {
+    const n = unitNumber(text);
+    const { staking: st, update: up } = latest.current;
+    if (n == null || n === Number(st?.unitSize)) return;
+    up({ staking: { ...st, unitSize: n } });
+  };
+  const onUnitType = (text) => {
+    setUnitText(text);
+    clearTimeout(unitTimer.current);
+    unitTimer.current = setTimeout(() => commitUnit(text), 600);
+  };
+  const onUnitBlur = () => {
+    unitFocused.current = false;
+    clearTimeout(unitTimer.current);
+    if (unitNumber(unitText) != null) commitUnit(unitText);
+    else setUnitText(String(latest.current.staking?.unitSize ?? '')); // invalid: put back the saved value
+  };
+  const pickUnit = (n) => { clearTimeout(unitTimer.current); setUnitText(String(n)); commitUnit(String(n)); };
+  const unitDraft = unitNumber(unitText);
+  const unitShown = unitDraft ?? (Number(staking?.unitSize) || 0);
   const toggle = (key) => setExpanded((e) => (e === key ? null : key));
   // Compact joined date so it fits the stat tile (e.g. "13 Sep 26"). Force a
   // 3-letter month — some locales render "Sept" for September, which is wide
@@ -244,7 +281,7 @@ export default function Account() {
         </div>
 
         <div className="ah-stats">
-          <div><span className="ah-ic"><Icon name="trophy" size={16} /></span><span className="k">Total Profit</span><span className={`v ${profitCls}`}>{stats ? money(stats.netProfit, currency, { signed: true }) : '—'}</span></div>
+          <div><span className="ah-ic"><Icon name="trophy" size={16} /></span><span className="k">Total Profit</span><span className={`v ${profitCls}`}>{stats ? amountParts(stats.netProfit, currency, staking, { signed: true }).main : '—'}</span></div>
           <div><span className="ah-ic"><Icon name="target" size={16} /></span><span className="k">Win Rate</span><span className="v">{stats ? `${stats.winRate}%` : '—'}</span></div>
           <div><span className="ah-ic"><Icon name="coins" size={16} /></span><span className="k">Total Bets</span><span className="v">{stats ? stats.totalBets : '—'}</span></div>
           <div><span className="ah-ic"><Icon name="calendar" size={16} /></span><span className="k">Joined</span><span className="v sm">{joinedShort}</span></div>
@@ -343,6 +380,55 @@ export default function Account() {
         </div>
       </div>
 
+      {/* Units */}
+      <div className="card set-card">
+        <div className="set-head">
+          <span className="set-ic"><Icon name="coins" size={18} /></span>
+          <div className="set-head-txt"><strong>Units</strong><span className="muted">Choose what 1 unit is worth and how amounts are shown.</span></div>
+        </div>
+
+        <div className="set-subhead">Show stakes &amp; profit as<span className="muted">Applies everywhere in the app</span></div>
+        <div className="seg-group" style={{ marginBottom: 6 }}>
+          {STAKE_OPTS.map((o) => (
+            <button key={o.key} type="button" className={`seg ${(staking?.mode || 'currency') === o.key ? 'on' : ''}`}
+              onClick={() => update({ staking: { ...staking, mode: o.key } })}>{o.label}</button>
+          ))}
+        </div>
+
+        <div className="set-subhead" style={{ marginTop: 14 }}>1 unit equals<span className="muted">Used to turn money into units</span></div>
+        <div className="input-prefix" style={{ maxWidth: 170 }}>
+          <span className="input-prefix-sym">{currencySymbol(currency)}</span>
+          <input
+            id="unit-size" type="number" inputMode="decimal" min="0.01" step="0.01"
+            value={unitText} aria-label="1 unit equals" aria-invalid={unitText !== '' && unitDraft == null}
+            onFocus={() => { unitFocused.current = true; }}
+            onChange={(e) => onUnitType(e.target.value)}
+            onBlur={onUnitBlur}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+          />
+        </div>
+        {unitText !== '' && unitDraft == null && (
+          <div className="muted" style={{ fontSize: 12.5, marginTop: 6, color: 'var(--loss)' }}>Enter an amount above zero.</div>
+        )}
+        <div className="ftog-row" style={{ marginTop: 10 }}>
+          {UNIT_PRESETS.map((n) => (
+            <button key={n} type="button" className={Number(staking?.unitSize) === n ? 'ftog on' : 'ftog'}
+              aria-pressed={Number(staking?.unitSize) === n} onClick={() => pickUnit(n)}>
+              {currencySymbol(currency)}{n}
+            </button>
+          ))}
+        </div>
+
+        <p className="muted" style={{ fontSize: 12.5, margin: '12px 0 0' }}>
+          {unitShown > 0
+            ? <>Example: a {money(25, currency)} stake is <strong style={{ color: 'var(--text)' }}>{units(25 / unitShown)}</strong>, and {money(60, currency, { signed: true })} profit is <strong style={{ color: 'var(--text)' }}>{units(60 / unitShown, { signed: true })}</strong>.</>
+            : 'Set an amount above to see units.'}
+        </p>
+        <p className="muted" style={{ fontSize: 12.5, margin: '6px 0 0' }}>
+          Changing this updates every stake and profit figure straight away. Your bets are saved in money, so past bets are shown in the new unit size too.
+        </p>
+      </div>
+
       {/* App preferences */}
       <div className="card set-card">
         <div className="set-head">
@@ -362,13 +448,6 @@ export default function Account() {
           <span className="pref-label">Currency</span>
           <select className="pref-select" value={currency} onChange={(e) => update({ currency: e.target.value })}>
             {CURRENCY_OPTS.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
-          </select>
-        </div>
-        <div className="pref-row">
-          <span className="sr-ic"><Icon name="trophy" size={17} /></span>
-          <span className="pref-label">Show profit as</span>
-          <select className="pref-select" value={staking?.mode || 'currency'} onChange={(e) => update({ staking: { ...staking, mode: e.target.value } })}>
-            {STAKE_OPTS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
           </select>
         </div>
         <div className="pref-row">

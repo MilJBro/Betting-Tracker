@@ -1,4 +1,4 @@
-import { money, formatStake, units } from '../format.js';
+import { formatStake, amountParts } from '../format.js';
 
 // Metadata for every possible stat card the user can enable.
 export const STAT_META = {
@@ -21,23 +21,21 @@ export default function StatCard({ statKey, stats, currency, staking }) {
   let sub = '';
   let subCls = '';
 
-  // Show a unit equivalent under money tiles when a unit size is set and the
-  // display is in currency (in units/both mode the value already shows units).
-  const unitSize = Number(staking?.unitSize) || 0;
-  const showUnits = (staking?.mode || 'currency') === 'currency' && unitSize > 0;
 
   switch (meta.kind) {
     case 'money-signed': {
       const v = stats[statKey] ?? 0;
-      value = formatStake(v, currency, staking, { signed: true });
+      const a = amountParts(v, currency, staking, { signed: true });
+      value = a.main;
       cls = v > 0 ? 'pos' : v < 0 ? 'neg' : '';
-      if (showUnits) { sub = units(v / unitSize, { signed: true }); subCls = cls; }
+      if (a.sub) { sub = a.sub; subCls = cls; }
       break;
     }
     case 'money': {
       const v = stats[statKey] ?? 0;
-      value = formatStake(v, currency, staking);
-      if (showUnits) sub = units(v / unitSize);
+      const a = amountParts(v, currency, staking);
+      value = a.main;
+      if (a.sub) sub = a.sub;
       break;
     }
     case 'percent': {
