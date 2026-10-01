@@ -24,14 +24,48 @@ export function units(u, { signed = false } = {}) {
   return `${sign}${val}u`;
 }
 
+// The unit size in force on a given day. The server keeps a dated history
+// (staking.unitHistory, oldest first) so past bets keep the unit size they were
+// placed under; with no history this is just the current size. Mirrors the
+// server's lib/units.js.
+export function unitSizeAt(staking, when) {
+  const hist = Array.isArray(staking?.unitHistory) ? staking.unitHistory : [];
+  const current = Number(staking?.unitSize) || 0;
+  if (!hist.length) return current;
+  const day = String(when || '').slice(0, 10);
+  let size = Number(hist[0].size) || current;
+  for (const e of hist) if (e.from && day >= e.from) size = Number(e.size) || size;
+  return size;
+}
+
+// A copy of a bet list with stakes/payouts re-expressed in units (each bet at
+// the unit size it was placed under). Profit is linear in stake and payout, so
+// running the usual metrics over this gives unit totals that add up bet by bet.
+export function toUnitBets(list, staking) {
+  return list.map((b) => {
+    const u = unitSizeAt(staking, b.placed_at);
+    if (!(u > 0)) return { ...b, stake: 0, payout: b.payout == null ? b.payout : 0 };
+    return { ...b, stake: b.stake / u, payout: b.payout == null || b.payout === '' ? b.payout : b.payout / u };
+  });
+}
+
+// How an amount is expressed in units. Pass `units` for a figure already summed
+// in units (totals); `at` (a bet's date) to use the size that applied then;
+// otherwise the current size.
+function unitValue(amount, staking, opts) {
+  if (opts.units != null) return Number.isFinite(Number(opts.units)) ? Number(opts.units) : null;
+  const size = opts.at ? unitSizeAt(staking, opts.at) : Number(staking?.unitSize) || 0;
+  return size > 0 ? amount / size : null;
+}
+
 // Format a monetary amount according to the user's staking preference:
-// currency (£), units (Nu), or both. `unitSize` is the £ value of 1 unit.
+// currency (£), units (Nu), or both.
 export function formatStake(amount, currency = 'GBP', staking, opts = {}) {
   if (amount == null) return '—';
   const mode = staking?.mode || 'currency';
-  const size = Number(staking?.unitSize) || 0;
-  if (mode === 'currency' || size <= 0) return money(amount, currency, opts);
-  const u = units(amount / size, opts);
+  const uv = mode === 'currency' ? null : unitValue(amount, staking, opts);
+  if (uv == null) return money(amount, currency, opts);
+  const u = units(uv, opts);
   if (mode === 'units') return u;
   return `${money(amount, currency, opts)} · ${u}`;
 }
@@ -45,10 +79,10 @@ export function formatStake(amount, currency = 'GBP', staking, opts = {}) {
 export function amountParts(amount, currency = 'GBP', staking, opts = {}) {
   if (amount == null) return { main: '—', sub: null };
   const mode = staking?.mode || 'currency';
-  const size = Number(staking?.unitSize) || 0;
   const m = money(amount, currency, opts);
-  if (mode === 'currency' || size <= 0) return { main: m, sub: null };
-  const u = units(amount / size, opts);
+  const uv = mode === 'currency' ? null : unitValue(amount, staking, opts);
+  if (uv == null) return { main: m, sub: null };
+  const u = units(uv, opts);
   return mode === 'units' ? { main: u, sub: m } : { main: m, sub: u };
 }
 

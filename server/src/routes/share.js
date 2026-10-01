@@ -5,6 +5,7 @@ import { requireAuth } from '../lib/auth.js';
 import { isPro } from '../lib/plan.js';
 import { mergeSettings } from '../lib/defaults.js';
 import { computeStats } from '../lib/stats.js';
+import { unitSizeAt, withUnits } from '../lib/units.js';
 import { resolveTrackerId, getTracker } from '../lib/trackers.js';
 
 const router = Router();
@@ -65,7 +66,7 @@ router.get('/public/:publicId', (req, res) => {
     .prepare('SELECT * FROM bets WHERE user_id = ? AND tracker_id = ?')
     .all(share.user_id, trackerId)
     .map((r) => ({ ...r, tags: r.tags ? JSON.parse(r.tags) : [] }));
-  const stats = computeStats(rows);
+  const stats = computeStats(withUnits(rows, settings.staking));
 
   // Only reveal what the user opted into sharing.
   const publicStats = {
@@ -73,12 +74,15 @@ router.get('/public/:publicId', (req, res) => {
     winRate: sharing.showWinRate ? stats.winRate : null,
     roi: sharing.showRoi ? stats.roi : null,
     netProfit: sharing.showProfit ? stats.netProfit : null,
+    netProfitU: sharing.showProfit ? stats.netProfitU : null,
     totalStaked: sharing.showStakes ? stats.totalStaked : null,
+    totalStakedU: sharing.showStakes ? stats.totalStakedU : null,
     timeline: sharing.showProfit ? stats.timeline : [],
     sportBreakdown: stats.sportBreakdown.map((s) => ({
       sport: s.sport,
       bets: s.bets,
       profit: sharing.showProfit ? s.profit : null,
+      profitU: sharing.showProfit ? s.profitU : null,
       roi: sharing.showRoi ? s.roi : null,
     })),
   };
@@ -94,6 +98,7 @@ router.get('/public/:publicId', (req, res) => {
           odds: b.odds,
           status: b.status,
           stake: sharing.showStakes ? b.stake : null,
+          stakeUnitSize: sharing.showStakes ? unitSizeAt(settings.staking, b.placed_at) : null,
         }))
     : [];
 

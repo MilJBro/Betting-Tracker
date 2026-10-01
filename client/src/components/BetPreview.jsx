@@ -49,12 +49,12 @@ export default function BetPreview({ bet, currency, staking, oddsFormat = 'decim
           <Row label="Event" value={bet.event} />
           <Row label="Bet type" value={bet.bet_type} />
           <Row label="Date" value={formatDate(bet.placed_at)} />
-          <Row label="Stake" value={formatStake(bet.stake, currency, staking)} />
+          <Row label="Stake" value={formatStake(bet.stake, currency, staking, { at: bet.placed_at })} />
           <Row label="Odds" value={Number(bet.odds) > 0 ? formatOdds(bet.odds, oddsFormat) : null} />
           <Row label="Winnings boost" value={Number(bet.boost) > 0 ? `+${Math.round(Number(bet.boost) * 100)}%` : null} />
           <Row label="Status" value={bet.status ? bet.status[0].toUpperCase() + bet.status.slice(1) : null} />
-          <Row label="Return" value={bet.payout != null && bet.payout !== '' ? formatStake(bet.payout, currency, staking) : null} />
-          <Row label="Profit" value={profit == null ? null : formatStake(profit, currency, staking, { signed: true })} />
+          <Row label="Return" value={bet.payout != null && bet.payout !== '' ? formatStake(bet.payout, currency, staking, { at: bet.placed_at }) : null} />
+          <Row label="Profit" value={profit == null ? null : formatStake(profit, currency, staking, { signed: true, at: bet.placed_at })} />
           <Row label="Bookmaker" value={bet.bookmaker} />
           <Row label="Tipster" value={bet.tipster} />
         </div>

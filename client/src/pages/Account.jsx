@@ -112,7 +112,16 @@ export default function Account() {
     const n = unitNumber(text);
     const { staking: st, update: up } = latest.current;
     if (n == null || n === Number(st?.unitSize)) return;
-    up({ staking: { ...st, unitSize: n } });
+    const d = new Date();
+    const unitFrom = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    // New size applies from today; the server keeps the earlier sizes for past bets.
+    up({ staking: { ...st, unitSize: n, unitFrom } });
+  };
+  const [confirmAll, setConfirmAll] = useState(false);
+  const applyToAll = () => {
+    const { staking: st, update: up } = latest.current;
+    up({ staking: { ...st, unitScope: 'all' } });
+    setConfirmAll(false);
   };
   const onUnitType = (text) => {
     setUnitText(text);
@@ -279,7 +288,7 @@ export default function Account() {
         </div>
 
         <div className="ah-stats">
-          <div><span className="ah-ic"><Icon name="trophy" size={16} /></span><span className="k">Total Profit</span><span className={`v ${profitCls}`}>{stats ? amountParts(stats.netProfit, currency, staking, { signed: true }).main : '—'}</span></div>
+          <div><span className="ah-ic"><Icon name="trophy" size={16} /></span><span className="k">Total Profit</span><span className={`v ${profitCls}`}>{stats ? amountParts(stats.netProfit, currency, staking, { signed: true, units: stats.netProfitU }).main : '—'}</span></div>
           <div><span className="ah-ic"><Icon name="target" size={16} /></span><span className="k">Win Rate</span><span className="v">{stats ? `${stats.winRate}%` : '—'}</span></div>
           <div><span className="ah-ic"><Icon name="coins" size={16} /></span><span className="k">Total Bets</span><span className="v">{stats ? stats.totalBets : '—'}</span></div>
           <div><span className="ah-ic"><Icon name="calendar" size={16} /></span><span className="k">Joined</span><span className="v sm">{joinedShort}</span></div>
@@ -415,8 +424,38 @@ export default function Account() {
             : 'Set an amount above to see units.'}
         </p>
         <p className="muted" style={{ fontSize: 12.5, margin: '6px 0 0' }}>
-          Changing this updates every stake and profit figure straight away. Your bets are saved in money, so past bets are shown in the new unit size too.
+          Changing this updates your figures straight away. The new size applies to bets from today on, and your past bets keep the unit size they were placed under, so your record doesn't change.
         </p>
+        {(staking?.unitHistory?.length ?? 0) > 1 && (
+          <div className="unit-hist" style={{ marginTop: 14 }}>
+            <div className="set-subhead" style={{ marginTop: 0 }}>Your unit sizes<span className="muted">Each bet uses the size from the day it was placed</span></div>
+            <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0, display: 'grid', gap: 6, fontSize: 13.5 }}>
+              {staking.unitHistory.map((e, i, all) => (
+                <li key={(e.from || 'start') + e.size} className="row spread">
+                  <strong>1u = {money(e.size, currency)}</strong>
+                  <span className="muted">
+                    {i === 0 ? `up to ${formatDate(all[1].from)}` : i === all.length - 1 ? `from ${formatDate(e.from)}` : `${formatDate(e.from)} – ${formatDate(all[i + 1].from)}`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {!confirmAll ? (
+              <button type="button" className="btn-ghost" style={{ marginTop: 12 }} onClick={() => setConfirmAll(true)}>
+                Use {money(staking.unitSize, currency)} for all past bets too
+              </button>
+            ) : (
+              <div className="card" style={{ marginTop: 12, padding: 12 }}>
+                <p style={{ margin: '0 0 10px', fontSize: 13.5 }}>
+                  This re-expresses every past bet at 1u = {money(staking.unitSize, currency)}. Your pounds don't change, but past unit figures will. Continue?
+                </p>
+                <div className="row" style={{ gap: 8 }}>
+                  <button type="button" className="btn-primary" onClick={applyToAll}>Yes, change all</button>
+                  <button type="button" className="btn-ghost" onClick={() => setConfirmAll(false)}>Cancel</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* App preferences */}

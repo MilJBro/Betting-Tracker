@@ -69,14 +69,14 @@ export default function Share() {
           <div className="stat">
             <div className="label">Net Profit</div>
             <div className={`value ${stats.netProfit > 0 ? 'pos' : stats.netProfit < 0 ? 'neg' : ''}`}>
-              {formatStake(stats.netProfit, currency, staking, { signed: true })}
+              {formatStake(stats.netProfit, currency, staking, { signed: true, units: stats.netProfitU })}
             </div>
           </div>
         )}
         {reveal.stakes && stats.totalStaked != null && (
           <div className="stat">
             <div className="label">Total Staked</div>
-            <div className="value">{formatStake(stats.totalStaked, currency, staking)}</div>
+            <div className="value">{formatStake(stats.totalStaked, currency, staking, { units: stats.totalStakedU })}</div>
           </div>
         )}
       </div>
@@ -104,7 +104,7 @@ export default function Share() {
                     {reveal.roi && <td className={s.roi > 0 ? 'pos' : s.roi < 0 ? 'neg' : ''}>{s.roi}%</td>}
                     {reveal.profit && (
                       <td className={s.profit > 0 ? 'pos' : s.profit < 0 ? 'neg' : ''}>
-                        {formatStake(s.profit, currency, staking, { signed: true })}
+                        {formatStake(s.profit, currency, staking, { signed: true, units: s.profitU })}
                       </td>
                     )}
                   </tr>
@@ -130,7 +130,7 @@ export default function Share() {
                     <td>{b.sport || '—'}</td>
                     <td>{b.selection || '—'}</td>
                     <td>{formatOdds(b.odds)}</td>
-                    {reveal.stakes && <td>{b.stake != null ? formatStake(b.stake, currency, staking) : '—'}</td>}
+                    {reveal.stakes && <td>{b.stake != null ? formatStake(b.stake, currency, staking, { units: b.stakeUnitSize > 0 ? b.stake / b.stakeUnitSize : null }) : '—'}</td>}
                     <td><span className={`badge ${b.status}`}>{b.status}</span></td>
                   </tr>
                 ))}

@@ -13,7 +13,7 @@ import { settlePayout } from '../settle.js';
 import { getCached, setCached, subscribeInvalidate } from '../dataCache.js';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
-import { formatStake, formatOdds, formatDate, amountParts } from '../format.js';
+import { formatStake, formatOdds, formatDate, amountParts, unitSizeAt } from '../format.js';
 import { betsToCsv, csvToBets, downloadCsv } from '../csv.js';
 
 // Common betting sports offered in the Add-bet form's sport field so there's
@@ -30,6 +30,14 @@ function profitOf(b) {
   if (b.status === 'placed') return (b.payout ?? 0) - b.stake; // each-way place part
   if (b.status === 'void' || b.status === 'cashout') return (b.payout ?? b.stake) - b.stake;
   return null;
+}
+
+// A bet's profit in units, at the unit size it was placed under (so totals stay
+// right after the user changes their unit size).
+function profitUnitsOf(b, staking) {
+  const p = profitOf(b);
+  const u = unitSizeAt(staking, b.placed_at);
+  return p == null || !(u > 0) ? 0 : p / u;
 }
 
 const SETTLED = ['won', 'lost', 'void', 'cashout', 'placed'];
@@ -186,6 +194,7 @@ export default function Bets() {
   // each bet), so there's no extra day-level nesting to wade through.
   const grouped = useMemo(() => {
     const sumProfit = (list) => list.reduce((s, b) => s + (profitOf(b) || 0), 0);
+    const sumProfitU = (list) => list.reduce((s, b) => s + profitUnitsOf(b, staking), 0);
     const months = new Map();
     for (const b of filtered) {
       const date = b.placed_at || '';
@@ -194,9 +203,9 @@ export default function Bets() {
       months.get(monthKey).push(b);
     }
     return [...months.entries()].map(([month, list]) => ({
-      month, bets: list, count: list.length, profit: sumProfit(list),
+      month, bets: list, count: list.length, profit: sumProfit(list), profitU: sumProfitU(list),
     }));
-  }, [filtered]);
+  }, [filtered, staking]);
 
   // Months start collapsed; we track only what the user has opened. State resets
   // when leaving the tab (the page unmounts), so returning always shows months
@@ -226,6 +235,7 @@ export default function Bets() {
     return out.map((d) => ({
       ...d,
       profit: d.bets.reduce((s, b) => s + (profitOf(b) || 0), 0),
+      profitU: d.bets.reduce((s, b) => s + profitUnitsOf(b, staking), 0),
     }));
   };
 
@@ -250,6 +260,8 @@ export default function Bets() {
     const staked = filtered.reduce((s, b) => s + b.stake, 0);
     const settledStake = settled.reduce((s, b) => s + b.stake, 0);
     const profit = settled.reduce((s, b) => s + (profitOf(b) || 0), 0);
+    const profitU = settled.reduce((s, b) => s + profitUnitsOf(b, staking), 0);
+    const stakedU = filtered.reduce((s, b) => { const u = unitSizeAt(staking, b.placed_at); return s + (u > 0 ? b.stake / u : 0); }, 0);
     const roi = settledStake > 0 ? (profit / settledStake) * 100 : 0;
     const wins = filtered.filter((b) => b.status === 'won').length;
     const losses = filtered.filter((b) => b.status === 'lost').length;
@@ -258,13 +270,15 @@ export default function Bets() {
     return {
       count: filtered.length,
       staked,
+      stakedU,
       profit,
+      profitU,
       roi: Math.round(roi * 10) / 10,
       wins,
       losses,
       winRate,
     };
-  }, [filtered]);
+  }, [filtered, staking]);
 
   const activeFilters = !!(sport || bookie || from || to || search.trim());
   function clearFilters() {
@@ -419,11 +433,11 @@ export default function Bets() {
         )}
         {col('bookmaker') && <td>{b.bookmaker || '—'}</td>}
         {col('tipster') && <td>{b.tipster || '—'}</td>}
-        {col('stake') && <td>{formatStake(b.stake, currency, staking)}</td>}
+        {col('stake') && <td>{formatStake(b.stake, currency, staking, { at: b.placed_at })}</td>}
         {col('odds') && <td>{formatOdds(b.odds, oddsFormat)}</td>}
         {col('status') && <td><span className={`badge ${b.status}`}>{b.status}</span></td>}
         <td className={p > 0 ? 'pos' : p < 0 ? 'neg' : 'muted'}>
-          {p == null ? '—' : formatStake(p, currency, staking, { signed: true })}
+          {p == null ? '—' : formatStake(p, currency, staking, { signed: true, at: b.placed_at })}
         </td>
         <td>
           <div className="row" style={{ flexWrap: 'nowrap' }}>
@@ -452,9 +466,9 @@ export default function Bets() {
     ].filter(Boolean).join(' · ');
     const selecting = selectMode && b.status === 'pending';
     const cls = p > 0 ? 'pos' : p < 0 ? 'neg' : 'muted';
-    const profitParts = p == null ? null : amountParts(p, currency, staking, { signed: true });
+    const profitParts = p == null ? null : amountParts(p, currency, staking, { signed: true, at: b.placed_at });
     const sub = [
-      col('stake') && formatStake(b.stake, currency, staking),
+      col('stake') && formatStake(b.stake, currency, staking, { at: b.placed_at }),
       col('odds') && Number(b.odds) > 0 ? `@ ${formatOdds(b.odds, oddsFormat)}` : null,
     ].filter(Boolean).join(' ');
     return (
@@ -506,9 +520,9 @@ export default function Bets() {
   const profitClass = (v) => (v > 0 ? 'pos' : v < 0 ? 'neg' : 'muted');
   // Month/day-header profit: the main figure only (money or units per the
   // Show-as setting), so the header stays on one line.
-  const signedProfit = (v) => amountParts(v, currency, staking, { signed: true }).main;
-  const heroProfit = amountParts(summary.profit, currency, staking, { signed: true });
-  const heroStaked = amountParts(summary.staked, currency, staking);
+  const signedProfit = (v, u) => amountParts(v, currency, staking, { signed: true, units: u }).main;
+  const heroProfit = amountParts(summary.profit, currency, staking, { signed: true, units: summary.profitU });
+  const heroStaked = amountParts(summary.staked, currency, staking, { units: summary.stakedU });
 
   return (
     <div className="main">
@@ -719,14 +733,14 @@ export default function Bets() {
                         <td colSpan={20}>
                           <div className="day-head-inner">
                             <span>{formatMonth(mo.month)} · {countLabel(mo.count)}</span>
-                            <span className={profitClass(mo.profit)}>{signedProfit(mo.profit)}</span>
+                            <span className={profitClass(mo.profit)}>{signedProfit(mo.profit, mo.profitU)}</span>
                           </div>
                         </td>
                       </tr>
                       {!moCollapsed && (
                         <>
                           {dayGroups
-                            ? visibleDays.map(({ day, bets: dayBets, profit: dayProfit }) => {
+                            ? visibleDays.map(({ day, bets: dayBets, profit: dayProfit, profitU: dayProfitU }) => {
                                 const dk = mo.month + '|' + day;
                                 const dopen = openDays.has(dk);
                                 return (
@@ -735,7 +749,7 @@ export default function Bets() {
                                       <td colSpan={20}>
                                         <div className="day-head-inner">
                                           <span><span className="day-chevron" aria-hidden>{dopen ? '▾' : '▸'}</span> {formatDayLabel(day)} · {countLabel(dayBets.length)}</span>
-                                          {isPro && <span className={profitClass(dayProfit)}>{signedProfit(dayProfit)}</span>}
+                                          {isPro && <span className={profitClass(dayProfit)}>{signedProfit(dayProfit, dayProfitU)}</span>}
                                         </div>
                                       </td>
                                     </tr>
@@ -774,12 +788,12 @@ export default function Bets() {
                       <span className="day-chevron" aria-hidden>{moCollapsed ? '▸' : '▾'}</span>
                       {formatMonth(mo.month)} <span className="muted" style={{ fontWeight: 600 }}>· {countLabel(mo.count)}</span>
                     </span>
-                    <span className={profitClass(mo.profit)} style={{ fontWeight: 800 }}>{signedProfit(mo.profit)}</span>
+                    <span className={profitClass(mo.profit)} style={{ fontWeight: 800 }}>{signedProfit(mo.profit, mo.profitU)}</span>
                   </button>
                   {!moCollapsed && (
                     <div className="month-bets">
                       {dayGroups
-                        ? visibleDays.map(({ day, bets: dayBets, profit: dayProfit }) => {
+                        ? visibleDays.map(({ day, bets: dayBets, profit: dayProfit, profitU: dayProfitU }) => {
                             const dk = mo.month + '|' + day;
                             const dopen = openDays.has(dk);
                             return (
@@ -790,7 +804,7 @@ export default function Bets() {
                                     {formatDayLabel(day)}
                                     <span className="muted" style={{ fontWeight: 600 }}> · {countLabel(dayBets.length)}</span>
                                   </span>
-                                  {isPro && <span className={profitClass(dayProfit)} style={{ fontWeight: 700 }}>{signedProfit(dayProfit)}</span>}
+                                  {isPro && <span className={profitClass(dayProfit)} style={{ fontWeight: 700 }}>{signedProfit(dayProfit, dayProfitU)}</span>}
                                 </button>
                                 {dopen && dayBets.map(renderCard)}
                               </div>

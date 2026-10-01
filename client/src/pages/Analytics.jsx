@@ -46,7 +46,7 @@ function Bars({ rows, currency, staking }) {
           <div className="row spread" style={{ fontSize: 13.5 }}>
             <span style={{ fontWeight: 600 }}>{r.label} <span className="muted" style={{ fontWeight: 500 }}>· {r.bets} · {r.winRate}% WR</span></span>
             <span className={r.profit > 0 ? 'pos' : r.profit < 0 ? 'neg' : 'muted'} style={{ fontWeight: 700 }}>
-              {formatStake(r.profit, currency, staking, { signed: true })} <span className="muted" style={{ fontWeight: 500 }}>({r.roi}%)</span>
+              {formatStake(r.profit, currency, staking, { signed: true, units: r.profitU })} <span className="muted" style={{ fontWeight: 500 }}>({r.roi}%)</span>
             </span>
           </div>
           <div className="bar"><i style={{ width: `${Math.max(4, (Math.abs(r.profit) / max) * 100)}%`, background: r.profit >= 0 ? 'var(--win)' : 'var(--loss)' }} /></div>
@@ -220,11 +220,11 @@ export default function Analytics() {
   const o = a.overall;
   const pcls = (v) => (v > 0 ? 'pos' : v < 0 ? 'neg' : '');
   const avgStake = o.bets ? o.staked / o.bets : 0;
-  const unitsOf = (v) => units(showUnits ? v / unitSize : 0, { signed: true });
+  const avgStakeU = o.bets ? (o.stakedU || 0) / o.bets : 0;
 
   // Hero primary/secondary figures.
-  const heroBig = ap(o.profit, { signed: true }).main;
-  const heroSub = ap(o.profit, { signed: true }).sub;
+  const heroBig = ap(o.profit, { signed: true, units: o.profitU }).main;
+  const heroSub = ap(o.profit, { signed: true, units: o.profitU }).sub;
 
   // Cumulative daily trend for the hero sparkline.
   let run = 0;
@@ -312,7 +312,7 @@ export default function Analytics() {
         <div className="ph-stats">
           <div><span className="k">ROI</span><span className={`v ${pcls(o.roi)}`}>{o.roi}%</span></div>
           <div><span className="k">Win rate</span><span className="v">{o.winRate}%</span></div>
-          <div><span className="k">Avg stake</span><span className="v">{formatStake(avgStake, currency, staking)}</span></div>
+          <div><span className="k">Avg stake</span><span className="v">{formatStake(avgStake, currency, staking, { units: avgStakeU })}</span></div>
           <div><span className="k">Total bets</span><span className="v">{o.bets}</span></div>
         </div>
       </div>
@@ -344,7 +344,7 @@ export default function Analytics() {
               <div className="bar"><i style={{ width: `${unitFill}%`, background: up ? 'var(--win)' : 'var(--loss)' }} /></div>
             </div>
             <div className="brk-val">
-              <span className={`v ${pcls(o.profit)}`}>{unitsOf(o.profit)}</span>
+              <span className={`v ${pcls(o.profit)}`}>{units(o.profitU || 0, { signed: true })}</span>
               <span className="s">Net units</span>
             </div>
           </div>
@@ -356,9 +356,9 @@ export default function Analytics() {
             <div className="brk-mid">
               <div className="brk-top">
                 <span className="brk-label">Profit by Sport</span>
-                <span className={`brk-amt ${pcls(o.profit)}`}>{formatStake(o.profit, currency, staking, { signed: true })} <Icon name="chevron" size={13} className="rt" /></span>
+                <span className={`brk-amt ${pcls(o.profit)}`}>{formatStake(o.profit, currency, staking, { signed: true, units: o.profitU })} <Icon name="chevron" size={13} className="rt" /></span>
               </div>
-              <div className="brk-sub">Best: {bestSport.sport} ({formatStake(bestSport.profit, currency, staking, { signed: true })})</div>
+              <div className="brk-sub">Best: {bestSport.sport} ({formatStake(bestSport.profit, currency, staking, { signed: true, units: bestSport.profitU })})</div>
             </div>
           </button>
         )}
@@ -369,9 +369,9 @@ export default function Analytics() {
             <div className="brk-mid">
               <div className="brk-top">
                 <span className="brk-label">Profit by Bookmaker</span>
-                <span className={`brk-amt ${pcls(o.profit)}`}>{formatStake(o.profit, currency, staking, { signed: true })} <Icon name="chevron" size={13} className="rt" /></span>
+                <span className={`brk-amt ${pcls(o.profit)}`}>{formatStake(o.profit, currency, staking, { signed: true, units: o.profitU })} <Icon name="chevron" size={13} className="rt" /></span>
               </div>
-              <div className="brk-sub">Best: {bestBook.bookmaker} ({formatStake(bestBook.profit, currency, staking, { signed: true })})</div>
+              <div className="brk-sub">Best: {bestBook.bookmaker} ({formatStake(bestBook.profit, currency, staking, { signed: true, units: bestBook.profitU })})</div>
             </div>
           </button>
         )}
@@ -406,8 +406,8 @@ export default function Analytics() {
           <div className="trend-box">
             <div className="tb-head"><Icon name="trophy" size={15} /> Biggest moves</div>
             <div className="tb-pair">
-              <div><span className="k">Biggest win</span><span className="v pos">{ap(a.biggestWin, { signed: true }).main}</span></div>
-              <div><span className="k">Biggest loss</span><span className="v neg">{ap(a.biggestLoss, { signed: true }).main}</span></div>
+              <div><span className="k">Biggest win</span><span className="v pos">{ap(a.biggestWin, { signed: true, units: a.biggestWinU }).main}</span></div>
+              <div><span className="k">Biggest loss</span><span className="v neg">{ap(a.biggestLoss, { signed: true, units: a.biggestLossU }).main}</span></div>
             </div>
           </div>
         </div>

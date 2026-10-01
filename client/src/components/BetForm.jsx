@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { currencySymbol, money, formatOdds, parseOdds } from '../format.js';
+import { currencySymbol, money, formatOdds, parseOdds, unitSizeAt } from '../format.js';
 import Icon from './Icon.jsx';
 import { sportLayout } from '../sportLayout.js';
 
@@ -90,7 +90,9 @@ const EDITABLE_FIELDS = [
 ];
 
 export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], defaultDate, onSetUnitSize, onToggleField, onSave, onClose }) {
-  const unitSize = Number(staking?.unitSize) || 0;
+  // An existing bet is shown in the unit size it was placed under (the user may
+  // have changed their unit size since); a new bet uses the current size.
+  const unitSize = isEdit && initial?.placed_at ? unitSizeAt(staking, initial.placed_at) : Number(staking?.unitSize) || 0;
   const [editUnit, setEditUnit] = useState(false);
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
   const toUnits = (money) =>
@@ -687,7 +689,7 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
                     </div>
                     <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
                       {stakeHint()}
-                      {onSetUnitSize && (
+                      {onSetUnitSize && !isEdit && (
                         <>
                           {' · '}
                           <button type="button" className="linklike" onClick={() => setEditUnit((v) => !v)}>
@@ -696,7 +698,7 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
                         </>
                       )}
                     </div>
-                    {onSetUnitSize && editUnit && (
+                    {onSetUnitSize && !isEdit && editUnit && (
                       <div className="row" style={{ gap: 8, marginTop: 8, alignItems: 'center' }}>
                         <span className="muted" style={{ fontSize: 13 }}>1 unit =</span>
                         <span className="muted" style={{ fontWeight: 700 }}>{currencySymbol(currency)}</span>

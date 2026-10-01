@@ -16,6 +16,13 @@ function profitOf(bet) {
   return 0; // pending
 }
 
+// Unit twins of the money figures. Each bet may carry `_u` (the unit size it was
+// placed under; see lib/units.js), so unit totals are summed bet by bet and stay
+// correct after the user changes their unit size. 0 when no size is set.
+const uOf = (b, v) => (b._u > 0 ? v / b._u : 0);
+const sumU = (rows, f) => rows.reduce((s, b) => s + uOf(b, f(b)), 0);
+const r2 = (n) => Number(n.toFixed(2));
+
 export function computeStats(bets) {
   const settled = bets.filter((b) => SETTLED.includes(b.status));
   const pending = bets.filter((b) => b.status === 'pending');
@@ -35,6 +42,7 @@ export function computeStats(bets) {
     0
   );
   const pendingStake = pending.reduce((s, b) => s + b.stake, 0);
+  const bestBet = settled.reduce((best, b) => (profitOf(b) > (best ? profitOf(best) : 0) ? b : best), null);
 
   // Current streak based on chronological order of decisive bets.
   const ordered = settled
@@ -69,8 +77,9 @@ export function computeStats(bets) {
   const bySport = {};
   for (const b of settled) {
     const key = b.sport || 'Uncategorised';
-    if (!bySport[key]) bySport[key] = { sport: key, profit: 0, bets: 0, staked: 0 };
+    if (!bySport[key]) bySport[key] = { sport: key, profit: 0, profitU: 0, bets: 0, staked: 0 };
     bySport[key].profit += profitOf(b);
+    bySport[key].profitU += uOf(b, profitOf(b));
     bySport[key].staked += b.stake;
     bySport[key].bets += 1;
   }
@@ -78,20 +87,25 @@ export function computeStats(bets) {
     .map((s) => ({
       ...s,
       profit: Number(s.profit.toFixed(2)),
+      profitU: r2(s.profitU),
       roi: s.staked > 0 ? Number(((s.profit / s.staked) * 100).toFixed(1)) : 0,
     }))
     .sort((a, b) => b.profit - a.profit);
 
   return {
     netProfit: Number(netProfit.toFixed(2)),
+    netProfitU: r2(sumU(settled, profitOf)),
     totalStaked: Number(totalStaked.toFixed(2)),
+    totalStakedU: r2(sumU(settled, (b) => b.stake)),
     roi: Number(roi.toFixed(1)),
     winRate: Number(winRate.toFixed(1)),
     totalBets: bets.length,
     settledBets: settled.length,
     pending: pending.length,
     pendingStake: Number(pendingStake.toFixed(2)),
+    pendingStakeU: r2(sumU(pending, (b) => b.stake)),
     biggestWin: Number(biggestWin.toFixed(2)),
+    biggestWinU: bestBet ? r2(uOf(bestBet, profitOf(bestBet))) : 0,
     currentStreak: streak,
     streakType,
     timeline,
@@ -130,7 +144,9 @@ function summarise(rows) {
   return {
     bets: rows.length,
     staked: Number(staked.toFixed(2)),
+    stakedU: r2(sumU(rows, (b) => b.stake)),
     profit: Number(profit.toFixed(2)),
+    profitU: r2(sumU(rows, profitOf)),
     roi: staked > 0 ? Number(((profit / staked) * 100).toFixed(1)) : 0,
     winRate: decisive.length ? Number(((wins / decisive.length) * 100).toFixed(1)) : 0,
     wins,
@@ -205,6 +221,11 @@ export function computeAnalytics(bets) {
   const profits = settled.map(profitOf);
   const biggestWin = profits.length ? Math.max(0, ...profits) : 0;
   const biggestLoss = profits.length ? Math.min(0, ...profits) : 0;
+  // Units of the very bets behind the biggest win / loss.
+  const unitsOfBet = (target) => {
+    const b = settled.find((x) => profitOf(x) === target);
+    return b && target !== 0 ? r2(uOf(b, target)) : 0;
+  };
 
   // Per-calendar-day P/L (chronological) — powers the hero trend line and the
   // "recent performance" day squares.
@@ -228,7 +249,9 @@ export function computeAnalytics(bets) {
     byDay,
     streaks: { longestWin, longestLoss, current, currentType },
     biggestWin: Number(biggestWin.toFixed(2)),
+    biggestWinU: unitsOfBet(biggestWin),
     biggestLoss: Number(biggestLoss.toFixed(2)),
+    biggestLossU: unitsOfBet(biggestLoss),
   };
 }
 
