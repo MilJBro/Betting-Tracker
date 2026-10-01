@@ -121,7 +121,7 @@ export default function Login() {
                       {'★'.repeat(Math.min(5, Math.round(r.rating)))}
                     </div>
                   )}
-                  <blockquote>{r.quote}</blockquote>
+                  <blockquote>“{r.quote}”</blockquote>
                   <figcaption>
                     <span className="lp-review-name">{r.name}</span>
                     {r.detail && <span className="lp-review-detail"> · {r.detail}</span>}
