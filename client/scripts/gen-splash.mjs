@@ -14,13 +14,17 @@
 //   chrome --headless --no-sandbox --disable-gpu \
 //     --remote-debugging-port=9222 --user-data-dir=/tmp/splashgen about:blank &
 //   node scripts/gen-splash.mjs
-// Override the port with CDP_PORT. Writes to public/splash-v3/.
-import { writeFileSync, mkdirSync } from 'node:fs';
+// Override the port with CDP_PORT. Writes to public/splash-v4/.
+import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const PORT = process.env.CDP_PORT || 9222;
-const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'splash-v3');
+const here = dirname(fileURLToPath(import.meta.url));
+const outDir = join(here, '..', 'public', 'splash-v4');
+// The in-app splash sets its wordmark in Sora (Google Fonts). Embed the same
+// weight so the launch image's wordmark is identical, not a fallback font.
+const SORA_800 = readFileSync(join(here, 'sora-800.woff2')).toString('base64');
 
 // [deviceW, deviceH, cssW, cssH, ratio] — portrait iPhones, SE → 16 Pro Max.
 const SIZES = [
@@ -31,10 +35,15 @@ const SIZES = [
 ];
 
 // Mirrors #boot in index.html; the progress bar is an empty track to match the
-// first frame of the in-app splash animation.
-const HTML = `<!doctype html><html><head><meta charset="utf-8"><style>
+// first frame of the in-app splash animation. The viewport meta is essential:
+// without it mobile emulation lays the page out at a ~980px desktop width and
+// zooms it out, which baked a logo roughly half the in-app size into every
+// launch image (the "small logo, then big logo" jump on launch).
+const HTML = `<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>
+@font-face{font-family:'Sora';font-weight:800;font-style:normal;src:url(data:font/woff2;base64,${SORA_800}) format('woff2')}
 html,body{margin:0;height:100%;background:#0b1120}
-.wrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+.wrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;font-family:'Sora',system-ui,-apple-system,sans-serif}
 .bmark{color:#22c55e;display:flex}
 .bword{font-weight:800;font-size:27px;letter-spacing:-0.02em;color:#f8fafc}
 .bword b{color:#22c55e;font-weight:800}
@@ -62,7 +71,10 @@ mkdirSync(outDir, { recursive: true });
 for (const [dw, dh, cw, ch, ratio] of SIZES) {
   await S('Emulation.setDeviceMetricsOverride', { width: cw, height: ch, deviceScaleFactor: ratio, mobile: true, screenWidth: cw, screenHeight: ch });
   await S('Page.navigate', { url: dataUrl });
-  await new Promise((r) => setTimeout(r, 500));
+  await new Promise((r) => setTimeout(r, 300));
+  // Don't capture until the embedded Sora face is actually in use.
+  await S('Runtime.evaluate', { expression: 'document.fonts.ready.then(() => true)', awaitPromise: true });
+  await new Promise((r) => setTimeout(r, 200));
   const { data } = await S('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
   writeFileSync(join(outDir, `splash-${dw}x${dh}.png`), Buffer.from(data, 'base64'));
   console.log(`splash-${dw}x${dh}.png`);
