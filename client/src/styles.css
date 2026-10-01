@@ -253,6 +253,12 @@ html.kb-room body { padding-bottom: 60vh; }
   /* Top padding clears the status bar / notch in the installed (standalone)
      app, now that viewport-fit=cover exposes the safe-area insets. */
   .tracker-bar { padding: calc(10px + env(safe-area-inset-top)) 14px 10px; }
+  /* Installed (home-screen) app only: recent iOS paints a soft blur along the
+     very top of the screen under the status bar, which was lightly fading the
+     top of the logo. A little extra room keeps the logo clear of it. */
+  @media (display-mode: standalone) {
+    .tracker-bar { padding-top: calc(20px + env(safe-area-inset-top)); }
+  }
   .tb-menu { display: inline-flex; }
   .tb-spacer { display: block; }
   .tracker-bar .brand-logo { display: inline-flex; flex: 1; justify-content: center; }
