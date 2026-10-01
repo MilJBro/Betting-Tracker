@@ -129,7 +129,6 @@ export default function Login() {
       <div className="landing">
         <div className="lp-topbar">
           <Logo />
-          <button className="btn-ghost btn-sm lp-top-login" onClick={() => goAuth('login')}>Log in</button>
         </div>
 
         <div className="lp-hero reveal">
@@ -139,12 +138,6 @@ export default function Login() {
             Log bets in seconds and see your profit, ROI and win rate across every sport,
             bookmaker and tipster. Your full betting record, in one place.
           </p>
-          <div className="lp-cta">
-            <button className="btn-primary" onClick={() => goAuth('register')}>
-              Create free account <span aria-hidden="true">→</span>
-            </button>
-            <button className="btn-outline" onClick={() => goAuth('login')}>Log in</button>
-          </div>
           <div className="lp-trust">No ads · No gambling promotions · Free to use</div>
         </div>
 

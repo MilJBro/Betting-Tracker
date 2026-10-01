@@ -898,16 +898,12 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 
 /* Top bar: logo left, log-in right. */
 .lp-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; }
-.lp-top-login { padding: 8px 16px; }
 
 .lp-hero { text-align: left; }
 .lp-eyebrow { text-transform: uppercase; letter-spacing: 0.22em; font-size: 12px; font-weight: 800; color: var(--muted); margin-bottom: 12px; }
 .lp-hero h1 { font-size: clamp(29px, 8vw, 46px); line-height: 1.06; letter-spacing: -0.02em; margin: 0 0 18px; font-weight: 800; }
 .lp-h-accent { color: var(--primary); }
 .lp-hero .sub { color: var(--muted); font-size: 16.5px; line-height: 1.55; max-width: 42ch; margin: 0 0 26px; }
-.lp-cta { display: flex; flex-direction: column; gap: 12px; }
-.lp-cta > button { width: 100%; padding: 16px 22px; font-size: 16px; border-radius: 14px; }
-.lp-cta .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
 .lp-trust { color: var(--muted); font-size: 12.5px; text-align: center; margin-top: 16px; }
 
 /* Icon feature row under the hero (matches the three benefits in the mockup). */
