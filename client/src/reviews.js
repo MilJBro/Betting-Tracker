@@ -31,4 +31,9 @@ export const REVIEWS = [
     name: 'Darren',
     detail: 'Tipster',
   },
+  {
+    quote: 'I use Betbooks just to track my weekend bets. The AI bet scanner is a massive help as it saves me time having to fill it out manually.',
+    name: 'Thomas',
+    detail: 'Weekend punter',
+  },
 ];
