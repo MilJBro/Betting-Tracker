@@ -92,7 +92,10 @@ const EDITABLE_FIELDS = [
 export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], defaultDate, onSetUnitSize, onToggleField, onSave, onClose }) {
   // An existing bet is shown in the unit size it was placed under (the user may
   // have changed their unit size since); a new bet uses the current size.
-  const unitSize = isEdit && initial?.placed_at ? unitSizeAt(staking, initial.placed_at) : Number(staking?.unitSize) || 0;
+  // Frozen for the life of the form when editing, so changing the unit size here
+  // (which only applies from today) never re-interprets this bet's stake.
+  const [betUnitSize] = useState(() => (isEdit && initial?.placed_at ? unitSizeAt(staking, initial.placed_at) : 0));
+  const unitSize = isEdit && betUnitSize > 0 ? betUnitSize : Number(staking?.unitSize) || 0;
   const [editUnit, setEditUnit] = useState(false);
   const usesUnits = (staking?.mode === 'units' || staking?.mode === 'both') && unitSize > 0;
   const toUnits = (money) =>
@@ -689,7 +692,7 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
                     </div>
                     <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
                       {stakeHint()}
-                      {onSetUnitSize && !isEdit && (
+                      {onSetUnitSize && (
                         <>
                           {' · '}
                           <button type="button" className="linklike" onClick={() => setEditUnit((v) => !v)}>
@@ -698,24 +701,29 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
                         </>
                       )}
                     </div>
-                    {onSetUnitSize && !isEdit && editUnit && (
+                    {onSetUnitSize && editUnit && (
                       <div className="row" style={{ gap: 8, marginTop: 8, alignItems: 'center' }}>
                         <span className="muted" style={{ fontSize: 13 }}>1 unit =</span>
                         <span className="muted" style={{ fontWeight: 700 }}>{currencySymbol(currency)}</span>
                         <input
-                          type="number" min="0.01" step="0.01" defaultValue={unitSize || ''}
+                          type="number" min="0.01" step="0.01" defaultValue={Number(staking?.unitSize) || ''}
                           aria-label="Set unit size"
                           onChange={(e) => {
                             const v = Number(e.target.value) || 0;
                             // Keep the selected preset unit and rescale the money,
                             // so "1u" stays 1u and the stake follows the new size.
                             const cur = stakeUnits();
-                            if (cur !== '' && !usesUnits) set('stake', String(Math.round(Number(cur) * v * 100) / 100));
+                            if (!isEdit && cur !== '' && !usesUnits) set('stake', String(Math.round(Number(cur) * v * 100) / 100));
                             onSetUnitSize(v);
                           }}
                           style={{ width: 110 }}
                           autoFocus
                         />
+                      </div>
+                    )}
+                    {onSetUnitSize && editUnit && isEdit && (
+                      <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
+                        Applies to bets from today on. This bet stays at 1u = {money(unitSize, currency)}.
                       </div>
                     )}
                   </>
