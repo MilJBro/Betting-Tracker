@@ -55,7 +55,6 @@ const STAKE_OPTS = [
   { key: 'both', label: 'Both' },
 ];
 // Quick picks for what 1 unit is worth (in the account currency).
-const UNIT_PRESETS = [1, 5, 10, 20, 25, 50, 100];
 
 const ODDS_OPTS = [
   { key: 'decimal', label: 'Decimal' },
@@ -126,7 +125,6 @@ export default function Account() {
     if (unitNumber(unitText) != null) commitUnit(unitText);
     else setUnitText(String(latest.current.staking?.unitSize ?? '')); // invalid: put back the saved value
   };
-  const pickUnit = (n) => { clearTimeout(unitTimer.current); setUnitText(String(n)); commitUnit(String(n)); };
   const unitDraft = unitNumber(unitText);
   const unitShown = unitDraft ?? (Number(staking?.unitSize) || 0);
   const toggle = (key) => setExpanded((e) => (e === key ? null : key));
@@ -410,14 +408,6 @@ export default function Account() {
         {unitText !== '' && unitDraft == null && (
           <div className="muted" style={{ fontSize: 12.5, marginTop: 6, color: 'var(--loss)' }}>Enter an amount above zero.</div>
         )}
-        <div className="ftog-row" style={{ marginTop: 10 }}>
-          {UNIT_PRESETS.map((n) => (
-            <button key={n} type="button" className={Number(staking?.unitSize) === n ? 'ftog on' : 'ftog'}
-              aria-pressed={Number(staking?.unitSize) === n} onClick={() => pickUnit(n)}>
-              {currencySymbol(currency)}{n}
-            </button>
-          ))}
-        </div>
 
         <p className="muted" style={{ fontSize: 12.5, margin: '12px 0 0' }}>
           {unitShown > 0
