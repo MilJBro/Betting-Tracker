@@ -53,6 +53,8 @@ const DASH_RANGES = [
   { key: 'all', label: 'All time', days: null },
 ];
 
+const rangeLabel = (key) => (DASH_RANGES.find((r) => r.key === key) || DASH_RANGES[2]).label;
+
 const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const betDate = (b) => new Date((b.placed_at || '').length <= 10 ? (b.placed_at || '') + 'T00:00:00' : b.placed_at);
 
@@ -134,8 +136,10 @@ export default function Dashboard() {
   const [stats, setStats] = useState(() => getCached('dash:' + activeId)?.stats ?? null);
   const [bets, setBets] = useState(() => getCached('dash:' + activeId)?.bets ?? []);
   const [loading, setLoading] = useState(() => !getCached('dash:' + activeId));
-  const [range, setRange] = useState('30d');
-  const [chartRange, setChartRange] = useState('30d');
+  // Start on All time so the headline figures match the My bets page; the
+  // period is always labelled below, and the pill at the top changes it.
+  const [range, setRange] = useState('all');
+  const [chartRange, setChartRange] = useState('all');
   const [editTiles, setEditTiles] = useState(false);
   const [preview, setPreview] = useState(null); // tapped recent bet — full breakdown
 
@@ -355,7 +359,8 @@ export default function Dashboard() {
       <PendingReminder bets={bets} onReview={() => navigate('/bets')} reviewLabel="Show open bets" />
 
       {/* Stat tiles — choosable */}
-      <div className="row" style={{ justifyContent: 'flex-end', marginBottom: 6 }}>
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+        <span className="muted" style={{ fontSize: 12.5, fontWeight: 700 }}>{rangeLabel(range)}</span>
         <button type="button" className="tile-edit" onClick={() => setEditTiles(true)}><Icon name="edit" size={13} /> Edit tiles</button>
       </div>
       <div className="dstat-grid" style={{ gridTemplateColumns: `repeat(${dashTiles.length}, 1fr)` }}>
@@ -414,7 +419,7 @@ export default function Dashboard() {
         </div>
         <div className="po-body">
           <div className="po-figures">
-            <span className="po-label">Total Profit</span>
+            <span className="po-label">Total Profit · {rangeLabel(chartRange)}</span>
             <span className={`po-big ${pcls(chartM.profit)}`}>{money(chartM.profit, currency, { signed: true })}</span>
             {showUnits && <span className={`po-sub ${pcls(chartM.profit)}`}>{unitsOf(chartM.profit)}</span>}
           </div>
