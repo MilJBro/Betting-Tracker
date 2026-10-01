@@ -4,19 +4,21 @@
 // publish them. Invented or edited-for-effect quotes are fake reviews, which is
 // unlawful in the UK and misleads people deciding whether to pay.
 //
+// If the reviewer has a connection to the business (friend, family, early
+// tester, paid or rewarded), say so in `detail`.
+//
 // While this list is empty the "What people say" section is hidden entirely.
 //
 // Each review:
 //   quote   the user's own words (lightly trimmed for length is fine; don't
 //           change the meaning)
 //   name    first name or username, as they're happy to be shown
-//   detail  optional, e.g. "Football and racing punter"
+//   detail  optional, e.g. "Early tester" or "Football punter"
 //   rating  optional, 1 to 5. Leave out if they didn't give one.
 export const REVIEWS = [
-  // {
-  //   quote: 'Their own words here.',
-  //   name: 'Sam',
-  //   detail: 'Football punter',
-  //   rating: 5,
-  // },
+  {
+    quote: 'Thanks to Betbooks I’ve been able to up my units within a matter of weeks, as I know where I’m winning and losing.',
+    name: 'Andrew',
+    detail: 'Early tester',
+  },
 ];
