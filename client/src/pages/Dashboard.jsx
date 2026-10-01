@@ -19,7 +19,7 @@ import { getCached, setCached, subscribeInvalidate } from '../dataCache.js';
 import { markAppReady } from '../boot.js';
 import { useAddBet } from '../context/AddBetContext.jsx';
 import { usePlan } from '../usePlan.js';
-import { formatStake, formatOdds, formatDate, units, money } from '../format.js';
+import { formatStake, formatOdds, formatDate, money, amountParts } from '../format.js';
 
 // A stat value that shrinks its font-size to fit its tile, so long numbers
 // (e.g. "+£1,523.52") never overflow or clip regardless of how many tiles are
@@ -208,7 +208,8 @@ export default function Dashboard() {
   const currency = settings.currency;
   const staking = settings.staking;
   const unitSize = Number(staking?.unitSize) || 0;
-  const showUnits = (staking?.mode || 'currency') === 'currency' && unitSize > 0;
+  // Amounts follow the Show-as setting (Money / Units / Both) via amountParts.
+  const ap = (v, opts) => amountParts(v, currency, staking, opts);
   const enabledCards = settings.statCards.filter((c) => c.enabled);
   const pending = bets.filter((b) => b.status === 'pending');
 
@@ -274,15 +275,6 @@ export default function Dashboard() {
   }
 
   const pcls = (v) => (v > 0 ? 'pos' : v < 0 ? 'neg' : '');
-  const unitsOf = (v) => units(unitSize > 0 ? v / unitSize : 0, { signed: true });
-  // Unit amount for a stake tile — shown as a sub-line when the user stakes in
-  // units or both, so the tile's main value stays a short money figure.
-  const unitStakeSub = (v) => {
-    const mode = staking?.mode || 'currency';
-    if (unitSize <= 0 || mode === 'currency' || v == null) return null;
-    return units(v / unitSize);
-  };
-
   // Period-over-period deltas (only when there's a comparable previous period).
   const delta = prevM ? {
     winRate: m.winRate - prevM.winRate,
@@ -314,16 +306,16 @@ export default function Dashboard() {
     const meta = TILE_CATALOG.find((t) => t.key === key) || {};
     const base = { label: meta.label, icon: meta.icon };
     switch (key) {
-      case 'netProfit': return { ...base, value: money(m.profit, currency, { signed: true }), valCls: pcls(m.profit), sub: showUnits ? unitsOf(m.profit) : null, subCls: pcls(m.profit) };
+      case 'netProfit': { const a = ap(m.profit, { signed: true }); return { ...base, value: a.main, valCls: pcls(m.profit), sub: a.sub, subCls: pcls(m.profit) }; }
       case 'roi': return { ...base, value: `${m.roi}%`, valCls: pcls(m.roi) };
       case 'winRate': return { ...base, value: `${m.winRate}%`, delta: delta?.winRate, deltaFmt: (x) => `${x.toFixed(0)}%` };
       case 'totalBets': return { ...base, value: m.totalBets, delta: delta?.totalBets, deltaFmt: (x) => `${x}` };
       // Tiles are narrow, so show a compact money value (not the long
       // "money · units" dual form) — the units read is available on Stats.
-      case 'avgStake': return { ...base, value: money(m.avgStake, currency), sub: unitStakeSub(m.avgStake), delta: unitStakeSub(m.avgStake) ? undefined : delta?.avgStake, deltaFmt: (x) => money(x, currency) };
-      case 'totalStaked': return { ...base, value: money(m.staked, currency), sub: unitStakeSub(m.staked) };
-      case 'biggestWin': return { ...base, value: money(m.biggestWin, currency, { signed: true }), valCls: 'pos', sub: showUnits ? unitsOf(m.biggestWin) : null, subCls: 'pos' };
-      case 'biggestLoss': return { ...base, value: money(m.biggestLoss, currency, { signed: true }), valCls: 'neg', sub: showUnits ? unitsOf(m.biggestLoss) : null, subCls: 'neg' };
+      case 'avgStake': { const a = ap(m.avgStake); return { ...base, value: a.main, sub: a.sub, delta: a.sub ? undefined : delta?.avgStake, deltaFmt: (x) => ap(x).main }; }
+      case 'totalStaked': { const a = ap(m.staked); return { ...base, value: a.main, sub: a.sub }; }
+      case 'biggestWin': { const a = ap(m.biggestWin, { signed: true }); return { ...base, value: a.main, valCls: 'pos', sub: a.sub, subCls: 'pos' }; }
+      case 'biggestLoss': { const a = ap(m.biggestLoss, { signed: true }); return { ...base, value: a.main, valCls: 'neg', sub: a.sub, subCls: 'neg' }; }
       case 'currentStreak': return { ...base, value: m.current, valCls: m.currentType === 'won' ? 'pos' : m.currentType === 'lost' ? 'neg' : '', sub: m.currentType === 'won' ? 'wins' : m.currentType === 'lost' ? 'losses' : '—' };
       case 'longestWin': return { ...base, value: m.longestWin, sub: 'wins' };
       case 'pending': return { ...base, value: pending.length, sub: formatStake(pendingStake, currency, staking) };
@@ -420,8 +412,8 @@ export default function Dashboard() {
         <div className="po-body">
           <div className="po-figures">
             <span className="po-label">Total Profit · {rangeLabel(chartRange)}</span>
-            <span className={`po-big ${pcls(chartM.profit)}`}>{money(chartM.profit, currency, { signed: true })}</span>
-            {showUnits && <span className={`po-sub ${pcls(chartM.profit)}`}>{unitsOf(chartM.profit)}</span>}
+            <span className={`po-big ${pcls(chartM.profit)}`}>{ap(chartM.profit, { signed: true }).main}</span>
+            {ap(chartM.profit, { signed: true }).sub && <span className={`po-sub ${pcls(chartM.profit)}`}>{ap(chartM.profit, { signed: true }).sub}</span>}
           </div>
           <div className="po-chart">
             {chartData.length >= 2 ? (
@@ -461,14 +453,14 @@ export default function Dashboard() {
             <div className="qs">
               <span className="qs-ic"><Icon name="trophy" size={16} /></span>
               <span className="qs-label">Best Win</span>
-              <span className="qs-val pos">{money(m.biggestWin, currency, { signed: true })}</span>
-              {showUnits && <span className="qs-sub">({unitsOf(m.biggestWin).replace('+', '')})</span>}
+              <span className="qs-val pos">{ap(m.biggestWin, { signed: true }).main}</span>
+              {ap(m.biggestWin, { signed: true }).sub && <span className="qs-sub">({ap(m.biggestWin, { signed: true }).sub.replace(/^[+-]/, '')})</span>}
             </div>
             <div className="qs">
               <span className="qs-ic"><Icon name="target" size={16} /></span>
               <span className="qs-label">Biggest Loss</span>
-              <span className="qs-val neg">{money(m.biggestLoss, currency, { signed: true })}</span>
-              {showUnits && <span className="qs-sub">({unitsOf(m.biggestLoss).replace('-', '')})</span>}
+              <span className="qs-val neg">{ap(m.biggestLoss, { signed: true }).main}</span>
+              {ap(m.biggestLoss, { signed: true }).sub && <span className="qs-sub">({ap(m.biggestLoss, { signed: true }).sub.replace(/^[+-]/, '')})</span>}
             </div>
             <div className="qs">
               <span className="qs-ic"><Icon name="analytics" size={16} /></span>
@@ -518,8 +510,8 @@ export default function Dashboard() {
                     <span className={`act-badge ${b.status}`}>{b.status === 'won' ? 'Won' : b.status === 'lost' ? 'Lost' : b.status === 'pending' ? 'Open' : b.status}</span>
                     {settled && (
                       <span className="act-pl">
-                        <span className={pcls(p)}>{money(p, currency, { signed: true })}</span>
-                        {showUnits && <span className={`act-pl-u ${pcls(p)}`}>{unitsOf(p)}</span>}
+                        <span className={pcls(p)}>{ap(p, { signed: true }).main}</span>
+                        {ap(p, { signed: true }).sub && <span className={`act-pl-u ${pcls(p)}`}>{ap(p, { signed: true }).sub}</span>}
                       </span>
                     )}
                   </span>

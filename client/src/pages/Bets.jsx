@@ -13,7 +13,7 @@ import { settlePayout } from '../settle.js';
 import { getCached, setCached, subscribeInvalidate } from '../dataCache.js';
 import Spinner from '../components/Spinner.jsx';
 import Icon from '../components/Icon.jsx';
-import { formatStake, formatOdds, formatDate, units, money } from '../format.js';
+import { formatStake, formatOdds, formatDate, amountParts } from '../format.js';
 import { betsToCsv, csvToBets, downloadCsv } from '../csv.js';
 
 // Common betting sports offered in the Add-bet form's sport field so there's
@@ -452,7 +452,7 @@ export default function Bets() {
     ].filter(Boolean).join(' · ');
     const selecting = selectMode && b.status === 'pending';
     const cls = p > 0 ? 'pos' : p < 0 ? 'neg' : 'muted';
-    const unitSize = Number(staking?.unitSize) || 0;
+    const profitParts = p == null ? null : amountParts(p, currency, staking, { signed: true });
     const sub = [
       col('stake') && formatStake(b.stake, currency, staking),
       col('odds') && Number(b.odds) > 0 ? `@ ${formatOdds(b.odds, oddsFormat)}` : null,
@@ -484,9 +484,9 @@ export default function Bets() {
               </>
             ) : (
               <>
-                <span className={`bet2-profit ${cls}`}>{money(p, currency, { signed: true })}</span>
-                {unitSize > 0
-                  ? <span className={`bet2-punits ${cls}`}>{units(p / unitSize, { signed: true })}</span>
+                <span className={`bet2-profit ${cls}`}>{profitParts.main}</span>
+                {profitParts.sub
+                  ? <span className={`bet2-punits ${cls}`}>{profitParts.sub}</span>
                   : (sub && <span className="bet2-sub">{sub}</span>)}
               </>
             )}
@@ -504,9 +504,11 @@ export default function Bets() {
   // Group-header helpers (used for both month and day headers).
   const countLabel = (n) => `${n} bet${n !== 1 ? 's' : ''}`;
   const profitClass = (v) => (v > 0 ? 'pos' : v < 0 ? 'neg' : 'muted');
-  // Month-header profit: money only, so the header stays on one line (the full
-  // money · units figure lives in the summary card above).
-  const signedProfit = (v) => money(v, currency, { signed: true });
+  // Month/day-header profit: the main figure only (money or units per the
+  // Show-as setting), so the header stays on one line.
+  const signedProfit = (v) => amountParts(v, currency, staking, { signed: true }).main;
+  const heroProfit = amountParts(summary.profit, currency, staking, { signed: true });
+  const heroStaked = amountParts(summary.staked, currency, staking);
 
   return (
     <div className="main">
@@ -639,11 +641,11 @@ export default function Bets() {
           <span className="bs-label">Net profit{status !== 'all' ? ` · ${statusFilterLabel(status)}` : ''}</span>
           <span className="bs-figures">
             <span className={`bs-profit ${summary.profit > 0 ? 'pos' : summary.profit < 0 ? 'neg' : ''}`}>
-              {money(summary.profit, currency, { signed: true })}
+              {heroProfit.main}
             </span>
-            {Number(staking?.unitSize) > 0 && (
+            {heroProfit.sub && (
               <span className={`bs-units ${summary.profit > 0 ? 'pos' : summary.profit < 0 ? 'neg' : 'muted'}`}>
-                {units(summary.profit / Number(staking.unitSize), { signed: true })}
+                {heroProfit.sub}
               </span>
             )}
           </span>
@@ -651,7 +653,7 @@ export default function Bets() {
         <div className="bs-stats">
           <div><span className="bs-k">ROI</span><span className={`bs-v ${summary.roi > 0 ? 'pos' : summary.roi < 0 ? 'neg' : ''}`}>{summary.roi}%</span></div>
           <div><span className="bs-k">Win rate</span><span className="bs-v">{summary.winRate == null ? '—' : summary.winRate + '%'}</span></div>
-          <div><span className="bs-k">Staked</span><span className="bs-v">{money(summary.staked, currency)}</span></div>
+          <div><span className="bs-k">Staked</span><span className="bs-v">{heroStaked.main}</span></div>
           <div><span className="bs-k">Bets</span><span className="bs-v">{summary.count}</span></div>
         </div>
       </div>

@@ -11,7 +11,7 @@ import Icon from '../components/Icon.jsx';
 import { getCached, setCached, subscribeInvalidate } from '../dataCache.js';
 import { useAddBet } from '../context/AddBetContext.jsx';
 import { usePlan } from '../usePlan.js';
-import { money, units, formatStake } from '../format.js';
+import { money, units, formatStake, amountParts } from '../format.js';
 
 const BLANK_FILTERS = { from: '', to: '', sport: '', tipster: '' };
 
@@ -77,8 +77,10 @@ export default function Analytics() {
   const currency = settings?.currency || 'GBP';
   const staking = settings?.staking;
   const unitSize = Number(staking?.unitSize) || 0;
+  // The dedicated "Units" row is always useful when a unit size is set; the
+  // money/units figures elsewhere follow the Show-as setting via amountParts.
   const showUnits = unitSize > 0;
-  const unitsFirst = (staking?.mode === 'units') && showUnits;
+  const ap = (v, opts) => amountParts(v, currency, staking, opts);
 
   const load = useCallback(() => {
     const q = new URLSearchParams();
@@ -221,8 +223,8 @@ export default function Analytics() {
   const unitsOf = (v) => units(showUnits ? v / unitSize : 0, { signed: true });
 
   // Hero primary/secondary figures.
-  const heroBig = unitsFirst ? unitsOf(o.profit) : money(o.profit, currency, { signed: true });
-  const heroSub = unitsFirst ? money(o.profit, currency, { signed: true }) : (showUnits ? unitsOf(o.profit) : null);
+  const heroBig = ap(o.profit, { signed: true }).main;
+  const heroSub = ap(o.profit, { signed: true }).sub;
 
   // Cumulative daily trend for the hero sparkline.
   let run = 0;
@@ -404,8 +406,8 @@ export default function Analytics() {
           <div className="trend-box">
             <div className="tb-head"><Icon name="trophy" size={15} /> Biggest moves</div>
             <div className="tb-pair">
-              <div><span className="k">Biggest win</span><span className="v pos">{money(a.biggestWin, currency, { signed: true })}</span></div>
-              <div><span className="k">Biggest loss</span><span className="v neg">{money(a.biggestLoss, currency, { signed: true })}</span></div>
+              <div><span className="k">Biggest win</span><span className="v pos">{ap(a.biggestWin, { signed: true }).main}</span></div>
+              <div><span className="k">Biggest loss</span><span className="v neg">{ap(a.biggestLoss, { signed: true }).main}</span></div>
             </div>
           </div>
         </div>
