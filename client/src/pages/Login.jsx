@@ -75,7 +75,7 @@ export default function Login() {
 
         <div className="lp-hero reveal">
           <div className="lp-eyebrow">Betting Tracker</div>
-          <h1>Track every bet.<br /><span className="lp-h-accent">Know your real results.</span></h1>
+          <h1>The betting tracker<br /><span className="lp-h-accent">for serious punters.</span></h1>
           <p className="sub">
             Log bets in seconds and see your profit, ROI and win rate across every sport,
             bookmaker and tipster. Your full betting record, in one place.
