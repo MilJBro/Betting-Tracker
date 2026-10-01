@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { currencySymbol, money, formatOdds, parseOdds } from '../format.js';
 import Icon from './Icon.jsx';
+import { sportLayout } from '../sportLayout.js';
 
 // The status picker: four tappable boxes (Won / Pending / Lost / Cashed out).
 const STATUS_BOXES = [
@@ -61,20 +62,6 @@ function combinedOdds(legs, fmt = 'decimal') {
 function splitEvent(ev) {
   const parts = (ev || '').split(/\s+v(?:s\.?|ersus)?\s+/i);
   return { home: (parts[0] || '').trim(), away: (parts.length > 1 ? parts.slice(1).join(' v ') : '').trim() };
-}
-
-// The bet slip adapts to the sport:
-//  · 'versus'  head-to-head (football, tennis, boxing…) — "Home v Away".
-//  · 'racing'  horse / greyhound racing — a course + time and the runner.
-//  · 'field'   other field sports (golf, motorsport, cycling…) — one event.
-const RACING_HINTS = ['horse', 'greyhound', 'harness'];
-const FIELD_HINTS = ['golf', 'cycl', 'athletic', 'motor', 'nascar', 'formula', 'rally', 'darts', 'snooker'];
-function sportLayout(sport) {
-  const s = (sport || '').trim().toLowerCase();
-  if (!s) return 'versus';
-  if (RACING_HINTS.some((k) => s.includes(k))) return 'racing';
-  if (s === 'f1' || FIELD_HINTS.some((k) => s.includes(k))) return 'field';
-  return 'versus';
 }
 
 // A racing event is stored as "Course HH:MM" (e.g. "Ascot 15:30"). Split it
