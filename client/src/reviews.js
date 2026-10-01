@@ -27,7 +27,7 @@ export const REVIEWS = [
     detail: 'Early tester',
   },
   {
-    quote: 'As I tip bets to a small group, Betbooks allows me to keep track of what I’m sharing, and show me in depth stats of all my bets.',
+    quote: 'As I tip bets to a small group, Betbooks allows me to keep track of what I’m sharing, and shows me in-depth stats of all my bets.',
     name: 'Darren',
     detail: 'Tipster',
   },
