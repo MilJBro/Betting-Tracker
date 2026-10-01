@@ -23,7 +23,12 @@ export const REVIEWS = [
   },
   {
     quote: 'Being up to date with my data shows me where my bad habits are in the long run. Betbooks has helped me cut these out for more consistent wins.',
-    name: 'Darren',
+    name: 'Nathaniel',
     detail: 'Early tester',
+  },
+  {
+    quote: 'As I tip bets to a small group, Betbooks allows me to keep track of what I’m sharing, and show me in depth stats of all my bets.',
+    name: 'Darren',
+    detail: 'Tipster',
   },
 ];
