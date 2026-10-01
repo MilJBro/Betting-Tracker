@@ -109,6 +109,13 @@ export const DEFAULT_SETTINGS = {
 export function mergeSettings(saved) {
   if (!saved) return structuredClone(DEFAULT_SETTINGS);
   const base = structuredClone(DEFAULT_SETTINGS);
+  // Heal accounts saved with a zero unit size (an old bug when the box was
+  // cleared): fall back to the last size they used, else the default.
+  if (saved.staking && !(Number(saved.staking.unitSize) > 0)) {
+    const hist = Array.isArray(saved.staking.unitHistory) ? saved.staking.unitHistory : [];
+    const last = Number(hist[hist.length - 1]?.size);
+    saved = { ...saved, staking: { ...saved.staking, unitSize: last > 0 ? last : base.staking.unitSize } };
+  }
   return {
     ...base,
     ...saved,

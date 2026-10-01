@@ -713,8 +713,8 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
                             // Keep the selected preset unit and rescale the money,
                             // so "1u" stays 1u and the stake follows the new size.
                             const cur = stakeUnits();
-                            if (!isEdit && cur !== '' && !usesUnits) set('stake', String(Math.round(Number(cur) * v * 100) / 100));
-                            onSetUnitSize(v);
+                            if (v > 0 && !isEdit && cur !== '' && !usesUnits) set('stake', String(Math.round(Number(cur) * v * 100) / 100));
+                            if (v > 0) onSetUnitSize(v); // a cleared box mid-typing is not a size
                           }}
                           style={{ width: 110 }}
                           autoFocus

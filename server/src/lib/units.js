@@ -37,11 +37,16 @@ export function unitSizeAt(staking, when) {
 export function resolveStaking(previous, incoming, { hasBets, today }) {
   const { unitScope, unitFrom, unitHistory: _ignored, ...rest } = incoming || {};
   const staking = { ...(previous || {}), ...rest };
-  const size = Number(staking.unitSize);
   const prevSize = Number(previous?.unitSize);
   const hist = cleanHistory(previous?.unitHistory);
 
-  if (!(size > 0)) { staking.unitHistory = hist; return staking; }
+  // A blank or zero size (e.g. a box cleared mid-edit) is never saved: it would
+  // switch every unit control off. Keep the size we had.
+  let size = Number(staking.unitSize);
+  if (!(size > 0)) {
+    size = prevSize > 0 ? prevSize : hist.length ? hist[hist.length - 1].size : 10;
+    staking.unitSize = size;
+  }
 
   const start = DAY.test(unitFrom) ? unitFrom : today;
   const base = hist.length ? hist : (prevSize > 0 ? [{ from: '', size: prevSize }] : []);

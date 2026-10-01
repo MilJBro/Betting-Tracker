@@ -55,3 +55,16 @@ test('unit totals are summed bet by bet using each bet\'s own size', () => {
   assert.equal(an.overall.profitU, 3);
   assert.equal(an.biggestLossU, -1);
 });
+
+test('a zero or blank unit size is never saved, and a saved zero heals', async () => {
+  const { mergeSettings } = await import('../src/lib/defaults.js');
+  const prev = { mode: 'both', unitSize: 10, unitHistory: [{ from: '', size: 10 }] };
+  for (const bad of [0, '', null, -5, 'abc']) {
+    const s = resolveStaking(prev, { ...prev, unitSize: bad }, opts);
+    assert.equal(s.unitSize, 10, `unitSize ${JSON.stringify(bad)} keeps the old size`);
+    assert.deepEqual(s.unitHistory, [{ from: '', size: 10 }]);
+  }
+  // Accounts already stored with 0 recover on read.
+  assert.equal(mergeSettings({ staking: { mode: 'both', unitSize: 0, unitHistory: [{ from: '', size: 10 }, { from: '2026-09-01', size: 25 }] } }).staking.unitSize, 25);
+  assert.equal(mergeSettings({ staking: { mode: 'both', unitSize: 0 } }).staking.unitSize, 10);
+});

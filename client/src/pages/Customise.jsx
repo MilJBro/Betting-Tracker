@@ -18,6 +18,7 @@ export default function Customise() {
   const toast = useToast();
   const [share, setShare] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [unitText, setUnitText] = useState(() => String(settings?.staking?.unitSize ?? ""));
 
   useEffect(() => { api.get('/share/me').then((d) => setShare(d.share)); }, []);
 
@@ -116,8 +117,14 @@ export default function Customise() {
               <div className="row" style={{ gap: 8 }}>
                 <span className="muted" style={{ fontWeight: 700 }}>{currencySymbol(settings.currency)}</span>
                 <input
-                  type="number" min="0.01" step="0.01" value={settings.staking.unitSize}
-                  onChange={(e) => update({ staking: { ...settings.staking, unitSize: Number(e.target.value) || 0 } })}
+                  type="number" min="0.01" step="0.01" value={unitText}
+                  onChange={(e) => {
+                    setUnitText(e.target.value);
+                    const n = Number(e.target.value);
+                    // Only a real size is saved; a cleared box while typing is not.
+                    if (n > 0) update({ staking: { ...settings.staking, unitSize: n } });
+                  }}
+                  onBlur={() => setUnitText(String(settings.staking.unitSize))}
                 />
               </div>
             </div>
