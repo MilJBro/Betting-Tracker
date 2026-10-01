@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import Icon from './Icon.jsx';
-import { keepInView } from '../keepInView.js';
 
-// A password field with a show/hide eye toggle. On focus it keeps itself
-// visible above the on-screen keyboard.
+// A password field with a show/hide eye toggle. Scrolling the field above the
+// keyboard is left to the browser's native behaviour — custom scrolling fought
+// iOS's own animation and made the page jitter.
 export default function PasswordInput({
   value,
   onChange,
@@ -24,7 +24,6 @@ export default function PasswordInput({
         autoComplete={autoComplete}
         required={required}
         aria-label={ariaLabel}
-        onFocus={(e) => keepInView(e.target)}
       />
       <button
         type="button"
