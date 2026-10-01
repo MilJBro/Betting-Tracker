@@ -244,6 +244,9 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6
 /* iOS Safari zooms the page into any field under 16px when it's tapped; keep
    the sign-in and password fields at 16px so focusing them doesn't zoom. */
 .auth-panel input, .pw-wrap input { font-size: 16px; }
+/* While a form field is focused (see keyboardRoom.js), add room below the page
+   so a field near the bottom can be scrolled up above the keyboard. */
+html.kb-room body { padding-bottom: 60vh; }
 /* Hover only on real pointers — on touch it sticks after a tap. */
 @media (hover: hover) { .pw-toggle:hover { color: var(--text); background: var(--surface-2); } }
 @media (max-width: 860px) {

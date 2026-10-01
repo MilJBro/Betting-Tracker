@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../api.js';
 import PasswordInput from './PasswordInput.jsx';
+import { keyboardFocus } from '../keyboardRoom.js';
 
 // The login / sign-up / forgot-password card. Reused on the landing page and
 // anywhere else auth is needed.
@@ -66,7 +67,7 @@ export default function AuthPanel({ initialMode = 'login', mode: modeProp, onMod
         </div>
       )}
 
-      <form onSubmit={submit}>
+      <form onSubmit={submit} onFocus={keyboardFocus}>
         <div className="field">
           <label>Email</label>
           <input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="you@example.com" required />
