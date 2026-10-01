@@ -17,7 +17,7 @@
 //   rating  optional, 1 to 5. Leave out if they didn't give one.
 export const REVIEWS = [
   {
-    quote: 'Thanks to Betbooks I’ve been able to up my units within a matter of weeks, as I know where I’m winning and losing.',
+    quote: 'Thanks to Betbooks, I’ve been able to up my units within a matter of weeks, as I know where I’m winning and losing.',
     name: 'Andrew',
     detail: 'Early tester',
   },
