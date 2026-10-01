@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AuthPanel from '../components/AuthPanel.jsx';
 import Logo from '../components/Logo.jsx';
@@ -35,6 +35,64 @@ function FeatureIcon({ children }) {
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       {children}
     </svg>
+  );
+}
+
+// Swipeable row of review cards (one and a bit visible, so the next peeks in),
+// with dots underneath. Real reviews only — see reviews.js.
+function ReviewCarousel({ reviews }) {
+  const scroller = useRef(null);
+  const [active, setActive] = useState(0);
+
+  const onScroll = () => {
+    const el = scroller.current;
+    if (!el) return;
+    let best = 0, bestDist = Infinity;
+    for (let i = 0; i < el.children.length; i++) {
+      const d = Math.abs(el.children[i].offsetLeft - el.scrollLeft - 20);
+      if (d < bestDist) { best = i; bestDist = d; }
+    }
+    setActive(best);
+  };
+  const goTo = (i) => {
+    const el = scroller.current;
+    const child = el?.children[i];
+    if (child) el.scrollTo({ left: child.offsetLeft - 20, behavior: 'smooth' });
+  };
+
+  return (
+    <>
+      <div className="lp-review-row" ref={scroller} onScroll={onScroll}>
+        {reviews.map((r) => (
+          <figure className="lp-review" key={r.name + r.quote.slice(0, 24)}>
+            {r.rating >= 1 && (
+              <div className="lp-stars" role="img" aria-label={`${r.rating} out of 5 stars`}>
+                {'★'.repeat(Math.min(5, Math.round(r.rating)))}
+              </div>
+            )}
+            <blockquote>“{r.quote}”</blockquote>
+            <figcaption>
+              <span className="lp-review-name">{r.name}</span>
+              {r.detail && <span className="lp-review-detail"> · {r.detail}</span>}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+      {reviews.length > 1 && (
+        <div className="lp-review-dots" role="tablist" aria-label="Reviews">
+          {reviews.map((r, i) => (
+            <button
+              key={r.name + i}
+              type="button"
+              className={active === i ? 'on' : ''}
+              onClick={() => goTo(i)}
+              aria-label={`Review ${i + 1} of ${reviews.length}`}
+              aria-selected={active === i}
+            />
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -113,22 +171,7 @@ export default function Login() {
         {REVIEWS.length > 0 && (
           <div className="lp-reviews reveal">
             <div className="section-title lp-h">What people say</div>
-            <div className="lp-review-list">
-              {REVIEWS.map((r) => (
-                <figure className="lp-review" key={r.name + r.quote.slice(0, 24)}>
-                  {r.rating >= 1 && (
-                    <div className="lp-stars" role="img" aria-label={`${r.rating} out of 5 stars`}>
-                      {'★'.repeat(Math.min(5, Math.round(r.rating)))}
-                    </div>
-                  )}
-                  <blockquote>“{r.quote}”</blockquote>
-                  <figcaption>
-                    <span className="lp-review-name">{r.name}</span>
-                    {r.detail && <span className="lp-review-detail"> · {r.detail}</span>}
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
+            <ReviewCarousel reviews={REVIEWS} />
           </div>
         )}
 

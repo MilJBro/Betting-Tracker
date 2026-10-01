@@ -954,17 +954,30 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
   box-shadow: 0 0 34px -8px color-mix(in srgb, var(--primary) 34%, transparent);
 }
 
-/* Reviews — real user quotes (see reviews.js). */
+/* Reviews — real user quotes (see reviews.js). A swipeable row: the next card
+   peeks in, and the row bleeds to the screen edges. */
 .lp-reviews { margin: 48px 0 10px; }
-.lp-review-list { display: flex; flex-direction: column; gap: 12px; }
+.lp-review-row {
+  display: flex; gap: 12px; margin: 0 -20px; padding: 2px 20px 4px;
+  overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 20px;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.lp-review-row::-webkit-scrollbar { display: none; }
 .lp-review {
-  margin: 0; padding: 20px 20px 18px; border-radius: 16px;
+  flex: 0 0 82%; max-width: 380px; scroll-snap-align: start; margin: 0;
+  display: flex; flex-direction: column; padding: 20px 20px 18px; border-radius: 16px;
   background: var(--surface); border: 1px solid var(--border);
 }
 .lp-stars { color: #f5b942; font-size: 15px; letter-spacing: 2px; margin-bottom: 8px; }
-.lp-review blockquote { margin: 0 0 12px; font-size: 15px; line-height: 1.6; color: var(--text); }
-.lp-review figcaption { font-size: 13px; color: var(--muted); }
+.lp-review blockquote { margin: 0 0 16px; font-size: 15px; line-height: 1.6; color: var(--text); }
+.lp-review figcaption { margin-top: auto; font-size: 13px; color: var(--muted); }
 .lp-review-name { font-family: var(--font-head); font-weight: 700; color: var(--text); }
+.lp-review-dots { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }
+.lp-review-dots button {
+  width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%;
+  background: var(--border); cursor: pointer; transition: width 0.2s, background 0.2s;
+}
+.lp-review-dots button.on { width: 22px; border-radius: 5px; background: var(--primary); }
 
 /* Scroll-in reveal — only animates when the visitor is fine with motion. */
 @media (prefers-reduced-motion: no-preference) {
