@@ -86,19 +86,6 @@ authGate.post(['/register', '/forgot-password', '/reset-password'], signupResetL
 authGate.use(sessionLimiter);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
-// TEMPORARY DIAGNOSTIC (remove after use): echoes back the caller's own address
-// headers so we can see what Render/Cloudflare actually forward.
-app.get('/api/_ip-debug', (req, res) => res.json({
-  xff: req.headers['x-forwarded-for'] || null,
-  cfConnectingIp: req.headers['cf-connecting-ip'] || null,
-  trueClientIp: req.headers['true-client-ip'] || null,
-  xRealIp: req.headers['x-real-ip'] || null,
-  reqIp: req.ip,
-  reqIps: req.ips,
-  socket: req.socket.remoteAddress,
-  cfRay: !!req.headers['cf-ray'],
-}));
-
 
 // Public pricing info so the logged-out landing page can show real plan prices.
 app.get('/api/pricing', (_req, res) => res.json({
