@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import { makeLimiter } from './lib/limits.js';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
@@ -43,12 +43,9 @@ app.use(
 // Bet-slip scanning takes an uploaded image, so it needs a larger body limit
 // and its own rate limit (each call hits a paid vision model). Mounted before
 // the global 1mb JSON parser so image payloads aren't rejected there.
-const scanLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+const scanLimiter = makeLimiter({
   max: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many scans — please wait a few minutes and try again.' },
+  message: 'Too many scans — please wait a few minutes and try again.',
 });
 app.use('/api/bets/scan', scanLimiter, express.json({ limit: '12mb' }), scanRoutes);
 
@@ -62,14 +59,31 @@ app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), stri
 
 app.use(express.json({ limit: '1mb' }));
 
-// Rate limit authentication endpoints to blunt brute-force and abuse.
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 40,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many attempts — please wait a few minutes and try again.' },
+// Rate limits on the auth endpoints, per real visitor address (see lib/limits.js).
+//  · Password checks (login, change password, delete account) count only FAILED
+//    attempts, so signing in correctly is never blocked: 20 wrong tries per 15 min.
+//  · Sign-up and the password-reset endpoints count every request (they can be
+//    abused even when they succeed, e.g. spam sign-ups or reset-email floods).
+//  · Everything else here (notably GET /me, which every app launch calls) gets a
+//    generous cap that only stops runaway loops.
+const passwordLimiter = makeLimiter({
+  max: 20,
+  skipSuccessfulRequests: true,
+  message: 'Too many attempts — please wait a few minutes and try again.',
 });
+const signupResetLimiter = makeLimiter({
+  max: 20,
+  message: 'Too many attempts — please wait a few minutes and try again.',
+});
+const sessionLimiter = makeLimiter({
+  max: 300,
+  message: 'Too many requests — please wait a few minutes and try again.',
+});
+const authGate = express.Router();
+authGate.post(['/login', '/change-password'], passwordLimiter);
+authGate.delete('/account', passwordLimiter);
+authGate.post(['/register', '/forgot-password', '/reset-password'], signupResetLimiter);
+authGate.use(sessionLimiter);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
@@ -85,7 +99,7 @@ app.get('/api/pricing', (_req, res) => res.json({
   trialDays: config.stripe.trialDays || 0,
   freeScanLimit: FREE_SCAN_LIMIT,
 }));
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', authGate, authRoutes);
 app.use('/api/bets', betRoutes);
 app.use('/api/trackers', trackerRoutes);
 app.use('/api/plan', planRoutes);
@@ -95,13 +109,7 @@ app.use('/api/share', shareRoutes);
 
 // Usage tracking beacon — high-frequency (a heartbeat per open tab), so give it
 // a generous but bounded rate limit to blunt abuse.
-const trackLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 400,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many requests.' },
-});
+const trackLimiter = makeLimiter({ max: 400, message: 'Too many requests.' });
 app.use('/api/track', trackLimiter, trackRoutes);
 app.use('/api/admin', adminRoutes);
 
