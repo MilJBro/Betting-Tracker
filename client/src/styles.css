@@ -1124,6 +1124,16 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
   /* Keep toasts above the bottom tab bar on mobile. */
   .toast-host { bottom: calc(92px + env(safe-area-inset-bottom)); }
 
+  /* Installed (home-screen) app: the tab bar sat close enough to the iPhone's
+     home-indicator swipe zone that taps near the bottom could trigger it (or
+     swipe the app away). Lift the bar by 8px, and everything positioned
+     against it by the same amount so nothing overlaps. */
+  @media (display-mode: standalone) {
+    .bottom-nav { padding-bottom: 21px; }
+    .main { padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
+    .toast-host { bottom: calc(100px + env(safe-area-inset-bottom)); }
+  }
+
   /* Modals dock to the bottom as sheets on mobile. */
   .modal-overlay { padding: 0; }
   /* Bottom sheet: margin-top:auto pins it to the bottom when it fits, and
@@ -1228,6 +1238,11 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
   }
   .insights-fab.active { border-color: var(--primary); color: var(--primary); }
+  /* Installed app: sit above the tab bar, which is 8px higher there. Declared
+     after the base rule above so it wins. */
+  @media (display-mode: standalone) {
+    .insights-fab { bottom: calc(94px + env(safe-area-inset-bottom)); }
+  }
 }
 
 /* In-app delete confirmation (replaces the unreliable native confirm()). */
