@@ -975,6 +975,13 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 }
 .lp-review-dots button.on { width: 22px; border-radius: 5px; background: var(--primary); }
 
+.lp-install { text-align: center; margin: 18px 0 0; }
+.lp-install button {
+  background: none; border: 0; padding: 8px 6px; color: var(--muted);
+  font-size: 13.5px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+}
+.lp-install button:active { transform: none; }
+
 /* Scroll-in reveal — only animates when the visitor is fine with motion. */
 @media (prefers-reduced-motion: no-preference) {
   .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 0.7, 0.2, 1); }

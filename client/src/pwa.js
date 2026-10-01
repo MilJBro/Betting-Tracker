@@ -107,3 +107,18 @@ export const isStandalone = () =>
 
 export const isIOS = () =>
   typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+export const isAndroid = () =>
+  typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+
+// Which Android browser is this? The "add to home screen" menu wording differs
+// between them. Anything unrecognised gets the generic steps.
+export function androidBrowser() {
+  if (!isAndroid()) return null;
+  const ua = navigator.userAgent;
+  if (/SamsungBrowser/i.test(ua)) return 'samsung';
+  if (/Firefox/i.test(ua)) return 'firefox';
+  if (/EdgA|OPR\/|Opera|DuckDuckGo|Vivaldi/i.test(ua)) return 'other';
+  if (/Chrome/i.test(ua)) return 'chrome';
+  return 'other';
+}

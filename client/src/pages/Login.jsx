@@ -5,6 +5,7 @@ import Logo from '../components/Logo.jsx';
 import PlanCards from '../components/PlanCards.jsx';
 import { api } from '../api.js';
 import { REVIEWS } from '../reviews.js';
+import InstallLink from '../components/InstallLink.jsx';
 
 const FEATURES = [
   {
@@ -191,6 +192,8 @@ export default function Login() {
 
         <div className="section-title lp-h" id="get-started">Get started</div>
         <AuthPanel mode={mode} onMode={setMode} />
+
+        <InstallLink />
 
         <p className="muted" style={{ textAlign: 'center', fontSize: 12, marginTop: 18 }}>
           Free to use · Please gamble responsibly ·{' '}
