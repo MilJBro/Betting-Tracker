@@ -4,6 +4,7 @@ import AuthPanel from '../components/AuthPanel.jsx';
 import Logo from '../components/Logo.jsx';
 import PlanCards from '../components/PlanCards.jsx';
 import { api } from '../api.js';
+import { REVIEWS } from '../reviews.js';
 
 const FEATURES = [
   {
@@ -108,18 +109,28 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Founder note — a real, human voice. Miles: edit this to be genuinely yours. */}
-        <div className="lp-founder reveal">
-          <div className="lp-founder-badge" aria-hidden="true">M</div>
-          <p className="lp-founder-note">
-            I built Betbooks because I was sick of not knowing. Good month, bad month — and no
-            real idea if I was actually up over the year. The bookies were never going to tell
-            me, and my spreadsheets never lasted a week. So I made the tracker I actually
-            wanted: log a bet in seconds, and see the truth. No ads, no selling your data, no
-            catch.
-          </p>
-          <div className="lp-founder-sign">— Miles, founder of Betbooks</div>
-        </div>
+        {/* Reviews — real user quotes only (see reviews.js). Hidden while empty. */}
+        {REVIEWS.length > 0 && (
+          <div className="lp-reviews reveal">
+            <div className="section-title lp-h">What people say</div>
+            <div className="lp-review-list">
+              {REVIEWS.map((r) => (
+                <figure className="lp-review" key={r.name + r.quote.slice(0, 24)}>
+                  {r.rating >= 1 && (
+                    <div className="lp-stars" role="img" aria-label={`${r.rating} out of 5 stars`}>
+                      {'★'.repeat(Math.min(5, Math.round(r.rating)))}
+                    </div>
+                  )}
+                  <blockquote>{r.quote}</blockquote>
+                  <figcaption>
+                    <span className="lp-review-name">{r.name}</span>
+                    {r.detail && <span className="lp-review-detail"> · {r.detail}</span>}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="lp-pricing reveal">
           <div className="lp-pricing-eyebrow">Pricing</div>
