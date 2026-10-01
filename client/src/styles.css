@@ -1141,6 +1141,11 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
      it from the top (reaching the Add button). */
   .modal { max-width: 100%; border-radius: 20px 20px 0 0; margin: auto auto 0; animation: sheetup 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); padding: 12px 16px calc(14px + env(safe-area-inset-bottom)); }
   @keyframes sheetup { from { transform: translateY(100%); } to { transform: none; } }
+  /* Installed app: the sheets' bottom buttons (Clear / Cancel / Add bet) sat
+     right on top of the iPhone home bar, so give them a little more room. */
+  @media (display-mode: standalone) {
+    .modal:not(.checkout-modal) { padding-bottom: calc(26px + env(safe-area-inset-bottom)); }
+  }
 
   /* Checkout stays a centered floating card (not a bottom sheet) so the app
      shows dimmed all around it. */
