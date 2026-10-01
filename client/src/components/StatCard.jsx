@@ -25,7 +25,7 @@ export default function StatCard({ statKey, stats, currency, staking }) {
   switch (meta.kind) {
     case 'money-signed': {
       const v = stats[statKey] ?? 0;
-      const a = amountParts(v, currency, staking, { signed: true });
+      const a = amountParts(v, currency, staking, { signed: true, units: stats[statKey + 'U'] });
       value = a.main;
       cls = v > 0 ? 'pos' : v < 0 ? 'neg' : '';
       if (a.sub) { sub = a.sub; subCls = cls; }
@@ -33,7 +33,7 @@ export default function StatCard({ statKey, stats, currency, staking }) {
     }
     case 'money': {
       const v = stats[statKey] ?? 0;
-      const a = amountParts(v, currency, staking);
+      const a = amountParts(v, currency, staking, { units: stats[statKey + 'U'] });
       value = a.main;
       if (a.sub) sub = a.sub;
       break;
@@ -50,7 +50,7 @@ export default function StatCard({ statKey, stats, currency, staking }) {
       break;
     case 'pending':
       value = stats.pending ?? 0;
-      sub = formatStake(stats.pendingStake ?? 0, currency, staking) + ' at stake';
+      sub = formatStake(stats.pendingStake ?? 0, currency, staking, { units: stats.pendingStakeU }) + ' at stake';
       break;
     case 'streak': {
       const n = stats.currentStreak ?? 0;

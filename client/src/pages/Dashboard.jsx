@@ -19,7 +19,7 @@ import { getCached, setCached, subscribeInvalidate } from '../dataCache.js';
 import { markAppReady } from '../boot.js';
 import { useAddBet } from '../context/AddBetContext.jsx';
 import { usePlan } from '../usePlan.js';
-import { formatStake, formatOdds, formatDate, money, amountParts } from '../format.js';
+import { formatStake, formatOdds, formatDate, money, amountParts, toUnitBets, unitSizeAt } from '../format.js';
 
 // A stat value that shrinks its font-size to fit its tile, so long numbers
 // (e.g. "+£1,523.52") never overflow or clip regardless of how many tiles are
@@ -126,6 +126,7 @@ export const TILE_CATALOG = [
 
 export default function Dashboard() {
   const { settings, update } = useSettings();
+  const staking = settings.staking;
   const { active, activeId } = useTracker();
   const toast = useToast();
   const { user } = useAuth();
@@ -188,6 +189,16 @@ export default function Dashboard() {
   const m = useMemo(() => computeMetrics(cur.list), [cur.list]);
   const prevM = useMemo(() => (cur.prev && cur.prev.length ? computeMetrics(cur.prev) : null), [cur.prev]);
   const chartM = useMemo(() => computeMetrics(windowFor(chartRange).list), [windowFor, chartRange]);
+  // Unit twins of the headline figures, summed bet by bet so each bet counts at
+  // the unit size it was placed under.
+  const mU = useMemo(() => computeMetrics(toUnitBets(cur.list, staking)), [cur.list, staking]);
+  const chartMU = useMemo(() => computeMetrics(toUnitBets(windowFor(chartRange).list, staking)), [windowFor, chartRange, staking]);
+  // The units of the specific bet behind the biggest win / loss.
+  const unitsOfBest = (list, target) => {
+    const b = list.find((x) => betProfit(x) === target && SETTLED.includes(x.status));
+    const u = b ? unitSizeAt(staking, b.placed_at) : 0;
+    return b && u > 0 && target !== 0 ? target / u : 0;
+  };
 
   async function settle(bet, status) {
     try {
@@ -206,7 +217,6 @@ export default function Dashboard() {
   if (!settings || loading || !stats) return <div className="main"><Spinner /></div>;
 
   const currency = settings.currency;
-  const staking = settings.staking;
   const unitSize = Number(staking?.unitSize) || 0;
   // Amounts follow the Show-as setting (Money / Units / Both) via amountParts.
   const ap = (v, opts) => amountParts(v, currency, staking, opts);
@@ -290,6 +300,7 @@ export default function Dashboard() {
   const recent = bets.slice(0, 5);
   const chartData = chartM.timeline;
   const pendingStake = pending.reduce((s, b) => s + b.stake, 0);
+  const pendingStakeU = toUnitBets(pending, staking).reduce((s, b) => s + b.stake, 0);
 
   // The user's chosen dashboard tiles (2–4), validated against the catalog.
   const dashTiles = (Array.isArray(settings.dashTiles) && settings.dashTiles.length >= 2
@@ -306,19 +317,19 @@ export default function Dashboard() {
     const meta = TILE_CATALOG.find((t) => t.key === key) || {};
     const base = { label: meta.label, icon: meta.icon };
     switch (key) {
-      case 'netProfit': { const a = ap(m.profit, { signed: true }); return { ...base, value: a.main, valCls: pcls(m.profit), sub: a.sub, subCls: pcls(m.profit) }; }
+      case 'netProfit': { const a = ap(m.profit, { signed: true, units: mU.profit }); return { ...base, value: a.main, valCls: pcls(m.profit), sub: a.sub, subCls: pcls(m.profit) }; }
       case 'roi': return { ...base, value: `${m.roi}%`, valCls: pcls(m.roi) };
       case 'winRate': return { ...base, value: `${m.winRate}%`, delta: delta?.winRate, deltaFmt: (x) => `${x.toFixed(0)}%` };
       case 'totalBets': return { ...base, value: m.totalBets, delta: delta?.totalBets, deltaFmt: (x) => `${x}` };
       // Tiles are narrow, so show a compact money value (not the long
       // "money · units" dual form) — the units read is available on Stats.
-      case 'avgStake': { const a = ap(m.avgStake); return { ...base, value: a.main, sub: a.sub, delta: a.sub ? undefined : delta?.avgStake, deltaFmt: (x) => ap(x).main }; }
-      case 'totalStaked': { const a = ap(m.staked); return { ...base, value: a.main, sub: a.sub }; }
-      case 'biggestWin': { const a = ap(m.biggestWin, { signed: true }); return { ...base, value: a.main, valCls: 'pos', sub: a.sub, subCls: 'pos' }; }
-      case 'biggestLoss': { const a = ap(m.biggestLoss, { signed: true }); return { ...base, value: a.main, valCls: 'neg', sub: a.sub, subCls: 'neg' }; }
+      case 'avgStake': { const a = ap(m.avgStake, { units: mU.avgStake }); return { ...base, value: a.main, sub: a.sub, delta: a.sub ? undefined : delta?.avgStake, deltaFmt: (x) => ap(x).main }; }
+      case 'totalStaked': { const a = ap(m.staked, { units: mU.staked }); return { ...base, value: a.main, sub: a.sub }; }
+      case 'biggestWin': { const a = ap(m.biggestWin, { signed: true, units: unitsOfBest(cur.list, m.biggestWin) }); return { ...base, value: a.main, valCls: 'pos', sub: a.sub, subCls: 'pos' }; }
+      case 'biggestLoss': { const a = ap(m.biggestLoss, { signed: true, units: unitsOfBest(cur.list, m.biggestLoss) }); return { ...base, value: a.main, valCls: 'neg', sub: a.sub, subCls: 'neg' }; }
       case 'currentStreak': return { ...base, value: m.current, valCls: m.currentType === 'won' ? 'pos' : m.currentType === 'lost' ? 'neg' : '', sub: m.currentType === 'won' ? 'wins' : m.currentType === 'lost' ? 'losses' : '—' };
       case 'longestWin': return { ...base, value: m.longestWin, sub: 'wins' };
-      case 'pending': return { ...base, value: pending.length, sub: formatStake(pendingStake, currency, staking) };
+      case 'pending': return { ...base, value: pending.length, sub: ap(pendingStake, { units: pendingStakeU }).main };
       default: return base;
     }
   }
@@ -412,8 +423,8 @@ export default function Dashboard() {
         <div className="po-body">
           <div className="po-figures">
             <span className="po-label">Total Profit · {rangeLabel(chartRange)}</span>
-            <span className={`po-big ${pcls(chartM.profit)}`}>{ap(chartM.profit, { signed: true }).main}</span>
-            {ap(chartM.profit, { signed: true }).sub && <span className={`po-sub ${pcls(chartM.profit)}`}>{ap(chartM.profit, { signed: true }).sub}</span>}
+            <span className={`po-big ${pcls(chartM.profit)}`}>{ap(chartM.profit, { signed: true, units: chartMU.profit }).main}</span>
+            {ap(chartM.profit, { signed: true, units: chartMU.profit }).sub && <span className={`po-sub ${pcls(chartM.profit)}`}>{ap(chartM.profit, { signed: true, units: chartMU.profit }).sub}</span>}
           </div>
           <div className="po-chart">
             {chartData.length >= 2 ? (
@@ -453,14 +464,14 @@ export default function Dashboard() {
             <div className="qs">
               <span className="qs-ic"><Icon name="trophy" size={16} /></span>
               <span className="qs-label">Best Win</span>
-              <span className="qs-val pos">{ap(m.biggestWin, { signed: true }).main}</span>
-              {ap(m.biggestWin, { signed: true }).sub && <span className="qs-sub">({ap(m.biggestWin, { signed: true }).sub.replace(/^[+-]/, '')})</span>}
+              <span className="qs-val pos">{ap(m.biggestWin, { signed: true, units: unitsOfBest(cur.list, m.biggestWin) }).main}</span>
+              {ap(m.biggestWin, { signed: true, units: unitsOfBest(cur.list, m.biggestWin) }).sub && <span className="qs-sub">({ap(m.biggestWin, { signed: true, units: unitsOfBest(cur.list, m.biggestWin) }).sub.replace(/^[+-]/, '')})</span>}
             </div>
             <div className="qs">
               <span className="qs-ic"><Icon name="target" size={16} /></span>
               <span className="qs-label">Biggest Loss</span>
-              <span className="qs-val neg">{ap(m.biggestLoss, { signed: true }).main}</span>
-              {ap(m.biggestLoss, { signed: true }).sub && <span className="qs-sub">({ap(m.biggestLoss, { signed: true }).sub.replace(/^[+-]/, '')})</span>}
+              <span className="qs-val neg">{ap(m.biggestLoss, { signed: true, units: unitsOfBest(cur.list, m.biggestLoss) }).main}</span>
+              {ap(m.biggestLoss, { signed: true, units: unitsOfBest(cur.list, m.biggestLoss) }).sub && <span className="qs-sub">({ap(m.biggestLoss, { signed: true, units: unitsOfBest(cur.list, m.biggestLoss) }).sub.replace(/^[+-]/, '')})</span>}
             </div>
             <div className="qs">
               <span className="qs-ic"><Icon name="analytics" size={16} /></span>
@@ -505,13 +516,13 @@ export default function Dashboard() {
                     <span className="act-title">{title}</span>
                     {sub ? <span className="act-sub">{sub}</span> : null}
                   </span>
-                  <span className="act-stake">{formatStake(b.stake, currency, staking)}<span className="act-odds">@ {formatOdds(b.odds, settings.oddsFormat)}</span></span>
+                  <span className="act-stake">{formatStake(b.stake, currency, staking, { at: b.placed_at })}<span className="act-odds">@ {formatOdds(b.odds, settings.oddsFormat)}</span></span>
                   <span className="act-right">
                     <span className={`act-badge ${b.status}`}>{b.status === 'won' ? 'Won' : b.status === 'lost' ? 'Lost' : b.status === 'pending' ? 'Open' : b.status}</span>
                     {settled && (
                       <span className="act-pl">
-                        <span className={pcls(p)}>{ap(p, { signed: true }).main}</span>
-                        {ap(p, { signed: true }).sub && <span className={`act-pl-u ${pcls(p)}`}>{ap(p, { signed: true }).sub}</span>}
+                        <span className={pcls(p)}>{ap(p, { signed: true, at: b.placed_at }).main}</span>
+                        {ap(p, { signed: true, at: b.placed_at }).sub && <span className={`act-pl-u ${pcls(p)}`}>{ap(p, { signed: true, at: b.placed_at }).sub}</span>}
                       </span>
                     )}
                   </span>
@@ -527,14 +538,14 @@ export default function Dashboard() {
         <div className="card perf-card">
           <div className="perf-card-head static">
             <span className="pch-title"><Icon name="bets" size={17} /> Open bets ({pending.length})</span>
-            <span className="muted" style={{ fontSize: 12.5 }}>{formatStake(pending.reduce((s, b) => s + b.stake, 0), currency, staking)} staked</span>
+            <span className="muted" style={{ fontSize: 12.5 }}>{ap(pendingStake, { units: pendingStakeU }).main} staked</span>
           </div>
           <div className="stack">
             {pending.slice(0, 6).map((b) => (
               <div key={b.id} className="row spread" style={{ flexWrap: 'wrap', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontWeight: 600 }}>{b.selection || b.event || b.sport || 'Bet'}</div>
-                  <div className="muted" style={{ fontSize: 12 }}>{formatDate(b.placed_at)} · {formatStake(b.stake, currency, staking)} @ {formatOdds(b.odds, settings.oddsFormat)}</div>
+                  <div className="muted" style={{ fontSize: 12 }}>{formatDate(b.placed_at)} · {formatStake(b.stake, currency, staking, { at: b.placed_at })} @ {formatOdds(b.odds, settings.oddsFormat)}</div>
                 </div>
                 <SettleControls bet={b} onSettle={(status) => settle(b, status)} />
               </div>

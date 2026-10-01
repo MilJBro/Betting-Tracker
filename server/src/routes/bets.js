@@ -5,6 +5,7 @@ import { requireAuth } from '../lib/auth.js';
 import { isPro, requirePro } from '../lib/plan.js';
 import { resolveTrackerId } from '../lib/trackers.js';
 import { computeStats, computeAnalytics } from '../lib/stats.js';
+import { loadStaking, withUnits } from '../lib/units.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -117,7 +118,7 @@ router.get('/stats', (req, res) => {
     .prepare('SELECT * FROM bets WHERE user_id = ? AND tracker_id = ?')
     .all(req.userId, trackerId)
     .map(rowToBet);
-  res.json({ stats: computeStats(rows) });
+  res.json({ stats: computeStats(withUnits(rows, loadStaking(req.userId))) });
 });
 
 // Deeper analytics (the Performance page) is a Pro feature — the dashboard's
@@ -145,7 +146,7 @@ router.get('/analytics', (req, res) => {
 
   const distinct = (key) => [...new Set(all.map((b) => b[key]).filter(Boolean))].sort();
   res.json({
-    analytics: computeAnalytics(rows),
+    analytics: computeAnalytics(withUnits(rows, loadStaking(req.userId))),
     pro,
     filters: applied,
     options: { sports: distinct('sport'), tipsters: distinct('tipster'), bookmakers: distinct('bookmaker') },
