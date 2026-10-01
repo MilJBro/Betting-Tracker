@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import Icon from './Icon.jsx';
+import { keepInView } from '../keepInView.js';
 
-// A password field with a show/hide eye toggle. On focus it scrolls itself into
-// view so the on-screen keyboard doesn't cover it (a problem on mobile where the
-// field sits low on the page).
+// A password field with a show/hide eye toggle. On focus it keeps itself
+// visible above the on-screen keyboard.
 export default function PasswordInput({
   value,
   onChange,
@@ -13,14 +13,6 @@ export default function PasswordInput({
   ariaLabel = 'Password',
 }) {
   const [show, setShow] = useState(false);
-
-  function onFocus(e) {
-    const el = e.target;
-    // Wait for the keyboard to animate in, then centre the field in the viewport.
-    setTimeout(() => {
-      try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch {}
-    }, 300);
-  }
 
   return (
     <div className="pw-wrap">
@@ -32,11 +24,14 @@ export default function PasswordInput({
         autoComplete={autoComplete}
         required={required}
         aria-label={ariaLabel}
-        onFocus={onFocus}
+        onFocus={(e) => keepInView(e.target)}
       />
       <button
         type="button"
         className="pw-toggle"
+        // Keep focus in the field: otherwise tapping the eye blurs it, the
+        // keyboard drops, the layout jumps mid-tap and the tap often misses.
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => setShow((s) => !s)}
         aria-label={show ? 'Hide password' : 'Show password'}
         aria-pressed={show}

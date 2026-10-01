@@ -234,8 +234,12 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6
 .input-prefix input { width: 100%; padding-left: 26px; }
 /* Password field with a show/hide eye toggle. */
 .pw-wrap { position: relative; }
-.pw-wrap input { width: 100%; padding-right: 44px; }
-.pw-toggle { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; display: grid; place-items: center; background: transparent; border: 0; color: var(--muted); cursor: pointer; border-radius: 8px; }
+.pw-wrap input { width: 100%; padding-right: 50px; }
+/* 44px tap target (Apple's minimum) — the icon stays 18px inside it. */
+.pw-toggle { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; display: grid; place-items: center; background: transparent; border: 0; color: var(--muted); cursor: pointer; border-radius: 10px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+/* iOS Safari zooms the page into any field under 16px when it's tapped; keep
+   the sign-in and password fields at 16px so focusing them doesn't zoom. */
+.auth-panel input, .pw-wrap input { font-size: 16px; }
 .pw-toggle:hover { color: var(--text); background: var(--surface-2); }
 @media (max-width: 860px) {
   /* Top padding clears the status bar / notch in the installed (standalone)
