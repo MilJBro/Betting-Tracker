@@ -116,6 +116,8 @@ export function mergeSettings(saved) {
     const last = Number(hist[hist.length - 1]?.size);
     saved = { ...saved, staking: { ...saved.staking, unitSize: last > 0 ? last : base.staking.unitSize } };
   }
+  const CURRENCIES = ['GBP', 'USD', 'EUR', 'AUD', 'CAD'];
+  if (saved.currency && !CURRENCIES.includes(saved.currency)) saved = { ...saved, currency: base.currency };
   return {
     ...base,
     ...saved,
