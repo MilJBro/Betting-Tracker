@@ -30,8 +30,18 @@ function safeJson(s, fallback) {
 function cleanLegs(raw) {
   if (!Array.isArray(raw)) return [];
   return raw
-    .map((l) => ({ selection: String(l?.selection || '').trim(), odds: Number(l?.odds) || 0 }))
+    .map((l) => ({ selection: String(l?.selection || '').trim().slice(0, 200), odds: Number(l?.odds) || 0 }))
     .filter((l) => l.selection || l.odds > 0);
+}
+
+// What a stored bet must satisfy. Returns an error message, or '' when fine.
+// A blank/zero odds figure is tolerated (imports and voids can lack one), but a
+// stake or price that can only be a mistake would corrupt every total.
+function validateBet(b) {
+  if (!(b.stake >= 0) || b.stake > 10_000_000) return 'Enter a stake between 0 and 10,000,000.';
+  if (b.odds < 0 || (b.odds > 0 && b.odds < 1) || b.odds > 100_000) return 'Odds must be 1.00 or higher.';
+  if (b.payout != null && (!(b.payout >= 0) || b.payout > 1_000_000_000)) return 'That return amount is not valid.';
+  return '';
 }
 
 function sanitise(body) {
@@ -46,12 +56,12 @@ function sanitise(body) {
   //    product of each leg's odds.
   //  · Bet builder: selections within the SAME game, priced by the bookmaker as
   //    one combined price, so we keep the odds the user entered.
-  const legs = cleanLegs(body.legs);
+  const legs = cleanLegs(body.legs).slice(0, 30);
   const requestedType = (body.bet_type || '').trim();
   const isBuilder = requestedType === 'Bet builder' && legs.length >= 2;
   const isAcca = !isBuilder && legs.length >= 2;
   let odds = num(body.odds);
-  let selection = (body.selection || '').trim();
+  let selection = String(body.selection || '').trim().slice(0, 300);
   let bet_type = requestedType;
   if (isAcca) {
     odds = Number(legs.reduce((p, l) => p * (l.odds || 1), 1).toFixed(3));
@@ -81,19 +91,20 @@ function sanitise(body) {
   }
   if (status === 'lost') payout = 0;
   return {
-    placed_at: body.placed_at || new Date().toISOString().slice(0, 10),
-    sport: (body.sport || '').trim(),
-    event: (body.event || '').trim(),
+    // Dates must look like YYYY-MM-DD (the app sorts and groups on them).
+    placed_at: /^\d{4}-\d{2}-\d{2}/.test(String(body.placed_at || '')) ? String(body.placed_at).slice(0, 10) : new Date().toISOString().slice(0, 10),
+    sport: String(body.sport || '').trim().slice(0, 60),
+    event: String(body.event || '').trim().slice(0, 300),
     selection,
     bet_type,
-    bookmaker: (body.bookmaker || '').trim(),
-    tipster: (body.tipster || '').trim(),
+    bookmaker: String(body.bookmaker || '').trim().slice(0, 60),
+    tipster: String(body.tipster || '').trim().slice(0, 60),
     stake: num(body.stake),
     odds,
     status,
     payout,
     notes: '', // notes were removed as a feature — never stored anymore
-    tags: JSON.stringify(Array.isArray(body.tags) ? body.tags : []),
+    tags: JSON.stringify(Array.isArray(body.tags) ? body.tags.slice(0, 20).map((t) => String(t).slice(0, 40)) : []),
     legs: JSON.stringify(legs),
     each_way: eachWay ? 1 : 0,
     ew_fraction: ewFraction,
@@ -155,6 +166,8 @@ router.get('/analytics', (req, res) => {
 
 router.post('/', (req, res) => {
   const b = sanitise(req.body || {});
+  const problem = validateBet(b);
+  if (problem) return res.status(400).json({ error: problem });
   const id = nanoid();
   const now = new Date().toISOString();
   const trackerId = resolveTrackerId(req.userId, (req.body || {}).tracker_id || req.query.tracker);
@@ -186,14 +199,18 @@ router.post('/import', requirePro, (req, res) => {
      VALUES (@id, @user_id, @tracker_id, @placed_at, @sport, @event, @selection, @bet_type,
        @bookmaker, @tipster, @stake, @odds, @status, @payout, @notes, @tags, @legs, @each_way, @ew_fraction, @ew_places, @boost, @created_at, @updated_at)`
   );
+  let imported = 0;
+  let skipped = 0; // rows with an impossible stake or price are left out, not the whole file
   const insertAll = db.transaction((rows) => {
     for (const raw of rows) {
       const b = sanitise(raw || {});
+      if (validateBet(b)) { skipped++; continue; }
+      imported++;
       stmt.run({ id: nanoid(), user_id: req.userId, tracker_id: trackerId, ...b, created_at: now, updated_at: now });
     }
   });
   insertAll(list);
-  res.status(201).json({ imported: list.length, tracker: trackerId });
+  res.status(201).json({ imported, skipped, tracker: trackerId });
 });
 
 router.put('/:id', (req, res) => {
@@ -201,7 +218,15 @@ router.put('/:id', (req, res) => {
     .prepare('SELECT * FROM bets WHERE id = ? AND user_id = ?')
     .get(req.params.id, req.userId);
   if (!existing) return res.status(404).json({ error: 'Bet not found' });
-  const b = sanitise({ ...rowToBet(existing), ...req.body });
+  const merged = { ...rowToBet(existing), ...req.body };
+  // Changing the stake, odds, boost or legs of a settled win without sending a
+  // new return would leave the old payout behind and quietly skew every total,
+  // so drop it and let it be recomputed from the new figures.
+  const body = req.body || {};
+  if (merged.status === 'won' && !merged.each_way && !('payout' in body) && ['stake', 'odds', 'boost', 'legs'].some((k) => k in body)) merged.payout = null;
+  const b = sanitise(merged);
+  const problem = validateBet(b);
+  if (problem) return res.status(400).json({ error: problem });
   db.prepare(
     `UPDATE bets SET placed_at=@placed_at, sport=@sport, event=@event,
        selection=@selection, bet_type=@bet_type, bookmaker=@bookmaker,

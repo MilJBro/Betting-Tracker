@@ -89,6 +89,20 @@ const EDITABLE_FIELDS = [
   { key: 'tags', label: 'Tags' },
 ];
 
+// The return the form works out for a bet: stake back plus profit (a winnings
+// boost adds to the profit part only). Each-way depends on the outcome: won =
+// Win + Place parts, placed = Place part, lost = nothing. `p` is the stake box
+// (per part when each-way) and `d` the decimal odds. null when not computable.
+function autoReturn({ d, p, status, eachWay, ewFraction, boost }) {
+  if (!(d > 0 && p > 0)) return null;
+  if (eachWay) {
+    const placeReturn = p * (1 + (d - 1) * fractionValue(ewFraction));
+    const ret = status === 'placed' ? placeReturn : status === 'lost' ? 0 : p * d + placeReturn;
+    return Math.round(ret * 100) / 100;
+  }
+  return Math.round((p + (p * d - p) * (1 + (Number(boost) || 0))) * 100) / 100;
+}
+
 export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, staking, currency, oddsFormat = 'decimal', defaults, bookmakers = [], sports = [], bets = [], defaultDate, onSetUnitSize, onToggleField, onSave, onClose }) {
   // An existing bet is shown in the unit size it was placed under (the user may
   // have changed their unit size since); a new bet uses the current size.
@@ -203,12 +217,24 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
 
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
   const [fieldsEditing, setFieldsEditing] = useState(false);
 
-  // Once the user edits the payout themselves, stop auto-filling it.
-  const [payoutTouched, setPayoutTouched] = useState(
-    () => !!(initial && initial.payout != null && initial.payout !== '')
-  );
+  // Once the user edits the payout themselves, stop auto-filling it. When
+  // editing a saved bet, its return only counts as "typed by hand" if it differs
+  // from what the form would have worked out (a cash-out, void or manual
+  // amount) — otherwise changing the stake or odds must update the return too,
+  // or the old figure would silently skew every total.
+  const [payoutTouched, setPayoutTouched] = useState(() => {
+    if (!(initial && initial.payout != null && initial.payout !== '')) return false;
+    const d = kind === 'acca' ? combinedOdds(legs, oddsFormat) : parseOdds(form.odds, oddsFormat);
+    const auto = autoReturn({
+      d, p: Number(form.stake), status: form.status,
+      eachWay: eachWay && kind === 'single', ewFraction: form.ew_fraction, boost: form.boost,
+    });
+    const saved = Number(form.payout);
+    return auto == null || Math.abs(saved - auto) > Math.max(0.02, Math.abs(auto) * 0.01);
+  });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const show = (k) => fields[k] !== false;
@@ -226,24 +252,8 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
     if (payoutTouched) return;
     const d = kind === 'acca' ? accaOdds : parseOdds(form.odds, oddsFormat);
     const p = Number(form.stake); // per-part stake (or plain stake when not each-way)
-    let next = '';
-    if (d > 0 && p > 0) {
-      if (eachWay && kind === 'single') {
-        const placeMult = 1 + (d - 1) * fractionValue(form.ew_fraction);
-        const winReturn = p * d;
-        const placeReturn = p * placeMult;
-        const ret =
-          form.status === 'placed' ? placeReturn
-          : form.status === 'lost' ? 0
-          : winReturn + placeReturn; // won, and the potential return otherwise
-        next = String(Math.round(ret * 100) / 100);
-      } else {
-        // A winnings boost adds to the profit part only (stake back unchanged).
-        const boost = Number(form.boost) || 0;
-        const ret = p + (p * d - p) * (1 + boost);
-        next = String(Math.round(ret * 100) / 100);
-      }
-    }
+    const ret = autoReturn({ d, p, status: form.status, eachWay: eachWay && kind === 'single', ewFraction: form.ew_fraction, boost: form.boost });
+    const next = ret == null ? '' : String(ret);
     setForm((f) => (f.payout === next ? f : { ...f, payout: next }));
   }, [form.stake, form.odds, form.status, form.ew_fraction, form.boost, eachWay, kind, accaOdds, oddsFormat, payoutTouched]);
 
@@ -251,8 +261,31 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
   const addLeg = () => setLegs((ls) => [...ls, { selection: '', odds: '' }]);
   const removeLeg = (i) => setLegs((ls) => (ls.length > 1 ? ls.filter((_, j) => j !== i) : ls));
 
+  // What's missing before a bet can be saved (empty string = good to go), so a
+  // half-filled form can't create a blank £0 bet. Messages name the field.
+  function missingBit() {
+    const stakeN = Number(form.stake);
+    if (!(stakeN > 0)) return 'Enter your stake.';
+    if (kind === 'acca') {
+      const priced = legs.filter((l) => (l.selection || '').trim() && parseOdds(l.odds, oddsFormat) > 1);
+      if (priced.length < 2) return 'Add at least two selections, each with its odds.';
+      return '';
+    }
+    if (kind === 'builder') {
+      if (!legs.some((l) => (l.selection || '').trim())) return 'Add at least one selection.';
+    } else {
+      const event = layout === 'racing' ? composeRace() : versus ? composeEvent() : (form.event || '').trim();
+      if (!(form.selection || '').trim() && !event) return 'Enter what you’re betting on.';
+    }
+    if (!(parseOdds(form.odds, oddsFormat) > 1)) return 'Enter the odds.';
+    return '';
+  }
+
   async function submit(e) {
     e.preventDefault();
+    const missing = missingBit();
+    if (missing) { setFormError(missing); return; }
+    setFormError('');
     setSaving(true);
     try {
       const payload = { ...form };
@@ -302,6 +335,8 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
       }
       await onSave(payload);
       onClose();
+    } catch {
+      // The parent has already shown the error; keep the sheet open to retry.
     } finally {
       setSaving(false);
     }
@@ -827,6 +862,7 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
             </div>
           )}
 
+          {formError && <div className="error-banner" role="alert" style={{ marginTop: 8 }}>{formError}</div>}
           <div className="row spread" style={{ marginTop: 8 }}>
             {!isEdit ? (
               <button type="button" className="btn-ghost" onClick={clearForm}>Clear</button>
