@@ -15,13 +15,25 @@ const SYSTEM_PROMPT = `You extract structured data from a screenshot of a bettin
 confirmation from any bookmaker. Return ONLY a single JSON object (no prose, no
 markdown code fences) with exactly these keys.
 
+This works for EVERY sport (football, horse racing, greyhounds, tennis, basketball, cricket,
+golf, boxing, MMA/UFC, rugby, darts, snooker, American football, baseball, ice hockey,
+motorsport, esports and more). An "event" means whatever that sport calls one fixture: a
+match, a game, a race, a fight, a round, a tournament or a stage.
+
 THE KEY RULE — decide the bet type by counting the distinct matches/events involved,
 NOT by the words printed on the slip:
   · SINGLE: one selection.
   · BET BUILDER (same game multi): two or more selections ALL within ONE match/event,
-    sharing ONE combined price.
+    sharing ONE combined price. Other names: Same Game Multi (SGM), Same Game Parlay (SGP),
+    BetBuilder, #YourOdds, Build-a-bet. Typical examples: a footballer to score + over 2.5
+    goals; an NBA player over 25.5 points + the same team to win; a tennis player to win +
+    over 21.5 games in the same match.
   · ACCUMULATOR (acca): selections or parts from TWO OR MORE DIFFERENT matches/events,
-    each part priced separately; the total odds are the parts' prices multiplied.
+    each part priced separately; the total odds are the parts' prices multiplied. Other
+    names: Parlay (US), Multi (Australia), Double, Treble, Fourfold, Fivefold and so on.
+    Selections from DIFFERENT races, fights, games or tournaments are an accumulator even
+    when they are the same sport or the same meeting (a horse racing double/treble across
+    different races is an accumulator, and so is a legs-across-sports slip).
 Bookmakers print "Bet Builder" on each builder they sell, even when several builders and
 singles from different matches sit together on one slip. That is still an ACCUMULATOR,
 because it spans different matches. Example: "BET BUILDER 6.50" (Belgium v Türkiye) +
@@ -30,8 +42,18 @@ ONE accumulator of three parts priced 6.50, 2.70 and 2.60 — not a bet builder.
 Only call it a bet builder when every selection belongs to the same single match.
 
 - selection (string): the main pick. For a multiple/bet builder, join each leg with " / ".
-- event (string): the match or event, e.g. "Arsenal v Chelsea". "" if not shown.
-- sport (string): sport or category, e.g. "Football", "Horse Racing", "Tennis". "" if unknown.
+- event (string): the match or event. Head-to-head (football, tennis, basketball, boxing,
+  MMA, rugby, cricket, baseball, ice hockey...): write "Home v Away" with a lowercase "v",
+  also for US-style "Away @ Home" (so "Lakers @ Celtics" becomes "Celtics v Lakers").
+  Horse/greyhound racing: "Course HH:MM", e.g. "Ascot 15:30". Golf, motorsport and other
+  field sports: the tournament or race, e.g. "The Masters", "Monaco Grand Prix". "" if not shown.
+- sport (string): use EXACTLY one of these names when the sport matches, translating
+  whatever the slip says (Soccer -> Football; NBA/NCAAB -> Basketball; NFL/NCAAF ->
+  American Football; MLB -> Baseball; NHL -> Ice Hockey; UFC -> MMA / UFC; F1/NASCAR ->
+  Motorsport; Racing/Horses -> Horse Racing; Dogs -> Greyhounds):
+  Football, Horse Racing, Greyhounds, Tennis, Basketball, Cricket, Golf, Boxing, MMA / UFC,
+  Rugby, Darts, Snooker, American Football, Baseball, Ice Hockey, Motorsport, Esports.
+  For any other sport write its common English name. "" if unknown.
 - bet_type (string): the KIND of bet, by the key rule above. Use exactly one of: "Single",
   "Bet builder" (selections within ONE match — also called Same Game Multi, BetBuilder,
   #YourOdds), "Accumulator" (parts across DIFFERENT matches — includes Double, Treble,
@@ -39,8 +61,9 @@ Only call it a bet builder when every selection belongs to the same single match
   "" only if you genuinely cannot tell.
 - parts (array): the PRICED parts of the slip, top to bottom. This is how the slip is
   structured and what the total odds are made from. One object per part:
-  { "type": "single" | "builder", "odds": number, "event": string, "selections": [string] }
-  "event" is the match that part is on (e.g. "Belgium v Türkiye"), "" if not shown.
+  { "type": "single" | "builder", "odds": number, "event": string, "sport": string, "selections": [string] }
+  "event" is the match/race/fight that part is on, written as described above. "sport" is
+  that part's sport (same names as above) — parts of one slip can be DIFFERENT sports.
   · A "single" part is ONE selection with its own odds shown beside it.
   · A "builder" part is a Bet Builder / Same Game Multi: two or more selections in ONE
     match that share ONE combined price, shown on the "Bet Builder" header line (e.g.
@@ -51,13 +74,20 @@ Only call it a bet builder when every selection belongs to the same single match
     total odds are the three prices multiplied together. Never drop a part's price.
   · A plain single bet is one part with one selection. A plain bet builder is one part
     with several selections. An ordinary accumulator is one "single" part per leg.
-  · "odds" for each part in DECIMAL (convert fractional/American). 0 only if not visible.
+  · "odds" for each part in DECIMAL. Convert fractional (5/2 -> 3.5), American (+150 -> 2.5,
+    -110 -> 1.909) and "Evens"/"EVS" (-> 2.0). Use 0 for an "SP" (starting price) bet, or if
+    the price isn't visible.
 - legs (array): optional, only if you did NOT fill in parts: one object per selection:
   { "selection": string, "odds": number }. Put each leg's odds in DECIMAL if the slip shows
   them, otherwise 0. A bet builder usually shows only the combined price, so its legs will
   have odds 0 — that's fine. Use an empty array [] for a Single.
+- each_way (boolean): true only if the slip shows an each-way bet ("E/W", "Each Way") on a
+  single selection (horse/greyhound racing, golf, etc.). false otherwise.
+- ew_fraction (string): the each-way place fraction as shown, e.g. "1/4" or "1/5". "" if not each-way.
+- ew_places (number): how many places are paid, e.g. 3 or 4. 0 if not each-way or not shown.
 - bookmaker (string): the bookmaker's name if identifiable (e.g. "Bet365", "Sky Bet", "Paddy Power"). "" if unknown.
-- stake (number): the stake as a plain number in the account currency (e.g. 10.00). 0 if not shown.
+- stake (number): the TOTAL stake as a plain number in the account currency (e.g. 10.00).
+  For an each-way bet that is the total outlay for both parts (£5 E/W = 10.00). 0 if not shown.
 - odds (number): the TOTAL odds in DECIMAL format. Convert fractional (e.g. 6/4 -> 2.5) and American (e.g. +150 -> 2.5, -200 -> 1.5). For a multi-part slip this is the parts' prices multiplied together (and should agree with "to return" ÷ stake). 0 if not shown.
 - payout (number or null): the potential returns / "to return" amount as a number, or null if not shown.
 - boost_percent (number): if the slip shows a WINNINGS boost / profit boost / bet-builder
@@ -72,6 +102,45 @@ Only call it a bet builder when every selection belongs to the same single match
 Rules: output valid JSON and nothing else. Use "" for unknown text fields and 0
 for unknown numbers, except payout, placed_at and currency which use null. Never
 invent values you cannot actually see in the image.`;
+
+// The sport names the app's slip layouts and stats are built around. The model
+// is asked for these, but slips say NBA, Soccer, UFC and so on, so map the
+// common aliases here rather than trusting it. Unknown sports are kept as given.
+const SPORT_ALIASES = [
+  [/^(football|soccer|association football)$/i, 'Football'],
+  [/horse|^racing$|^horses$/i, 'Horse Racing'],
+  [/greyhound|^dogs?$/i, 'Greyhounds'],
+  [/tennis/i, 'Tennis'],
+  [/basketball|^nba$|^wnba$|^ncaab$|euroleague/i, 'Basketball'],
+  [/cricket/i, 'Cricket'],
+  [/golf/i, 'Golf'],
+  [/boxing/i, 'Boxing'],
+  [/mma|ufc|mixed martial/i, 'MMA / UFC'],
+  [/rugby/i, 'Rugby'],
+  [/darts/i, 'Darts'],
+  [/snooker|pool/i, 'Snooker'],
+  [/american football|^nfl$|^ncaaf$|gridiron/i, 'American Football'],
+  [/baseball|^mlb$/i, 'Baseball'],
+  [/ice hockey|^nhl$|^hockey$/i, 'Ice Hockey'],
+  [/motorsport|motor racing|formula|^f1$|nascar|indycar|motogp|rally/i, 'Motorsport'],
+  [/esport|e-sport|counter-strike|^cs2?$|dota|league of legends|valorant/i, 'Esports'],
+];
+export function canonicalSport(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return '';
+  const hit = SPORT_ALIASES.find(([re]) => re.test(s));
+  return hit ? hit[1] : s;
+}
+
+// Head-to-head events are stored as "Home v Away". US slips print "Away @ Home",
+// which is the same fixture the other way round, and some say "vs".
+export function normalizeEvent(raw) {
+  const e = String(raw || '').trim();
+  if (!e) return '';
+  const at = e.split(/\s+@\s+/);
+  if (at.length === 2 && at[0] && at[1]) return `${at[1].trim()} v ${at[0].trim()}`;
+  return e.replace(/\s+(?:vs\.?|versus)\s+/i, ' v ');
+}
 
 function coerceNumber(v) {
   const n = Number(v);
@@ -103,7 +172,8 @@ function fromParts(parsed, stake, payout, boostPct) {
   const parts = parsed.parts
     .map((p) => ({
       odds: coerceNumber(p?.odds),
-      event: String(p?.event || '').trim(),
+      event: normalizeEvent(p?.event),
+      sport: canonicalSport(p?.sport),
       selections: (Array.isArray(p?.selections) ? p.selections : [p?.selection])
         .map((x) => String(x || '').trim())
         .filter(Boolean),
@@ -114,11 +184,12 @@ function fromParts(parsed, stake, payout, boostPct) {
   if (parts.length === 1) {
     const [p] = parts;
     if (p.selections.length === 1) {
-      return { bet_type: 'Single', selection: p.selections[0], odds: p.odds, legs: [], event: p.event };
+      return { bet_type: 'Single', selection: p.selections[0], odds: p.odds, legs: [], event: p.event, sport: p.sport };
     }
     return {
       bet_type: 'Bet builder',
       event: p.event,
+      sport: p.sport,
       selection: p.selections.join(' / '),
       odds: p.odds,
       legs: p.selections.map((s) => ({ selection: s, odds: 0 })),
@@ -138,9 +209,12 @@ function fromParts(parsed, stake, payout, boostPct) {
   }
   const priced = legs.filter((l) => l.odds > 1);
   const total = priced.length ? priced.reduce((acc, l) => acc * l.odds, 1) : 0;
+  // One sport if every part agrees; otherwise it's a mixed-sport accumulator.
+  const sports = [...new Set(parts.map((p) => p.sport).filter(Boolean))];
   return {
     bet_type: 'Accumulator',
     event: '',
+    sport: sports.length > 1 ? 'Multi-sport' : sports[0] || '',
     selection: legs.map((l) => l.selection).join(' / '),
     odds: Number(total.toFixed(3)),
     legs,
@@ -163,12 +237,19 @@ export function normalizeBet(parsed) {
   // for selections in one match, so selections that each carry their own price
   // are separate matches multiplied together: an accumulator.
   let betType = built ? built.bet_type : String(parsed.bet_type || '').trim();
+  // Each-way only applies to a single selection; keep the terms the slip shows.
+  const isSingle = betType === 'Single' || (!betType && legs.length < 2);
+  const eachWay = isSingle && (parsed.each_way === true || parsed.each_way === 'true');
+  const ewFraction = eachWay ? String(parsed.ew_fraction || '').trim().replace(/\s+/g, '') : '';
+  const ewPlaces = eachWay ? Math.max(0, Math.round(coerceNumber(parsed.ew_places))) : 0;
   if (!built && /builder/i.test(betType) && legs.filter((l) => l.odds > 1).length >= 2) betType = 'Accumulator';
   return {
     selection: built ? built.selection : String(parsed.selection || '').trim(),
     // An accumulator spans several matches, so it has no single event.
-    event: built ? (built.event || (built.bet_type === 'Accumulator' ? '' : String(parsed.event || '').trim())) : String(parsed.event || '').trim(),
-    sport: String(parsed.sport || '').trim(),
+    event: built
+      ? (built.event || (built.bet_type === 'Accumulator' ? '' : normalizeEvent(parsed.event)))
+      : normalizeEvent(parsed.event),
+    sport: (built && built.sport) || canonicalSport(parsed.sport),
     bet_type: betType,
     bookmaker: String(parsed.bookmaker || '').trim(),
     stake,
@@ -181,6 +262,7 @@ export function normalizeBet(parsed) {
     status: statuses.includes(parsed.status) ? parsed.status : 'pending',
     boost: boostPct > 0 ? Math.min(3, boostPct / 100) : 0,
     legs: built ? built.legs : legs,
+    ...(eachWay ? { each_way: true, ew_fraction: ewFraction || '1/5', ew_places: ewPlaces || '' } : {}),
   };
 }
 
