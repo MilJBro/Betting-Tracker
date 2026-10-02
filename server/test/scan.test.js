@@ -71,3 +71,39 @@ test('old-style output without parts is read as before', () => {
   const junk = normalizeBet({ ...base, parts: 'nonsense', odds: 2, selection: 'X' });
   assert.equal(junk.odds, 2); assert.equal(junk.selection, 'X');
 });
+
+test('the type follows the matches involved, not the bookmaker\'s "Bet Builder" label or the model\'s guess', () => {
+  const threeMatches = [
+    { type: 'builder', odds: 6.5, event: 'Belgium v Türkiye', selections: ['A', 'B'] },
+    { type: 'builder', odds: 2.7, event: 'Croatia v England', selections: ['C', 'D'] },
+    { type: 'single', odds: 2.6, event: 'North Macedonia v Scotland', selections: ['E'] },
+  ];
+  // model wrongly says "Bet builder" because every part is headed "Bet Builder"
+  const acca = normalizeBet({ ...base, bet_type: 'Bet builder', event: 'Belgium v Türkiye', parts: threeMatches });
+  assert.equal(acca.bet_type, 'Accumulator');
+  assert.equal(acca.event, '', 'no single event for a multi-match bet');
+  assert.equal(acca.odds, 45.63);
+
+  // model wrongly says "Accumulator" for several selections in ONE match
+  const builder = normalizeBet({
+    ...base, bet_type: 'Accumulator', payout: 65,
+    parts: [{ type: 'builder', odds: 6.5, event: 'Arsenal v Chelsea', selections: ['Saka to score', 'Over 2.5 goals', 'Havertz 1+ shot'] }],
+  });
+  assert.equal(builder.bet_type, 'Bet builder');
+  assert.equal(builder.event, 'Arsenal v Chelsea');
+  assert.equal(builder.odds, 6.5);
+  assert.equal(builder.legs.length, 3);
+  assert.ok(builder.legs.every((l) => l.odds === 0), 'builder selections share one price');
+
+  // one selection is a single whatever the model called it
+  const single = normalizeBet({ ...base, bet_type: 'Accumulator', parts: [{ type: 'single', odds: 2, event: 'A v B', selections: ['A to win'] }] });
+  assert.equal(single.bet_type, 'Single');
+  assert.equal(single.event, 'A v B');
+});
+
+test('without parts, "builder" selections that each have their own price are an accumulator', () => {
+  const b = normalizeBet({ ...base, bet_type: 'Bet builder', odds: 6, legs: [{ selection: 'A', odds: 2 }, { selection: 'B', odds: 3 }] });
+  assert.equal(b.bet_type, 'Accumulator');
+  const real = normalizeBet({ ...base, bet_type: 'Bet builder', odds: 6.5, legs: [{ selection: 'A', odds: 0 }, { selection: 'B', odds: 0 }] });
+  assert.equal(real.bet_type, 'Bet builder');
+});

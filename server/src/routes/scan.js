@@ -13,20 +13,34 @@ const ALLOWED_MEDIA = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 // truth; odds are normalised to decimal so they slot straight into the app.
 const SYSTEM_PROMPT = `You extract structured data from a screenshot of a betting slip or bet
 confirmation from any bookmaker. Return ONLY a single JSON object (no prose, no
-markdown code fences) with exactly these keys:
+markdown code fences) with exactly these keys.
+
+THE KEY RULE — decide the bet type by counting the distinct matches/events involved,
+NOT by the words printed on the slip:
+  · SINGLE: one selection.
+  · BET BUILDER (same game multi): two or more selections ALL within ONE match/event,
+    sharing ONE combined price.
+  · ACCUMULATOR (acca): selections or parts from TWO OR MORE DIFFERENT matches/events,
+    each part priced separately; the total odds are the parts' prices multiplied.
+Bookmakers print "Bet Builder" on each builder they sell, even when several builders and
+singles from different matches sit together on one slip. That is still an ACCUMULATOR,
+because it spans different matches. Example: "BET BUILDER 6.50" (Belgium v Türkiye) +
+"BET BUILDER 2.70" (Croatia v England) + a single at 2.60 (North Macedonia v Scotland) is
+ONE accumulator of three parts priced 6.50, 2.70 and 2.60 — not a bet builder.
+Only call it a bet builder when every selection belongs to the same single match.
 
 - selection (string): the main pick. For a multiple/bet builder, join each leg with " / ".
 - event (string): the match or event, e.g. "Arsenal v Chelsea". "" if not shown.
 - sport (string): sport or category, e.g. "Football", "Horse Racing", "Tennis". "" if unknown.
-- bet_type (string): the KIND of bet. Use exactly one of: "Single" (one selection),
-  "Bet builder" (two or more selections within ONE match/event — also called Same Game
-  Multi, Bet Builder, BetBuilder, #YourOdds), "Accumulator" (two or more priced parts across
-  DIFFERENT matches/events — includes Double, Treble, Fourfold, etc., and also an
-  accumulator whose parts are themselves bet builders). If it is clearly a single pick use
-  "Single". "" only if you genuinely cannot tell.
+- bet_type (string): the KIND of bet, by the key rule above. Use exactly one of: "Single",
+  "Bet builder" (selections within ONE match — also called Same Game Multi, BetBuilder,
+  #YourOdds), "Accumulator" (parts across DIFFERENT matches — includes Double, Treble,
+  Fourfold etc., and an accumulator whose parts are themselves bet builders).
+  "" only if you genuinely cannot tell.
 - parts (array): the PRICED parts of the slip, top to bottom. This is how the slip is
   structured and what the total odds are made from. One object per part:
-  { "type": "single" | "builder", "odds": number, "selections": [string] }
+  { "type": "single" | "builder", "odds": number, "event": string, "selections": [string] }
+  "event" is the match that part is on (e.g. "Belgium v Türkiye"), "" if not shown.
   · A "single" part is ONE selection with its own odds shown beside it.
   · A "builder" part is a Bet Builder / Same Game Multi: two or more selections in ONE
     match that share ONE combined price, shown on the "Bet Builder" header line (e.g.
@@ -89,6 +103,7 @@ function fromParts(parsed, stake, payout, boostPct) {
   const parts = parsed.parts
     .map((p) => ({
       odds: coerceNumber(p?.odds),
+      event: String(p?.event || '').trim(),
       selections: (Array.isArray(p?.selections) ? p.selections : [p?.selection])
         .map((x) => String(x || '').trim())
         .filter(Boolean),
@@ -99,10 +114,11 @@ function fromParts(parsed, stake, payout, boostPct) {
   if (parts.length === 1) {
     const [p] = parts;
     if (p.selections.length === 1) {
-      return { bet_type: 'Single', selection: p.selections[0], odds: p.odds, legs: [] };
+      return { bet_type: 'Single', selection: p.selections[0], odds: p.odds, legs: [], event: p.event };
     }
     return {
       bet_type: 'Bet builder',
+      event: p.event,
       selection: p.selections.join(' / '),
       odds: p.odds,
       legs: p.selections.map((s) => ({ selection: s, odds: 0 })),
@@ -124,6 +140,7 @@ function fromParts(parsed, stake, payout, boostPct) {
   const total = priced.length ? priced.reduce((acc, l) => acc * l.odds, 1) : 0;
   return {
     bet_type: 'Accumulator',
+    event: '',
     selection: legs.map((l) => l.selection).join(' / '),
     odds: Number(total.toFixed(3)),
     legs,
@@ -142,12 +159,17 @@ export function normalizeBet(parsed) {
   const stake = coerceNumber(parsed.stake);
   const payout = parsed.payout == null ? '' : coerceNumber(parsed.payout);
   const built = fromParts(parsed, stake, payout === '' ? 0 : payout, boostPct);
+  // Without parts, fall back on the model's label — but a bet builder is ONE price
+  // for selections in one match, so selections that each carry their own price
+  // are separate matches multiplied together: an accumulator.
+  let betType = built ? built.bet_type : String(parsed.bet_type || '').trim();
+  if (!built && /builder/i.test(betType) && legs.filter((l) => l.odds > 1).length >= 2) betType = 'Accumulator';
   return {
     selection: built ? built.selection : String(parsed.selection || '').trim(),
-    // A multi-part accumulator spans several matches, so there's no single event.
-    event: built && built.bet_type === 'Accumulator' ? '' : String(parsed.event || '').trim(),
+    // An accumulator spans several matches, so it has no single event.
+    event: built ? (built.event || (built.bet_type === 'Accumulator' ? '' : String(parsed.event || '').trim())) : String(parsed.event || '').trim(),
     sport: String(parsed.sport || '').trim(),
-    bet_type: built ? built.bet_type : String(parsed.bet_type || '').trim(),
+    bet_type: betType,
     bookmaker: String(parsed.bookmaker || '').trim(),
     stake,
     odds: built && built.odds > 0 ? built.odds : coerceNumber(parsed.odds),
