@@ -370,7 +370,7 @@ export default function Dashboard() {
         {dashTiles.map((key, i) => {
           const td = tileData(key);
           return (
-            <div key={key} className={`dstat ${i === 0 ? 'primary' : ''}`}>
+            <div key={key} className="dstat">
               <div className="dstat-top"><span className="dstat-ic"><Icon name={td.icon} size={16} /></span></div>
               <div className="dstat-label">{td.label}</div>
               <FitValue className={`dstat-val ${td.valCls || ''}`}>{td.value}</FitValue>
