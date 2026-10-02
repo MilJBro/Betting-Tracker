@@ -107,3 +107,101 @@ test('without parts, "builder" selections that each have their own price are an 
   const real = normalizeBet({ ...base, bet_type: 'Bet builder', odds: 6.5, legs: [{ selection: 'A', odds: 0 }, { selection: 'B', odds: 0 }] });
   assert.equal(real.bet_type, 'Bet builder');
 });
+
+// ---- other sports ----------------------------------------------------------
+import { canonicalSport, normalizeEvent } from '../src/routes/scan.js';
+
+test('slip sport names map onto the names the app knows, for every sport', () => {
+  const cases = {
+    Soccer: 'Football', football: 'Football', NBA: 'Basketball', NCAAB: 'Basketball', NFL: 'American Football',
+    'American football': 'American Football', MLB: 'Baseball', NHL: 'Ice Hockey', UFC: 'MMA / UFC', MMA: 'MMA / UFC',
+    'Formula 1': 'Motorsport', F1: 'Motorsport', NASCAR: 'Motorsport', 'Horse racing': 'Horse Racing', Racing: 'Horse Racing',
+    Dogs: 'Greyhounds', Greyhounds: 'Greyhounds', Tennis: 'Tennis', 'Rugby Union': 'Rugby', 'Rugby League': 'Rugby',
+    Cricket: 'Cricket', Golf: 'Golf', Darts: 'Darts', Snooker: 'Snooker', Boxing: 'Boxing', 'CS2': 'Esports', Valorant: 'Esports',
+    Handball: 'Handball', '': '',
+  };
+  for (const [raw, want] of Object.entries(cases)) assert.equal(canonicalSport(raw), want, raw);
+});
+
+test('events are written Home v Away whatever the sport or slip style', () => {
+  assert.equal(normalizeEvent('Lakers @ Celtics'), 'Celtics v Lakers', 'US style away @ home');
+  assert.equal(normalizeEvent('Djokovic vs. Alcaraz'), 'Djokovic v Alcaraz');
+  assert.equal(normalizeEvent('Fury versus Usyk'), 'Fury v Usyk');
+  assert.equal(normalizeEvent('Arsenal v Chelsea'), 'Arsenal v Chelsea');
+  assert.equal(normalizeEvent('Ascot 15:30'), 'Ascot 15:30');
+  assert.equal(normalizeEvent('The Masters'), 'The Masters');
+});
+
+test('an accumulator across different sports is a Multi-sport accumulator', () => {
+  const b = normalizeBet({
+    stake: 10, payout: 0, status: 'pending', bookmaker: 'Paddy Power',
+    parts: [
+      { type: 'single', odds: 1.8, sport: 'Soccer', event: 'Arsenal v Chelsea', selections: ['Arsenal to win'] },
+      { type: 'single', odds: 2.1, sport: 'Tennis', event: 'Djokovic vs Alcaraz', selections: ['Djokovic to win'] },
+      { type: 'single', odds: 3.5, sport: 'Horse Racing', event: 'Ascot 15:30', selections: ['Frankel'] },
+      { type: 'single', odds: 1.909, sport: 'NBA', event: 'Lakers @ Celtics', selections: ['Celtics -4.5'] },
+    ],
+  });
+  assert.equal(b.bet_type, 'Accumulator');
+  assert.equal(b.sport, 'Multi-sport');
+  assert.equal(b.legs.length, 4);
+  assert.equal(b.odds, Number((1.8 * 2.1 * 3.5 * 1.909).toFixed(3)));
+});
+
+test('an accumulator within one sport keeps that sport, in any sport', () => {
+  for (const [sport, want] of [['Soccer', 'Football'], ['NBA', 'Basketball'], ['Horse racing', 'Horse Racing'], ['Cricket', 'Cricket'], ['MLB', 'Baseball']]) {
+    const b = normalizeBet({ stake: 5, parts: [2, 3].map((o, i) => ({ type: 'single', odds: o, sport, event: `E${i}`, selections: [`S${i}`] })) });
+    assert.equal(b.bet_type, 'Accumulator'); assert.equal(b.sport, want); assert.equal(b.odds, 6);
+  }
+});
+
+test('a US same game parlay is a bet builder; a parlay across games is an accumulator', () => {
+  const sgp = normalizeBet({
+    stake: 10, sport: 'NBA',
+    parts: [{ type: 'builder', odds: 4.5, sport: 'NBA', event: 'Lakers @ Celtics', selections: ['Tatum over 27.5 points', 'Celtics moneyline'] }],
+  });
+  assert.equal(sgp.bet_type, 'Bet builder'); assert.equal(sgp.sport, 'Basketball'); assert.equal(sgp.event, 'Celtics v Lakers'); assert.equal(sgp.odds, 4.5);
+  const parlay = normalizeBet({
+    stake: 10,
+    parts: [
+      { type: 'single', odds: 1.909, sport: 'NFL', event: 'Chiefs @ Bills', selections: ['Bills -2.5'] },
+      { type: 'single', odds: 2.4, sport: 'NFL', event: 'Cowboys @ Eagles', selections: ['Eagles ML'] },
+    ],
+  });
+  assert.equal(parlay.bet_type, 'Accumulator'); assert.equal(parlay.sport, 'American Football');
+});
+
+test('racing: a double across different races is an accumulator; an each-way single keeps its terms', () => {
+  const dbl = normalizeBet({
+    stake: 10, sport: 'Horse Racing',
+    parts: [
+      { type: 'single', odds: 3, sport: 'Horse Racing', event: 'Ascot 14:00', selections: ['Horse A'] },
+      { type: 'single', odds: 4, sport: 'Horse Racing', event: 'Ascot 14:35', selections: ['Horse B'] },
+    ],
+  });
+  assert.equal(dbl.bet_type, 'Accumulator'); assert.equal(dbl.odds, 12); assert.equal(dbl.sport, 'Horse Racing');
+  const ew = normalizeBet({
+    stake: 10, sport: 'Horse racing', each_way: true, ew_fraction: '1/4', ew_places: 3,
+    parts: [{ type: 'single', odds: 6, sport: 'Horse Racing', event: 'Cheltenham 15:30', selections: ['Constitution Hill'] }],
+  });
+  assert.equal(ew.bet_type, 'Single'); assert.equal(ew.event, 'Cheltenham 15:30');
+  assert.equal(ew.each_way, true); assert.equal(ew.ew_fraction, '1/4'); assert.equal(ew.ew_places, 3);
+  // golf each-way outright
+  const golf = normalizeBet({ stake: 4, each_way: true, ew_fraction: '1/5', ew_places: 5,
+    parts: [{ type: 'single', odds: 21, sport: 'Golf', event: 'The Masters', selections: ['Rory McIlroy'] }] });
+  assert.equal(golf.sport, 'Golf'); assert.equal(golf.each_way, true); assert.equal(golf.ew_places, 5);
+});
+
+test('each-way is ignored on accumulators and bet builders, and when not each-way', () => {
+  const acca = normalizeBet({ each_way: true, ew_fraction: '1/4', parts: [3, 4].map((o, i) => ({ type: 'single', odds: o, event: `E${i}`, selections: [`S${i}`] })) });
+  assert.equal('each_way' in acca, false);
+  const plain = normalizeBet({ stake: 5, parts: [{ type: 'single', odds: 2, selections: ['X'] }] });
+  assert.equal('each_way' in plain, false);
+});
+
+test('individual-sport slips work too: tennis, boxing, MMA, darts, snooker, esports', () => {
+  for (const [sport, event, sel] of [['Tennis', 'Sinner v Medvedev', 'Sinner'], ['Boxing', 'Fury v Usyk', 'Usyk'], ['UFC', 'Makhachev v Tsarukyan', 'Makhachev by KO'], ['Darts', 'Littler v Humphries', 'Littler 6-3'], ['Snooker', "O'Sullivan v Trump", 'Trump'], ['CS2', 'Navi v FaZe', 'Navi']]) {
+    const b = normalizeBet({ stake: 10, parts: [{ type: 'single', odds: 2.2, sport, event, selections: [sel] }] });
+    assert.equal(b.bet_type, 'Single'); assert.equal(b.event, event); assert.equal(b.selection, sel);
+  }
+});
