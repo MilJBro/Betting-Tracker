@@ -48,6 +48,7 @@ const countryName = (code) => {
   if (!code) return 'Unknown';
   try { return (REGION_NAMES && REGION_NAMES.of(code)) || code; } catch { return code; }
 };
+const pctOf = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
 const fmtDay = (d) => {
   const dt = new Date(d + 'T00:00:00');
   return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
@@ -139,6 +140,41 @@ export default function AdminStats() {
         <Kpi icon="eye" label={`Page views · ${days}d`} value={d.range?.views ?? 0} />
         <Kpi icon="clock" label="Avg. time on app" value={fmtDuration(d.range?.avgSessionSec)} sub="per visit" />
         <Kpi icon="coins" label="Total users" value={d.totals?.users ?? 0} sub={`${d.totals?.pro ?? 0} on Pro`} />
+      </div>
+
+      {/* Who's using it, and are they sticking? */}
+      <div className="kpi-grid">
+        <Kpi icon="account" label="Active today" value={d.engagement?.dau ?? 0} sub="signed-in users" />
+        <Kpi icon="account" label="Active · 7 days" value={d.engagement?.wau ?? 0} sub={`${d.engagement?.mau ?? 0} in 30 days`} />
+        <Kpi icon="trend" label="Came back" value={`${d.engagement?.retention7 ?? 0}%`} sub={`of ${d.engagement?.retentionBase ?? 0} signed up 7+ days ago, active this week`} />
+        <Kpi icon="coins" label="Pro conversion" value={`${pctOf(d.totals?.pro, d.totals?.users)}%`} sub={`${d.totals?.pro ?? 0} of ${d.totals?.users ?? 0} users`} />
+      </div>
+      <div className="kpi-grid">
+        <Kpi icon="bets" label="Bets logged today" value={d.engagement?.betsToday ?? 0} sub={`${d.engagement?.betsRange ?? 0} in ${days}d`} />
+        <Kpi icon="bets" label="Bets logged · all time" value={d.engagement?.betsTotal ?? 0} />
+        <Kpi icon="eye" label="AI scans this month" value={d.engagement?.scansThisMonth ?? 0} />
+        <Kpi icon="globe" label="Public records shared" value={d.engagement?.shares ?? 0} />
+      </div>
+
+      {/* Signup funnel */}
+      <div className="card perf-card">
+        <div className="perf-card-head static">
+          <span className="pch-title"><Icon name="trend" size={18} /> Signup funnel</span>
+        </div>
+        {[
+          { label: `Landing page visitors · ${days}d`, n: d.engagement?.landingVisitors ?? 0 },
+          { label: 'Accounts created (all time)', n: d.totals?.users ?? 0 },
+          { label: 'Logged at least 1 bet', n: d.engagement?.withBet ?? 0, of: d.totals?.users },
+          { label: 'Logged 5+ bets', n: d.engagement?.withFive ?? 0, of: d.totals?.users },
+          { label: 'Logged 10+ bets', n: d.engagement?.withTen ?? 0, of: d.totals?.users },
+          { label: 'On Pro', n: d.totals?.pro ?? 0, of: d.totals?.users },
+        ].map((r) => (
+          <div key={r.label} className="tp-row">
+            <span className="p">{r.label}</span>
+            <span className="tp-n">{r.n}{r.of > 0 ? ` · ${pctOf(r.n, r.of)}%` : ''}</span>
+          </div>
+        ))}
+        <p className="muted" style={{ fontSize: 12, margin: '8px 2px 0' }}>Percentages are of all accounts.</p>
       </div>
 
       {/* Trend chart */}
