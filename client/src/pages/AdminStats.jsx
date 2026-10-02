@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
+  ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
 } from 'recharts';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -54,13 +55,100 @@ const fmtDay = (d) => {
   return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 };
 
-function Kpi({ icon, label, value, sub, live }) {
-  return (
-    <div className="kpi">
-      <span className="k">{live && <span className="live-dot" />}<Icon name={icon} size={13} /> {label}</span>
+// A tile. With `onOpen` it's a button that opens that metric's deep dive.
+function Kpi({ icon, label, value, sub, live, onOpen }) {
+  const body = (
+    <>
+      <span className="k">{live && <span className="live-dot" />}<Icon name={icon} size={13} /> {label}{onOpen && <Icon name="chevron" size={13} className="kpi-go" />}</span>
       <span className="v">{value}</span>
       {sub && <span className="s">{sub}</span>}
-    </div>
+    </>
+  );
+  return onOpen
+    ? <button type="button" className="kpi tap" onClick={onOpen}>{body}</button>
+    : <div className="kpi">{body}</div>;
+}
+
+// The deep-dive sheet: summary figures, a daily chart, then ranked lists. The
+// server returns every metric in the same shape (see routes/admin.js DETAILS).
+function DetailSheet({ metric, days, onClose }) {
+  const [d, setD] = useState(null);
+  const [err, setErr] = useState('');
+  useEffect(() => {
+    let off = false;
+    setD(null); setErr('');
+    api.get(`/admin/detail?metric=${metric}&days=${days}`)
+      .then((x) => { if (!off) setD(x); })
+      .catch((e) => { if (!off) setErr(e.message || 'Could not load this'); });
+    return () => { off = true; };
+  }, [metric, days]);
+  useEffect(() => {
+    const k = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  }, [onClose]);
+
+  const data = d?.series?.data || [];
+  return createPortal(
+    <div className="modal-overlay" onMouseDown={onClose}>
+      <div className="modal detail-sheet" onMouseDown={(e) => e.stopPropagation()} role="dialog" aria-label={d?.title || 'Details'}>
+        <div className="row spread" style={{ marginBottom: 12 }}>
+          <h2 style={{ margin: 0, fontSize: 20 }}>{d?.title || 'Loading…'}</h2>
+          <button type="button" className="btn-ghost btn-sm" onClick={onClose} aria-label="Close">✕</button>
+        </div>
+        {err && <div className="error-banner">{err}</div>}
+        {!d && !err && <Spinner />}
+        {d && (
+          <>
+            <div className="ds-summary">
+              {d.summary.map((x) => (
+                <div key={x.label}><span className="k">{x.label}</span><span className="v">{x.value}</span></div>
+              ))}
+            </div>
+            {data.length >= 2 && (
+              <div className="ds-chart">
+                <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>{d.series.label}</div>
+                <ResponsiveContainer width="100%" height={150}>
+                  <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
+                    <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="d" tickFormatter={fmtDay} tick={{ fill: 'var(--muted)', fontSize: 10 }} minTickGap={22} axisLine={false} tickLine={false} />
+                    <YAxis allowDecimals={false} tick={{ fill: 'var(--muted)', fontSize: 10 }} axisLine={false} tickLine={false} width={34} />
+                    <Tooltip
+                      cursor={{ fill: 'var(--border)', opacity: 0.4 }}
+                      contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontSize: 12 }}
+                      labelFormatter={fmtDay}
+                      formatter={(v) => [v + (d.series.unit || ''), d.series.label]}
+                    />
+                    <Bar dataKey="v" fill="var(--primary)" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            {d.lists.map((l) => {
+              const nums = l.rows.map((r) => (typeof r.value === 'number' ? r.value : null));
+              const max = Math.max(1, ...nums.filter((n) => n != null));
+              return (
+                <div key={l.title} className="ds-list">
+                  <div className="set-subhead" style={{ marginTop: 14 }}>{l.title}</div>
+                  {l.rows.length === 0 && <p className="muted" style={{ fontSize: 13, margin: '6px 0' }}>Nothing yet.</p>}
+                  {l.rows.map((r, i) => (
+                    <div key={i} className="ds-row">
+                      <div className="ds-main">
+                        <span className="p">{l.page ? pageLabel(r.label) : (/^[A-Z]{2}$/.test(r.label) ? countryName(r.label) : r.label)}</span>
+                        {r.sub && <span className="s">{r.sub}</span>}
+                      </div>
+                      {nums[i] != null && <span className="tp-bar"><i style={{ width: `${Math.max(4, (nums[i] / max) * 100)}%` }} /></span>}
+                      <span className="tp-n">{r.value}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -70,6 +158,7 @@ export default function AdminStats() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+  const [open, setOpen] = useState(null); // metric key of the open deep dive
   const daysRef = useRef(days);
   daysRef.current = days;
 
@@ -123,37 +212,37 @@ export default function AdminStats() {
         </div>
       </div>
       <p className="muted" style={{ fontSize: 13, margin: '-4px 2px 16px' }}>
-        Live app usage · updates automatically
+        Live app usage · updates automatically · tap any tile for the detail
       </p>
 
       {/* Live + today */}
       <div className="kpi-grid">
-        <Kpi icon="pulse" label="Online now" value={d.liveNow ?? 0} sub="active in last 3 min" live />
-        <Kpi icon="account" label="Visitors today" value={d.today?.visitors ?? 0} />
-        <Kpi icon="eye" label="Views today" value={d.today?.views ?? 0} />
-        <Kpi icon="trend" label="Signups today" value={d.today?.signups ?? 0} />
+        <Kpi icon="pulse" label="Online now" value={d.liveNow ?? 0} sub="active in last 3 min" live onOpen={() => setOpen('live')} />
+        <Kpi icon="account" label="Visitors today" value={d.today?.visitors ?? 0} onOpen={() => setOpen('visitors')} />
+        <Kpi icon="eye" label="Views today" value={d.today?.views ?? 0} onOpen={() => setOpen('views')} />
+        <Kpi icon="trend" label="Signups today" value={d.today?.signups ?? 0} onOpen={() => setOpen('signups')} />
       </div>
 
       {/* Range figures */}
       <div className="kpi-grid">
-        <Kpi icon="account" label={`Visitors · ${days}d`} value={d.range?.visitors ?? 0} sub={`${d.range?.signups ?? 0} new signups`} />
-        <Kpi icon="eye" label={`Page views · ${days}d`} value={d.range?.views ?? 0} />
-        <Kpi icon="clock" label="Avg. time on app" value={fmtDuration(d.range?.avgSessionSec)} sub="per visit" />
-        <Kpi icon="coins" label="Total users" value={d.totals?.users ?? 0} sub={`${d.totals?.pro ?? 0} on Pro`} />
+        <Kpi icon="account" label={`Visitors · ${days}d`} value={d.range?.visitors ?? 0} sub={`${d.range?.signups ?? 0} new signups`} onOpen={() => setOpen('visitors')} />
+        <Kpi icon="eye" label={`Page views · ${days}d`} value={d.range?.views ?? 0} onOpen={() => setOpen('views')} />
+        <Kpi icon="clock" label="Avg. time on app" value={fmtDuration(d.range?.avgSessionSec)} sub="per visit" onOpen={() => setOpen('session')} />
+        <Kpi icon="coins" label="Total users" value={d.totals?.users ?? 0} sub={`${d.totals?.pro ?? 0} on Pro`} onOpen={() => setOpen('signups')} />
       </div>
 
       {/* Who's using it, and are they sticking? */}
       <div className="kpi-grid">
-        <Kpi icon="account" label="Active today" value={d.engagement?.dau ?? 0} sub="signed-in users" />
-        <Kpi icon="account" label="Active · 7 days" value={d.engagement?.wau ?? 0} sub={`${d.engagement?.mau ?? 0} in 30 days`} />
-        <Kpi icon="trend" label="Came back" value={`${d.engagement?.retention7 ?? 0}%`} sub={`of ${d.engagement?.retentionBase ?? 0} signed up 7+ days ago, active this week`} />
-        <Kpi icon="coins" label="Pro conversion" value={`${pctOf(d.totals?.pro, d.totals?.users)}%`} sub={`${d.totals?.pro ?? 0} of ${d.totals?.users ?? 0} users`} />
+        <Kpi icon="account" label="Active today" value={d.engagement?.dau ?? 0} sub="signed-in users" onOpen={() => setOpen('active')} />
+        <Kpi icon="account" label="Active · 7 days" value={d.engagement?.wau ?? 0} sub={`${d.engagement?.mau ?? 0} in 30 days`} onOpen={() => setOpen('active')} />
+        <Kpi icon="trend" label="Came back" value={`${d.engagement?.retention7 ?? 0}%`} sub={`of ${d.engagement?.retentionBase ?? 0} signed up 7+ days ago, active this week`} onOpen={() => setOpen('retention')} />
+        <Kpi icon="coins" label="Pro conversion" value={`${pctOf(d.totals?.pro, d.totals?.users)}%`} sub={`${d.totals?.pro ?? 0} of ${d.totals?.users ?? 0} users`} onOpen={() => setOpen('pro')} />
       </div>
       <div className="kpi-grid">
-        <Kpi icon="bets" label="Bets logged today" value={d.engagement?.betsToday ?? 0} sub={`${d.engagement?.betsRange ?? 0} in ${days}d`} />
-        <Kpi icon="bets" label="Bets logged · all time" value={d.engagement?.betsTotal ?? 0} />
-        <Kpi icon="eye" label="AI scans this month" value={d.engagement?.scansThisMonth ?? 0} />
-        <Kpi icon="globe" label="Public records shared" value={d.engagement?.shares ?? 0} />
+        <Kpi icon="bets" label="Bets logged today" value={d.engagement?.betsToday ?? 0} sub={`${d.engagement?.betsRange ?? 0} in ${days}d`} onOpen={() => setOpen('bets')} />
+        <Kpi icon="bets" label="Bets logged · all time" value={d.engagement?.betsTotal ?? 0} onOpen={() => setOpen('bets')} />
+        <Kpi icon="eye" label="AI scans this month" value={d.engagement?.scansThisMonth ?? 0} onOpen={() => setOpen('scans')} />
+        <Kpi icon="globe" label="Public records shared" value={d.engagement?.shares ?? 0} onOpen={() => setOpen('shares')} />
       </div>
 
       {/* Signup funnel */}
@@ -260,6 +349,8 @@ export default function AdminStats() {
           <p className="muted" style={{ fontSize: 13, padding: '8px 2px' }}>No country data yet.</p>
         )}
       </div>
+
+      {open && <DetailSheet metric={open} days={days} onClose={() => setOpen(null)} />}
 
       <p className="muted" style={{ fontSize: 12, textAlign: 'center', margin: '4px 0 8px' }}>
         Private to you · first-party analytics · no third parties
