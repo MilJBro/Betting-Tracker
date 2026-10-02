@@ -70,6 +70,21 @@ function initialsOf(name) {
   return (name || '?').slice(0, 2).toUpperCase();
 }
 
+// A settings card that stays closed until its header is tapped.
+function SetCard({ icon, title, desc, badge, open, onToggle, children }) {
+  return (
+    <div className={`card set-card collapsible${open ? ' open' : ''}`}>
+      <button type="button" className="set-head set-head-btn" onClick={onToggle} aria-expanded={open}>
+        <span className="set-ic"><Icon name={icon} size={18} /></span>
+        <div className="set-head-txt"><strong>{title}</strong><span className="muted">{desc}</span></div>
+        {badge}
+        <Icon name="chevron" size={16} className={`sr-chev ${open ? 'open' : ''}`} />
+      </button>
+      {open && <div className="set-body">{children}</div>}
+    </div>
+  );
+}
+
 export default function Account() {
   const { user, logout, refreshUser } = useAuth();
   const { settings, update } = useSettings();
@@ -137,6 +152,11 @@ export default function Account() {
   const unitDraft = unitNumber(unitText);
   const unitShown = unitDraft ?? (Number(staking?.unitSize) || 0);
   const toggle = (key) => setExpanded((e) => (e === key ? null : key));
+  // Settings cards start closed and open when tapped. A plan message (e.g. coming
+  // back from checkout) opens the Plan card so it isn't hidden.
+  const [openSets, setOpenSets] = useState({});
+  const toggleSet = (key) => setOpenSets((o) => ({ ...o, [key]: !o[key] }));
+  const isOpen = (key) => !!openSets[key] || (key === 'plan' && !!planMsg);
   // Compact joined date so it fits the stat tile (e.g. "13 Sep 26"). Force a
   // 3-letter month — some locales render "Sept" for September, which is wide
   // enough to overflow the narrow stat column.
@@ -306,11 +326,7 @@ export default function Account() {
       )}
 
       {/* Account settings */}
-      <div className="card set-card">
-        <div className="set-head">
-          <span className="set-ic"><Icon name="account" size={18} /></span>
-          <div className="set-head-txt"><strong>Account settings</strong><span className="muted">Update your personal details and preferences.</span></div>
-        </div>
+      <SetCard icon="account" title="Account settings" desc="Update your personal details and preferences." open={isOpen('account')} onToggle={() => toggleSet('account')}>
 
         <button type="button" className="set-row" onClick={() => toggle('personal')}>
           <span className="sr-ic"><Icon name="account" size={17} /></span>
@@ -352,14 +368,10 @@ export default function Account() {
             </form>
           </div>
         )}
-      </div>
+      </SetCard>
 
       {/* Display preferences */}
-      <div className="card set-card">
-        <div className="set-head">
-          <span className="set-ic"><Icon name="monitor" size={18} /></span>
-          <div className="set-head-txt"><strong>Display preferences</strong><span className="muted">Choose what you want to see in your app.</span></div>
-        </div>
+      <SetCard icon="monitor" title="Display preferences" desc="Choose what you want to see in your app." open={isOpen('display')} onToggle={() => toggleSet('display')}>
 
         <div className="set-subhead">Appearance<span className="muted">Light or dark theme</span></div>
         <div className="seg-group" style={{ marginBottom: 6, maxWidth: 260 }}>
@@ -385,14 +397,10 @@ export default function Account() {
             </button>
           ))}
         </div>
-      </div>
+      </SetCard>
 
       {/* Units */}
-      <div className="card set-card">
-        <div className="set-head">
-          <span className="set-ic"><Icon name="coins" size={18} /></span>
-          <div className="set-head-txt"><strong>Units</strong><span className="muted">Choose what 1 unit is worth and how amounts are shown.</span></div>
-        </div>
+      <SetCard icon="coins" title="Units" desc="Choose what 1 unit is worth and how amounts are shown." open={isOpen('units')} onToggle={() => toggleSet('units')}>
 
         <div className="set-subhead">Show stakes &amp; profit as<span className="muted">Applies everywhere in the app</span></div>
         <div className="seg-group" style={{ marginBottom: 6 }}>
@@ -456,14 +464,10 @@ export default function Account() {
             )}
           </div>
         )}
-      </div>
+      </SetCard>
 
       {/* App preferences */}
-      <div className="card set-card">
-        <div className="set-head">
-          <span className="set-ic"><Icon name="gear" size={18} /></span>
-          <div className="set-head-txt"><strong>App preferences</strong><span className="muted">Fine tune your experience.</span></div>
-        </div>
+      <SetCard icon="gear" title="App preferences" desc="Fine tune your experience." open={isOpen('app')} onToggle={() => toggleSet('app')}>
 
         <div className="pref-row">
           <span className="sr-ic"><Icon name="calendar" size={17} /></span>
@@ -491,19 +495,14 @@ export default function Account() {
           <div className="sr-txt"><strong>More customisation</strong><span className="muted">Dashboard cards, staking unit & sharing</span></div>
           <Icon name="chevron" size={16} className="sr-chev" style={{ transform: 'rotate(-90deg)' }} />
         </button>
-      </div>
+      </SetCard>
 
       <InstallAppCard isPro={isPro} onUpgrade={doUpgrade} />
 
       {/* Plan & billing — kept a clear, standard route so cancelling stays
           easy to find (as the law and Stripe require), just not the most
           prominent thing on the page. */}
-      <div className="card set-card">
-        <div className="set-head">
-          <span className="set-ic"><Icon name="trophy" size={18} /></span>
-          <div className="set-head-txt"><strong>Plan & billing</strong><span className="muted">{isPro ? 'Manage or cancel your subscription.' : 'Upgrade to unlock everything.'}</span></div>
-          <span className={`badge ${isPro ? 'won' : ''}`} style={{ textTransform: 'none' }}>{isPro ? 'Pro' : 'Free'}</span>
-        </div>
+      <SetCard icon="trophy" title="Plan &amp; billing" desc={isPro ? 'Manage or cancel your subscription.' : 'Upgrade to unlock everything.'} badge={<span className={`badge ${isPro ? 'won' : ''}`} style={{ textTransform: 'none' }}>{isPro ? 'Pro' : 'Free'}</span>} open={isOpen('plan')} onToggle={() => toggleSet('plan')}>
         {planMsg && <div className="muted" style={{ fontSize: 13, margin: '4px 2px 8px' }}>{planMsg}</div>}
         {!isPro ? (
           <div style={{ padding: '4px 2px 2px' }}>
@@ -528,14 +527,10 @@ export default function Account() {
             )}
           </div>
         )}
-      </div>
+      </SetCard>
 
       {/* Data & security */}
-      <div className="card set-card">
-        <div className="set-head">
-          <span className="set-ic"><Icon name="lock" size={18} /></span>
-          <div className="set-head-txt"><strong>Data & security</strong><span className="muted">Your data and where you’re signed in.</span></div>
-        </div>
+      <SetCard icon="lock" title="Data &amp; security" desc="Your data and where you’re signed in." open={isOpen('data')} onToggle={() => toggleSet('data')}>
         <div className="tog-row"><span className="sr-ic"><Icon name="log" size={17} /></span>
           <div className="sr-txt"><strong>Export my data</strong><span className="muted">All your bets and settings as JSON</span></div>
           <button className="btn-ghost btn-sm" onClick={exportData}>Export</button>
@@ -544,14 +539,10 @@ export default function Account() {
           <div className="sr-txt"><strong>Log out everywhere</strong><span className="muted">Sign out of all devices</span></div>
           <button className="btn-ghost btn-sm" onClick={logoutEverywhere}>Log out all</button>
         </div>
-      </div>
+      </SetCard>
 
       {/* Responsible gambling */}
-      <div className="card set-card">
-        <div className="set-head">
-          <span className="set-ic"><Icon name="target" size={18} /></span>
-          <div className="set-head-txt"><strong>Responsible gambling</strong><span className="muted">Betting should be fun and within your means.</span></div>
-        </div>
+      <SetCard icon="target" title="Responsible gambling" desc="Betting should be fun and within your means." open={isOpen('rg')} onToggle={() => toggleSet('rg')}>
         <div className="stack" style={{ gap: 8, marginTop: 4 }}>
           <a className="row spread" href="https://www.begambleaware.org/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
             <span style={{ fontWeight: 600 }}>BeGambleAware</span><span className="muted" style={{ fontSize: 13 }}>Advice & support →</span>
@@ -567,7 +558,7 @@ export default function Account() {
           </a>
         </div>
         <p className="muted" style={{ fontSize: 12, marginBottom: 0, marginTop: 12 }}>You must be 18+ to gamble. When the fun stops, stop.</p>
-      </div>
+      </SetCard>
 
       {/* Log out */}
       <button type="button" className="card logout-row" onClick={signOut}>

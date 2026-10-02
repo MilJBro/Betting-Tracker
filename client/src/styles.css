@@ -546,6 +546,10 @@ tr:last-child td { border-bottom: none; }
 .sr-txt strong { font-size: 14.5px; font-weight: 700; }
 .sr-txt .muted { font-size: 12.5px; }
 .sr-chev { color: var(--muted); transition: transform 0.15s ease; }
+/* Collapsible settings card: the header is the button. */
+.set-head-btn { width: 100%; text-align: left; cursor: pointer; background: transparent; border: 0; padding: 0; margin: 0; color: var(--text); font: inherit; border-radius: 0; }
+.set-head-btn:active { transform: none; }
+.set-card.collapsible .set-body { margin-top: 12px; padding-top: 4px; border-top: 1px solid var(--border); }
 .sr-chev.open { transform: rotate(180deg); }
 .set-row:active, .logout-row:active { transform: none; }
 .set-panel { padding: 4px 2px 12px; }
