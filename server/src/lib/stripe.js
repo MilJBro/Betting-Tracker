@@ -8,6 +8,21 @@ export const stripe = config.stripe.secretKey ? new Stripe(config.stripe.secretK
 
 export const billingEnabled = config.billingEnabled;
 
+// Cancel every live subscription on a customer, immediately. Used when an
+// account is deleted so nobody keeps being billed for an account that no longer
+// exists. Throws if Stripe refuses, so the caller can stop rather than orphan a
+// subscription. Returns how many were cancelled.
+export async function cancelAllSubscriptions(customerId, client = stripe) {
+  if (!client || !customerId) return 0;
+  let cancelled = 0;
+  for await (const sub of client.subscriptions.list({ customer: customerId, status: 'all', limit: 100 })) {
+    if (sub.status === 'canceled' || sub.status === 'incomplete_expired') continue;
+    await client.subscriptions.cancel(sub.id);
+    cancelled++;
+  }
+  return cancelled;
+}
+
 // Find (or lazily create) the Stripe customer for a user and remember its id.
 export async function ensureCustomer(userId) {
   const row = db.prepare('SELECT id, email, username, stripe_customer_id FROM users WHERE id = ?').get(userId);

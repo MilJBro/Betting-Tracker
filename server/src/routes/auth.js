@@ -13,6 +13,7 @@ import { config } from '../lib/config.js';
 import { entitlements } from '../lib/plan.js';
 import { isAdminEmail } from '../lib/admin.js';
 import { ensureDefaultTracker } from '../lib/trackers.js';
+import { cancelAllSubscriptions } from '../lib/stripe.js';
 import { sendMail, passwordResetEmail } from '../lib/mailer.js';
 import {
   validateEmail,
@@ -183,12 +184,22 @@ router.get('/export', requireAuth, (req, res) => {
 });
 
 // Delete the account and everything attached to it (bets, settings, share).
-router.delete('/account', requireAuth, (req, res) => {
+router.delete('/account', requireAuth, async (req, res) => {
   const { password } = req.body || {};
   const row = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
   if (!row) return res.status(404).json({ error: 'User not found' });
   if (!verifyPassword(password || '', row.password))
     return res.status(401).json({ error: 'Password is incorrect' });
+  // Stop billing first. If Stripe can't cancel, keep the account so the person
+  // isn't left paying for something they can no longer reach.
+  try {
+    await cancelAllSubscriptions(row.stripe_customer_id);
+  } catch (e) {
+    console.error('[account delete] could not cancel subscription:', e.message);
+    return res.status(502).json({
+      error: 'We couldn’t cancel your subscription, so your account has not been deleted. Please try again in a minute.',
+    });
+  }
   db.prepare('DELETE FROM users WHERE id = ?').run(req.userId); // cascades
   res.json({ ok: true });
 });

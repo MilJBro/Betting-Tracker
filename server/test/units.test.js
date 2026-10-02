@@ -68,3 +68,21 @@ test('a zero or blank unit size is never saved, and a saved zero heals', async (
   assert.equal(mergeSettings({ staking: { mode: 'both', unitSize: 0, unitHistory: [{ from: '', size: 10 }, { from: '2026-09-01', size: 25 }] } }).staking.unitSize, 25);
   assert.equal(mergeSettings({ staking: { mode: 'both', unitSize: 0 } }).staking.unitSize, 10);
 });
+
+test('deleting an account cancels every live Stripe subscription, and surfaces failures', async () => {
+  const { cancelAllSubscriptions } = await import('../src/lib/stripe.js');
+  const cancelled = [];
+  const subs = [{ id: 'sub_a', status: 'active' }, { id: 'sub_b', status: 'canceled' }, { id: 'sub_c', status: 'trialing' }, { id: 'sub_d', status: 'past_due' }];
+  const client = {
+    subscriptions: {
+      list: () => (async function* () { yield* subs; })(),
+      cancel: async (id) => { cancelled.push(id); },
+    },
+  };
+  assert.equal(await cancelAllSubscriptions('cus_1', client), 3);
+  assert.deepEqual(cancelled, ['sub_a', 'sub_c', 'sub_d']);
+  assert.equal(await cancelAllSubscriptions(null, client), 0, 'no customer, nothing to cancel');
+  assert.equal(await cancelAllSubscriptions('cus_1', null), 0, 'billing not configured');
+  const failing = { subscriptions: { list: () => (async function* () { yield { id: 'sub_x', status: 'active' }; })(), cancel: async () => { throw new Error('stripe down'); } } };
+  await assert.rejects(() => cancelAllSubscriptions('cus_1', failing), /stripe down/);
+});
