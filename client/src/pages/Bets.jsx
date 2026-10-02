@@ -457,7 +457,8 @@ export default function Bets() {
   const renderCard = (b) => {
     const p = profitOf(b);
     const isMulti = b.bet_type === 'Accumulator' || b.bet_type === 'Bet builder';
-    const title = (b.event && b.event.trim()) || (col('sport') && b.sport) || b.bet_type || 'Bet';
+    // Accumulators have no single event, so name them by their selections.
+    const title = (b.event && b.event.trim()) || (isMulti && b.selection) || (col('sport') && b.sport) || b.bet_type || 'Bet';
     const meta = [
       col('sport') && b.sport && b.sport !== title ? b.sport : null,
       isMulti ? b.bet_type : null,
