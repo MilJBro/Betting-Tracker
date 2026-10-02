@@ -99,8 +99,40 @@ router.get('/stats', (req, res) => {
     since
   );
 
+  // Signed-in people active in the app (distinct accounts seen by the beacon).
+  const activeUsers = (ms) => one('SELECT COUNT(DISTINCT user_id) n FROM analytics_events WHERE user_id IS NOT NULL AND ts >= ?', ms).n;
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const sevenAgoIso = new Date(now - 7 * DAY).toISOString();
+  const usersWithBets = (min) => one('SELECT COUNT(*) n FROM (SELECT user_id FROM bets GROUP BY user_id HAVING COUNT(*) >= ?)', min).n;
+  const oldUsers = one('SELECT COUNT(*) n FROM users WHERE created_at < ?', sevenAgoIso).n;
+  const oldAndActive = one(
+    `SELECT COUNT(DISTINCT u.id) n FROM users u JOIN analytics_events e ON e.user_id = u.id
+      WHERE u.created_at < ? AND e.ts >= ?`, sevenAgoIso, now - 7 * DAY).n;
+  const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
+
+  const engagement = {
+    dau: activeUsers(todayMs),
+    wau: activeUsers(now - 7 * DAY),
+    mau: activeUsers(now - 30 * DAY),
+    // Of people who signed up more than a week ago, how many were back this week.
+    retention7: pct(oldAndActive, oldUsers),
+    retentionBase: oldUsers,
+    // Signup -> first bet -> regular use.
+    withBet: usersWithBets(1),
+    withFive: usersWithBets(5),
+    withTen: usersWithBets(10),
+    betsToday: one('SELECT COUNT(*) n FROM bets WHERE created_at >= ?', todayIso).n,
+    betsRange: one('SELECT COUNT(*) n FROM bets WHERE created_at >= ?', sinceIso).n,
+    betsTotal: one('SELECT COUNT(*) n FROM bets').n,
+    scansThisMonth: one('SELECT COALESCE(SUM(scan_count), 0) n FROM users WHERE scan_month = ?', thisMonth).n,
+    shares: one('SELECT COUNT(*) n FROM shares').n,
+    // Logged-out landing-page visitors vs the signups they produced.
+    landingVisitors: one("SELECT COUNT(DISTINCT session_id) n FROM analytics_events WHERE kind = 'view' AND path = '/' AND user_id IS NULL AND ts >= ?", since).n,
+  };
+
   res.json({
     generatedAt: now,
+    engagement,
     days,
     liveNow,
     livePages,
