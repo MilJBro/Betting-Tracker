@@ -20,23 +20,38 @@ markdown code fences) with exactly these keys:
 - sport (string): sport or category, e.g. "Football", "Horse Racing", "Tennis". "" if unknown.
 - bet_type (string): the KIND of bet. Use exactly one of: "Single" (one selection),
   "Bet builder" (two or more selections within ONE match/event — also called Same Game
-  Multi, Bet Builder, BetBuilder, #YourOdds), "Accumulator" (two or more selections across
-  DIFFERENT matches/events — includes Double, Treble, Fourfold, etc.). If it is clearly a
-  single pick use "Single". "" only if you genuinely cannot tell.
-- legs (array): for a bet builder or accumulator, one object per selection:
+  Multi, Bet Builder, BetBuilder, #YourOdds), "Accumulator" (two or more priced parts across
+  DIFFERENT matches/events — includes Double, Treble, Fourfold, etc., and also an
+  accumulator whose parts are themselves bet builders). If it is clearly a single pick use
+  "Single". "" only if you genuinely cannot tell.
+- parts (array): the PRICED parts of the slip, top to bottom. This is how the slip is
+  structured and what the total odds are made from. One object per part:
+  { "type": "single" | "builder", "odds": number, "selections": [string] }
+  · A "single" part is ONE selection with its own odds shown beside it.
+  · A "builder" part is a Bet Builder / Same Game Multi: two or more selections in ONE
+    match that share ONE combined price, shown on the "Bet Builder" header line (e.g.
+    "BET BUILDER 6.50"). Put every selection of that builder in "selections" and that
+    header price in "odds" — the individual selections have no price of their own.
+  · A slip can MIX these. For example an accumulator can be made of two bet builders
+    (each with its own price) plus a single selection: that is THREE parts, and the
+    total odds are the three prices multiplied together. Never drop a part's price.
+  · A plain single bet is one part with one selection. A plain bet builder is one part
+    with several selections. An ordinary accumulator is one "single" part per leg.
+  · "odds" for each part in DECIMAL (convert fractional/American). 0 only if not visible.
+- legs (array): optional, only if you did NOT fill in parts: one object per selection:
   { "selection": string, "odds": number }. Put each leg's odds in DECIMAL if the slip shows
   them, otherwise 0. A bet builder usually shows only the combined price, so its legs will
   have odds 0 — that's fine. Use an empty array [] for a Single.
 - bookmaker (string): the bookmaker's name if identifiable (e.g. "Bet365", "Sky Bet", "Paddy Power"). "" if unknown.
 - stake (number): the stake as a plain number in the account currency (e.g. 10.00). 0 if not shown.
-- odds (number): the TOTAL odds in DECIMAL format. Convert fractional (e.g. 6/4 -> 2.5) and American (e.g. +150 -> 2.5, -200 -> 1.5). For an accumulator use the combined odds. 0 if not shown.
+- odds (number): the TOTAL odds in DECIMAL format. Convert fractional (e.g. 6/4 -> 2.5) and American (e.g. +150 -> 2.5, -200 -> 1.5). For a multi-part slip this is the parts' prices multiplied together (and should agree with "to return" ÷ stake). 0 if not shown.
 - payout (number or null): the potential returns / "to return" amount as a number, or null if not shown.
 - boost_percent (number): if the slip shows a WINNINGS boost / profit boost / bet-builder
   boost added to the returns (e.g. "25% Boost", "Boost +50%", "Profit Boost applied"), the
   percentage as a plain number (e.g. 25 or 50). 0 if there is no such boost. Do NOT use this
   for an enhanced/boosted PRICE that is already baked into the odds.
 - placed_at (string or null): the bet date as YYYY-MM-DD if clearly shown, else null.
-- status (string): one of "pending","won","lost","void","cashout". Use "pending" for an open/unsettled slip unless it clearly shows the outcome.
+- status (string): one of "pending","won","lost","void","cashout". Use "pending" for an open/unsettled slip unless it clearly shows the outcome. A "Cash Out £x" BUTTON is an offer, not a result, and green ticks, progress bars, live scores and "SUB ON PLAY ON" labels only describe a match in play — the bet is still "pending".
 - currency (string or null): "GBP","USD","EUR","AUD","CAD" if identifiable from a symbol or code, else null.
 - confidence (number): 0..1, your overall confidence in the extraction.
 
@@ -65,6 +80,56 @@ function modelOptions() {
 // Map the model's raw JSON into the app's bet shape. Unknown fields stay blank
 // so the user just fills the gaps rather than fighting wrong guesses. Exported
 // for testing.
+// Turn the slip's priced parts into the app's bet shape. An accumulator leg that
+// is itself a bet builder keeps ONE price for its group of selections, so the
+// combined odds (and the return) come out right. Returns null if there are no
+// usable parts, so the caller falls back to the older single/legs reading.
+function fromParts(parsed, stake, payout, boostPct) {
+  if (!Array.isArray(parsed.parts)) return null;
+  const parts = parsed.parts
+    .map((p) => ({
+      odds: coerceNumber(p?.odds),
+      selections: (Array.isArray(p?.selections) ? p.selections : [p?.selection])
+        .map((x) => String(x || '').trim())
+        .filter(Boolean),
+    }))
+    .filter((p) => p.selections.length);
+  if (!parts.length) return null;
+
+  if (parts.length === 1) {
+    const [p] = parts;
+    if (p.selections.length === 1) {
+      return { bet_type: 'Single', selection: p.selections[0], odds: p.odds, legs: [] };
+    }
+    return {
+      bet_type: 'Bet builder',
+      selection: p.selections.join(' / '),
+      odds: p.odds,
+      legs: p.selections.map((s) => ({ selection: s, odds: 0 })),
+    };
+  }
+
+  // Several parts: an accumulator. Each part is one leg priced as a whole.
+  const legs = parts.map((p) => ({ selection: p.selections.join(' + '), odds: p.odds > 1 ? p.odds : 0 }));
+  const unpriced = legs.filter((l) => !(l.odds > 1));
+  // The slip's "to return" ÷ stake is the total odds. Use it to recover ONE
+  // missing price (but not when a winnings boost has inflated the return).
+  const implied = stake > 0 && payout > 0 && !(boostPct > 0) ? payout / stake : 0;
+  if (unpriced.length === 1 && implied > 1) {
+    const known = legs.filter((l) => l.odds > 1).reduce((acc, l) => acc * l.odds, 1);
+    const missing = implied / known;
+    if (missing > 1) unpriced[0].odds = Number(missing.toFixed(2));
+  }
+  const priced = legs.filter((l) => l.odds > 1);
+  const total = priced.length ? priced.reduce((acc, l) => acc * l.odds, 1) : 0;
+  return {
+    bet_type: 'Accumulator',
+    selection: legs.map((l) => l.selection).join(' / '),
+    odds: Number(total.toFixed(3)),
+    legs,
+  };
+}
+
 export function normalizeBet(parsed) {
   const statuses = ['pending', 'won', 'lost', 'void', 'cashout'];
   const legs = Array.isArray(parsed.legs)
@@ -74,22 +139,26 @@ export function normalizeBet(parsed) {
     : [];
   // Winnings boost is stored as a fraction of the profit (0.25 = +25%).
   const boostPct = coerceNumber(parsed.boost_percent);
+  const stake = coerceNumber(parsed.stake);
+  const payout = parsed.payout == null ? '' : coerceNumber(parsed.payout);
+  const built = fromParts(parsed, stake, payout === '' ? 0 : payout, boostPct);
   return {
-    selection: String(parsed.selection || '').trim(),
-    event: String(parsed.event || '').trim(),
+    selection: built ? built.selection : String(parsed.selection || '').trim(),
+    // A multi-part accumulator spans several matches, so there's no single event.
+    event: built && built.bet_type === 'Accumulator' ? '' : String(parsed.event || '').trim(),
     sport: String(parsed.sport || '').trim(),
-    bet_type: String(parsed.bet_type || '').trim(),
+    bet_type: built ? built.bet_type : String(parsed.bet_type || '').trim(),
     bookmaker: String(parsed.bookmaker || '').trim(),
-    stake: coerceNumber(parsed.stake),
-    odds: coerceNumber(parsed.odds),
-    payout: parsed.payout == null ? '' : coerceNumber(parsed.payout),
+    stake,
+    odds: built && built.odds > 0 ? built.odds : coerceNumber(parsed.odds),
+    payout,
     placed_at:
       typeof parsed.placed_at === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(parsed.placed_at)
         ? parsed.placed_at
         : new Date().toISOString().slice(0, 10),
     status: statuses.includes(parsed.status) ? parsed.status : 'pending',
     boost: boostPct > 0 ? Math.min(3, boostPct / 100) : 0,
-    legs,
+    legs: built ? built.legs : legs,
   };
 }
 
