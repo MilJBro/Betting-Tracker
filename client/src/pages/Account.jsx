@@ -11,7 +11,7 @@ import { saveFile } from '../download.js';
 import { amountParts, currencySymbol, formatDate, formatStake, money, units } from '../format.js';
 import Icon from '../components/Icon.jsx';
 import CheckoutModal from '../components/CheckoutModal.jsx';
-import InstallAppCard from '../components/InstallAppCard.jsx';
+import InstallStatus from '../components/InstallStatus.jsx';
 import PasswordInput from '../components/PasswordInput.jsx';
 
 const PRO_FEATURE_LABELS = [
@@ -301,7 +301,10 @@ export default function Account() {
               <>
                 <div className="ah-name">{username}</div>
                 <div className="ah-email">{email}</div>
-                <span className={`badge ${isPro ? 'won' : ''}`} style={{ textTransform: 'none' }}>{isPro ? 'Pro' : 'Free'}</span>
+                <div className="ah-chips">
+                  <span className={`badge ${isPro ? 'won' : ''}`} style={{ textTransform: 'none' }}>{isPro ? 'Pro' : 'Free'}</span>
+                  <InstallStatus />
+                </div>
               </>
             )}
           </div>
@@ -496,8 +499,6 @@ export default function Account() {
           <Icon name="chevron" size={16} className="sr-chev" style={{ transform: 'rotate(-90deg)' }} />
         </button>
       </SetCard>
-
-      <InstallAppCard isPro={isPro} onUpgrade={doUpgrade} />
 
       {/* Plan & billing — kept a clear, standard route so cancelling stays
           easy to find (as the law and Stripe require), just not the most
