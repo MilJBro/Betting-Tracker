@@ -10,9 +10,10 @@ import Icon from '../components/Icon.jsx';
 import Spinner from '../components/Spinner.jsx';
 
 const RANGES = [
-  { key: 7, label: '7 days' },
-  { key: 30, label: '30 days' },
-  { key: 90, label: '90 days' },
+  { key: 'today', label: 'Today' },
+  { key: 7, label: '7d' },
+  { key: 30, label: '30d' },
+  { key: 90, label: '90d' },
 ];
 
 // Friendly labels for the app's routes so the pages list reads plainly.
@@ -50,7 +51,11 @@ const countryName = (code) => {
   try { return (REGION_NAMES && REGION_NAMES.of(code)) || code; } catch { return code; }
 };
 const pctOf = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
+// "Today" is measured in YOUR time zone, so tell the server the offset.
+const tzQuery = () => `&tz=${new Date().getTimezoneOffset()}`;
+const rangeWord = (days) => (days === 'today' ? 'today' : `${days}d`);
 const fmtDay = (d) => {
+  if (/^\d{2}$/.test(d)) return `${d}:00`; // an hour of today
   const dt = new Date(d + 'T00:00:00');
   return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 };
@@ -77,7 +82,7 @@ function DetailSheet({ metric, days, onClose }) {
   useEffect(() => {
     let off = false;
     setD(null); setErr('');
-    api.get(`/admin/detail?metric=${metric}&days=${days}`)
+    api.get(`/admin/detail?metric=${metric}&days=${days}${tzQuery()}`)
       .then((x) => { if (!off) setD(x); })
       .catch((e) => { if (!off) setErr(e.message || 'Could not load this'); });
     return () => { off = true; };
@@ -163,7 +168,7 @@ export default function AdminStats() {
   daysRef.current = days;
 
   const load = useCallback((d) => {
-    return api.get('/admin/stats?days=' + d)
+    return api.get('/admin/stats?days=' + d + tzQuery())
       .then((res) => { setData(res); setErr(''); })
       .catch((e) => setErr(e.message || 'Could not load stats'));
   }, []);
@@ -225,8 +230,8 @@ export default function AdminStats() {
 
       {/* Range figures */}
       <div className="kpi-grid">
-        <Kpi icon="account" label={`Visitors · ${days}d`} value={d.range?.visitors ?? 0} sub={`${d.range?.signups ?? 0} new signups`} onOpen={() => setOpen('visitors')} />
-        <Kpi icon="eye" label={`Page views · ${days}d`} value={d.range?.views ?? 0} onOpen={() => setOpen('views')} />
+        <Kpi icon="account" label={`Visitors · ${rangeWord(days)}`} value={d.range?.visitors ?? 0} sub={`${d.range?.signups ?? 0} new signups`} onOpen={() => setOpen('visitors')} />
+        <Kpi icon="eye" label={`Page views · ${rangeWord(days)}`} value={d.range?.views ?? 0} onOpen={() => setOpen('views')} />
         <Kpi icon="clock" label="Avg. time on app" value={fmtDuration(d.range?.avgSessionSec)} sub="per visit" onOpen={() => setOpen('session')} />
         <Kpi icon="coins" label="Total users" value={d.totals?.users ?? 0} sub={`${d.totals?.pro ?? 0} on Pro`} onOpen={() => setOpen('signups')} />
       </div>
@@ -239,7 +244,7 @@ export default function AdminStats() {
         <Kpi icon="coins" label="Pro conversion" value={`${pctOf(d.totals?.pro, d.totals?.users)}%`} sub={`${d.totals?.pro ?? 0} of ${d.totals?.users ?? 0} users`} onOpen={() => setOpen('pro')} />
       </div>
       <div className="kpi-grid">
-        <Kpi icon="bets" label="Bets logged today" value={d.engagement?.betsToday ?? 0} sub={`${d.engagement?.betsRange ?? 0} in ${days}d`} onOpen={() => setOpen('bets')} />
+        <Kpi icon="bets" label="Bets logged today" value={d.engagement?.betsToday ?? 0} sub={days === 'today' ? undefined : `${d.engagement?.betsRange ?? 0} in ${days}d`} onOpen={() => setOpen('bets')} />
         <Kpi icon="bets" label="Bets logged · all time" value={d.engagement?.betsTotal ?? 0} onOpen={() => setOpen('bets')} />
         <Kpi icon="eye" label="AI scans this month" value={d.engagement?.scansThisMonth ?? 0} onOpen={() => setOpen('scans')} />
         <Kpi icon="globe" label="Public records shared" value={d.engagement?.shares ?? 0} onOpen={() => setOpen('shares')} />
@@ -251,7 +256,7 @@ export default function AdminStats() {
           <span className="pch-title"><Icon name="trend" size={18} /> Signup funnel</span>
         </div>
         {[
-          { label: `Landing page visitors · ${days}d`, n: d.engagement?.landingVisitors ?? 0 },
+          { label: `Landing page visitors · ${rangeWord(days)}`, n: d.engagement?.landingVisitors ?? 0 },
           { label: 'Accounts created (all time)', n: d.totals?.users ?? 0 },
           { label: 'Logged at least 1 bet', n: d.engagement?.withBet ?? 0, of: d.totals?.users },
           { label: 'Logged 5+ bets', n: d.engagement?.withFive ?? 0, of: d.totals?.users },
