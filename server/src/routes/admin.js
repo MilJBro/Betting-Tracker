@@ -10,21 +10,56 @@ const DAY = 24 * 60 * 60 * 1000;
 const one = (sql, ...p) => db.prepare(sql).get(...p);
 const all = (sql, ...p) => db.prepare(sql).all(...p);
 
-function startOfTodayMs() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
+// "Today" starts at midnight in the VIEWER's time zone. The server runs in UTC,
+// so the browser sends its offset (minutes behind UTC, as Date#getTimezoneOffset
+// reports it) and we measure the day from there.
+function tzOf(req) {
+  const n = parseInt(req.query.tz, 10);
+  return Number.isFinite(n) && Math.abs(n) <= 14 * 60 ? n : new Date().getTimezoneOffset();
+}
+export function startOfDayMs(tz, now = Date.now()) {
+  return Math.floor((now - tz * 60000) / DAY) * DAY + tz * 60000;
+}
+
+// The time window a request asks for: `days=today` (midnight to now) or a
+// trailing number of days. Today's charts bucket by hour instead of by day.
+function windowOf(req) {
+  const tz = tzOf(req);
+  const now = Date.now();
+  const todayMs = startOfDayMs(tz, now);
+  if (String(req.query.days) === 'today') {
+    return { today: true, days: 1, label: 'today', since: todayMs, sinceIso: new Date(todayMs).toISOString(), tz, todayMs, now };
+  }
+  const days = Math.min(90, Math.max(1, parseInt(req.query.days, 10) || 30));
+  const since = now - days * DAY;
+  return { today: false, days, label: `${days} days`, since, sinceIso: new Date(since).toISOString(), tz, todayMs, now };
+}
+// SQL for the chart bucket of an analytics timestamp column (ms): hour of the
+// viewer's day when looking at today, otherwise the server's calendar day.
+const tsBucket = (win, col = 'ts') => win.today
+  ? `strftime('%H', ${col} / 1000 - ${win.tz * 60}, 'unixepoch')`
+  : `date(${col} / 1000, 'unixepoch', 'localtime')`;
+// Same for an ISO created_at column.
+const isoBucket = (win, col = 'created_at') => win.today
+  ? `strftime('%H', ${col}, '${-win.tz >= 0 ? '+' : '-'}${Math.abs(win.tz)} minutes')`
+  : `substr(${col}, 1, 10)`;
+// Fill quiet hours (so far today) or days with zero so charts have no gaps.
+function fillWindow(win, rows) {
+  if (!win.today) return fillDays(rows, win.days);
+  const map = new Map(rows.map((r) => [r.d, r.v]));
+  const hoursSoFar = new Date(win.now - win.tz * 60000).getUTCHours();
+  return Array.from({ length: hoursSoFar + 1 }, (_, h) => {
+    const d = String(h).padStart(2, '0');
+    return { d, v: map.get(d) || 0 };
+  });
 }
 
 // Everything the private Insights page needs, in one call it can poll for a
 // live feel. `days` selects the trailing window for the range figures.
 router.get('/stats', (req, res) => {
-  const days = Math.min(90, Math.max(1, parseInt(req.query.days, 10) || 30));
-  const now = Date.now();
-  const since = now - days * DAY;
+  const win = windowOf(req);
+  const { days, now, since, sinceIso, todayMs } = win;
   const liveSince = now - 3 * 60 * 1000; // "online now" = active in last 3 min
-  const todayMs = startOfTodayMs();
-  const sinceIso = new Date(since).toISOString();
   const todayIso = new Date(todayMs).toISOString();
 
   const liveNow = one('SELECT COUNT(DISTINCT session_id) n FROM analytics_events WHERE ts >= ?', liveSince).n;
@@ -70,7 +105,7 @@ router.get('/stats', (req, res) => {
 
   // Daily visitors + views for the trend chart (local day buckets).
   const series = all(
-    `SELECT date(ts / 1000, 'unixepoch', 'localtime') d,
+    `SELECT ${tsBucket(win)} d,
             COUNT(DISTINCT session_id) visitors,
             SUM(CASE WHEN kind = 'view' THEN 1 ELSE 0 END) views
        FROM analytics_events WHERE ts >= ? GROUP BY d ORDER BY d`,
@@ -79,7 +114,7 @@ router.get('/stats', (req, res) => {
 
   // Signups per day, keyed by date, so the chart can overlay growth.
   const signupRows = all(
-    "SELECT substr(created_at, 1, 10) d, COUNT(*) n FROM users WHERE created_at >= ? GROUP BY d",
+    `SELECT ${isoBucket(win)} d, COUNT(*) n FROM users WHERE created_at >= ? GROUP BY d`,
     sinceIso
   );
   const signupByDay = Object.fromEntries(signupRows.map((r) => [r.d, r.n]));
@@ -139,7 +174,11 @@ router.get('/stats', (req, res) => {
     today,
     range,
     totals,
-    series: series.map((s) => ({ ...s, signups: signupByDay[s.d] || 0 })),
+    window: { today: win.today, label: win.label },
+    series: (win.today
+      ? fillWindow(win, []).map(({ d }) => series.find((x) => x.d === d) || { d, visitors: 0, views: 0 })
+      : series
+    ).map((s) => ({ ...s, signups: signupByDay[s.d] || 0 })),
     topPages,
     topCountries,
   });
@@ -151,7 +190,6 @@ router.get('/stats', (req, res) => {
 //   { title, summary: [{label, value}], series?: {label, unit, data: [{d, v}]},
 //     lists: [{title, page?, rows: [{label, value, sub?}]}] }
 const MONTH_KEY = () => new Date().toISOString().slice(0, 7);
-const dayCol = "date(ts / 1000, 'unixepoch', 'localtime')";
 
 // Fill gaps so a chart shows quiet days as zero rather than skipping them.
 function fillDays(rows, days) {
@@ -175,7 +213,7 @@ const ago_iso = (iso) => ago(Date.parse(iso));
 const pctStr = (a, b) => (b > 0 ? `${Math.round((a / b) * 100)}%` : '0%');
 
 const DETAILS = {
-  live(days) {
+  live() {
     const liveSince = Date.now() - 3 * 60 * 1000;
     const recent = all(
       `SELECT e.session_id, e.path, e.ts, e.country, u.username
@@ -210,19 +248,19 @@ const DETAILS = {
     };
   },
 
-  visitors(days) {
-    const since = Date.now() - days * DAY;
-    const series = all(`SELECT ${dayCol} d, COUNT(DISTINCT session_id) v FROM analytics_events WHERE ts >= ? GROUP BY d`, since);
+  visitors(win) {
+    const { since } = win;
+    const series = all(`SELECT ${tsBucket(win)} d, COUNT(DISTINCT session_id) v FROM analytics_events WHERE ts >= ? GROUP BY d`, since);
     const total = one('SELECT COUNT(DISTINCT session_id) n FROM analytics_events WHERE ts >= ?', since).n;
     const signedIn = one('SELECT COUNT(DISTINCT session_id) n FROM analytics_events WHERE ts >= ? AND user_id IS NOT NULL', since).n;
     return {
-      title: `Visitors · ${days} days`,
+      title: `Visitors · ${win.label}`,
       summary: [
         { label: 'Visitors', value: total },
         { label: 'Signed in', value: `${signedIn} (${pctStr(signedIn, total)})` },
         { label: 'Logged out', value: total - signedIn },
       ],
-      series: { label: 'Visitors per day', data: fillDays(series, days) },
+      series: { label: win.today ? 'Visitors per hour' : 'Visitors per day', hourly: win.today, data: fillWindow(win, series) },
       lists: [
         { title: 'Where they landed first', page: true, rows: all(
           `SELECT path label, COUNT(*) value FROM (
@@ -236,19 +274,19 @@ const DETAILS = {
     };
   },
 
-  views(days) {
-    const since = Date.now() - days * DAY;
-    const series = all(`SELECT ${dayCol} d, COUNT(*) v FROM analytics_events WHERE kind = 'view' AND ts >= ? GROUP BY d`, since);
+  views(win) {
+    const { since, days } = win;
+    const series = all(`SELECT ${tsBucket(win)} d, COUNT(*) v FROM analytics_events WHERE kind = 'view' AND ts >= ? GROUP BY d`, since);
     const views = one("SELECT COUNT(*) n FROM analytics_events WHERE kind = 'view' AND ts >= ?", since).n;
     const visitors = one('SELECT COUNT(DISTINCT session_id) n FROM analytics_events WHERE ts >= ?', since).n;
     return {
-      title: `Page views · ${days} days`,
+      title: `Page views · ${win.label}`,
       summary: [
         { label: 'Page views', value: views },
         { label: 'Per visitor', value: visitors ? (views / visitors).toFixed(1) : '0' },
-        { label: 'Per day', value: (views / days).toFixed(1) },
+        ...(win.today ? [] : [{ label: 'Per day', value: (views / days).toFixed(1) }]),
       ],
-      series: { label: 'Views per day', data: fillDays(series, days) },
+      series: { label: win.today ? 'Views per hour' : 'Views per day', hourly: win.today, data: fillWindow(win, series) },
       lists: [
         { title: 'Pages', page: true, rows: all(
           `SELECT path label, COUNT(*) value FROM analytics_events
@@ -257,9 +295,9 @@ const DETAILS = {
     };
   },
 
-  signups(days) {
-    const sinceIso = new Date(Date.now() - days * DAY).toISOString();
-    const series = all("SELECT substr(created_at, 1, 10) d, COUNT(*) v FROM users WHERE created_at >= ? GROUP BY d", sinceIso);
+  signups(win) {
+    const { sinceIso } = win;
+    const series = all(`SELECT ${isoBucket(win)} d, COUNT(*) v FROM users WHERE created_at >= ? GROUP BY d`, sinceIso);
     const recent = all(
       `SELECT u.username, u.plan, u.created_at,
               (SELECT COUNT(*) FROM bets b WHERE b.user_id = u.id) bets,
@@ -268,11 +306,11 @@ const DETAILS = {
     return {
       title: 'Signups',
       summary: [
-        { label: `Last ${days} days`, value: one('SELECT COUNT(*) n FROM users WHERE created_at >= ?', sinceIso).n },
+        { label: win.today ? 'Today' : `Last ${win.days} days`, value: one('SELECT COUNT(*) n FROM users WHERE created_at >= ?', sinceIso).n },
         { label: 'All time', value: one('SELECT COUNT(*) n FROM users').n },
         { label: 'On Pro', value: one("SELECT COUNT(*) n FROM users WHERE plan = 'pro'").n },
       ],
-      series: { label: 'Signups per day', data: fillDays(series, days) },
+      series: { label: win.today ? 'Signups per hour' : 'Signups per day', hourly: win.today, data: fillWindow(win, series) },
       lists: [
         { title: 'Newest accounts', rows: recent.map((r) => ({
           label: r.username, value: `${r.bets} bet${r.bets === 1 ? '' : 's'}`,
@@ -281,10 +319,9 @@ const DETAILS = {
     };
   },
 
-  active(days) {
-    const now = Date.now();
-    const since = now - days * DAY;
-    const series = all(`SELECT ${dayCol} d, COUNT(DISTINCT user_id) v FROM analytics_events WHERE user_id IS NOT NULL AND ts >= ? GROUP BY d`, since);
+  active(win) {
+    const { now, since } = win;
+    const series = all(`SELECT ${tsBucket(win)} d, COUNT(DISTINCT user_id) v FROM analytics_events WHERE user_id IS NOT NULL AND ts >= ? GROUP BY d`, since);
     const au = (ms) => one('SELECT COUNT(DISTINCT user_id) n FROM analytics_events WHERE user_id IS NOT NULL AND ts >= ?', ms).n;
     const top = all(
       `SELECT u.username, COUNT(*) events, MAX(e.ts) seen,
@@ -294,13 +331,13 @@ const DETAILS = {
     return {
       title: 'Active users',
       summary: [
-        { label: 'Today', value: au(startOfTodayMs()) },
+        { label: 'Today', value: au(win.todayMs) },
         { label: '7 days', value: au(now - 7 * DAY) },
         { label: '30 days', value: au(now - 30 * DAY) },
       ],
-      series: { label: 'Active users per day', data: fillDays(series, days) },
+      series: { label: win.today ? 'Active users per hour' : 'Active users per day', hourly: win.today, data: fillWindow(win, series) },
       lists: [
-        { title: `Most active · ${days} days`, rows: top.map((r) => ({
+        { title: `Most active · ${win.label}`, rows: top.map((r) => ({
           label: r.username, value: `${r.events} actions`, sub: `${r.bets} bets · last seen ${ago(r.seen)}` })) },
       ],
     };
@@ -351,25 +388,25 @@ const DETAILS = {
     };
   },
 
-  bets(days) {
-    const sinceIso = new Date(Date.now() - days * DAY).toISOString();
-    const series = all("SELECT substr(created_at, 1, 10) d, COUNT(*) v FROM bets WHERE created_at >= ? GROUP BY d", sinceIso);
+  bets(win) {
+    const { sinceIso } = win;
+    const series = all(`SELECT ${isoBucket(win)} d, COUNT(*) v FROM bets WHERE created_at >= ? GROUP BY d`, sinceIso);
     return {
       title: 'Bets logged',
       summary: [
-        { label: 'Today', value: one('SELECT COUNT(*) n FROM bets WHERE created_at >= ?', new Date(startOfTodayMs()).toISOString()).n },
-        { label: `${days} days`, value: one('SELECT COUNT(*) n FROM bets WHERE created_at >= ?', sinceIso).n },
+        { label: 'Today', value: one('SELECT COUNT(*) n FROM bets WHERE created_at >= ?', new Date(win.todayMs).toISOString()).n },
+        ...(win.today ? [] : [{ label: `${win.days} days`, value: one('SELECT COUNT(*) n FROM bets WHERE created_at >= ?', sinceIso).n }]),
         { label: 'All time', value: one('SELECT COUNT(*) n FROM bets').n },
       ],
-      series: { label: 'Bets logged per day', data: fillDays(series, days) },
+      series: { label: win.today ? 'Bets logged per hour' : 'Bets logged per day', hourly: win.today, data: fillWindow(win, series) },
       lists: [
-        { title: `Sports · ${days} days`, rows: all(
+        { title: `Sports · ${win.label}`, rows: all(
           `SELECT COALESCE(NULLIF(sport, ''), 'No sport') label, COUNT(*) value FROM bets
             WHERE created_at >= ? GROUP BY label ORDER BY value DESC LIMIT 10`, sinceIso) },
-        { title: `Bookmakers · ${days} days`, rows: all(
+        { title: `Bookmakers · ${win.label}`, rows: all(
           `SELECT COALESCE(NULLIF(bookmaker, ''), 'No bookmaker') label, COUNT(*) value FROM bets
             WHERE created_at >= ? GROUP BY label ORDER BY value DESC LIMIT 10`, sinceIso) },
-        { title: `Who is logging most · ${days} days`, rows: all(
+        { title: `Who is logging most · ${win.label}`, rows: all(
           `SELECT u.username label, COUNT(*) value FROM bets b JOIN users u ON u.id = b.user_id
             WHERE b.created_at >= ? GROUP BY u.id ORDER BY value DESC LIMIT 10`, sinceIso) },
       ],
@@ -403,10 +440,10 @@ const DETAILS = {
     };
   },
 
-  session(days) {
-    const since = Date.now() - days * DAY;
+  session(win) {
+    const { since } = win;
     const sess = all(
-      `SELECT ${dayCol.replace('ts', 'MIN(ts)')} d, (MAX(ts) - MIN(ts)) / 1000 sec FROM analytics_events
+      `SELECT ${tsBucket(win, 'MIN(ts)')} d, (MAX(ts) - MIN(ts)) / 1000 sec FROM analytics_events
         WHERE ts >= ? GROUP BY session_id`, since);
     const buckets = [['Under 10s', 0, 10], ['10–60s', 10, 60], ['1–5 min', 60, 300], ['5–15 min', 300, 900], ['15 min +', 900, Infinity]];
     const byDay = new Map();
@@ -421,7 +458,7 @@ const DETAILS = {
         { label: 'Typical (median)', value: `${Math.floor((sorted[Math.floor(sorted.length / 2)] || 0) / 60)}m ${(sorted[Math.floor(sorted.length / 2)] || 0) % 60}s` },
         { label: 'Visits', value: sess.length },
       ],
-      series: { label: 'Average visit length per day (seconds)', unit: 's', data: fillDays(series, days) },
+      series: { label: win.today ? 'Average visit length per hour (seconds)' : 'Average visit length per day (seconds)', unit: 's', hourly: win.today, data: fillWindow(win, series) },
       lists: [{ title: 'How long visits last', rows: buckets.map(([label, lo, hi]) => ({
         label, value: sess.filter((r) => r.sec >= lo && r.sec < hi).length })) }],
     };
@@ -431,9 +468,8 @@ const DETAILS = {
 router.get('/detail', (req, res) => {
   const fn = DETAILS[String(req.query.metric || '')];
   if (!fn) return res.status(400).json({ error: 'Unknown metric' });
-  const days = Math.min(90, Math.max(1, parseInt(req.query.days, 10) || 30));
   try {
-    res.json(fn(days));
+    res.json(fn(windowOf(req)));
   } catch (e) {
     console.error('admin detail failed', e);
     res.status(500).json({ error: 'Could not load that breakdown' });
