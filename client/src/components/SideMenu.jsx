@@ -5,7 +5,6 @@ import { getCached, setCached } from '../dataCache.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { useTracker } from '../context/TrackerContext.jsx';
-import { useAddBet } from '../context/AddBetContext.jsx';
 import { usePlan } from '../usePlan.js';
 import { amountParts } from '../format.js';
 import Icon from './Icon.jsx';
@@ -38,7 +37,6 @@ export default function SideMenu({ onClose, onNewTracker, onManageTracker }) {
   const { user, logout } = useAuth();
   const { settings, update } = useSettings();
   const { trackers, activeId, pro, switchTo } = useTracker();
-  const { openAddBet, scanBet, scanEnabled } = useAddBet();
   const { ent } = usePlan();
   const navigate = useNavigate();
   const isPro = ent ? !!ent.pro : !!pro;
@@ -59,8 +57,6 @@ export default function SideMenu({ onClose, onNewTracker, onManageTracker }) {
   }, [activeId]);
 
   const go = (path) => () => { onClose(); navigate(path); };
-  const addBet = () => { onClose(); openAddBet(); };
-  const scan = () => { onClose(); scanBet(); };
   const signOut = () => { onClose(); logout(); navigate('/'); };
   const setMode = (mode) => { if (settings && (settings.theme?.mode || 'dark') !== mode) update({ theme: { ...settings.theme, mode } }); };
 
@@ -85,18 +81,6 @@ export default function SideMenu({ onClose, onNewTracker, onManageTracker }) {
         </span>
         <span className={`badge sm-plan ${isPro ? 'won' : ''}`} style={{ textTransform: 'none' }}>{isPro ? 'Pro' : 'Free'}</span>
       </button>
-
-      {/* The two things you do most */}
-      <div className="sm-actions">
-        <button type="button" className="btn-primary sm-act" onClick={addBet}>
-          <Icon name="plus" size={17} /> Add bet
-        </button>
-        {scanEnabled && (
-          <button type="button" className="btn-ghost sm-act" onClick={scan}>
-            <Icon name="camera" size={17} /> Scan slip
-          </button>
-        )}
-      </div>
 
       {/* Trackers */}
       <div className="sm-section">
