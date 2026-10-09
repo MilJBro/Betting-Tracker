@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { requireAuth } from '../lib/auth.js';
 import { config } from '../lib/config.js';
 import { isPro } from '../lib/plan.js';
-import { stripe, billingEnabled, ensureCustomer } from '../lib/stripe.js';
+import { stripe, billingEnabled, ensureCustomer, applySubscriptionState } from '../lib/stripe.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -67,12 +67,32 @@ router.post('/portal', async (req, res) => {
     const customer = await ensureCustomer(req.userId);
     const session = await stripe.billingPortal.sessions.create({
       customer,
-      return_url: `${config.appUrl}/account`,
+      return_url: `${config.appUrl}/account?billing=updated`,
     });
     res.json({ url: session.url });
   } catch (err) {
     console.error('portal error', err.message);
     res.status(502).json({ error: 'Could not open the billing portal. Please try again.' });
+  }
+});
+
+// Pull the subscription straight from Stripe and apply it. The webhook normally
+// does this, but syncing on return from checkout/the portal means the Plan card
+// is right immediately even if a webhook is late.
+router.post('/sync', async (req, res) => {
+  if (!billingEnabled) return res.json({ ok: true });
+  try {
+    const customer = await ensureCustomer(req.userId);
+    let best = null;
+    for await (const sub of stripe.subscriptions.list({ customer, status: 'all', limit: 10 })) {
+      if (['active', 'trialing', 'past_due'].includes(sub.status)) { best = sub; break; }
+      if (!best) best = sub;
+    }
+    if (best) applySubscriptionState(customer, best.status, best);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('billing sync error', err.message);
+    res.status(502).json({ error: 'Could not refresh your subscription.' });
   }
 });
 
