@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { getCached, setCached } from '../dataCache.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -10,18 +10,6 @@ import { amountParts } from '../format.js';
 import Icon from './Icon.jsx';
 import Logo from './Logo.jsx';
 import InstallStatus from './InstallStatus.jsx';
-
-// Where the menu can take you. "Stats" is a Pro page, so free accounts get a
-// small Pro tag on it (the page itself explains and offers the upgrade).
-const LINKS = [
-  { to: '/', end: true, icon: 'house', label: 'Home' },
-  { to: '/bets', icon: 'bets', label: 'My bets' },
-  { to: '/analytics', icon: 'analytics', label: 'Stats', proTag: true },
-  { to: '/customise', icon: 'sliders', label: 'Customise' },
-  { to: '/pricing', icon: 'zap', label: 'Plans' },
-  { to: '/account', icon: 'account', label: 'You' },
-  { to: '/blog', icon: 'book', label: 'Betting guides' },
-];
 
 // 'MilesBrown' / 'Miles Brown' -> 'MB', otherwise the first two letters.
 function initialsOf(name) {
@@ -123,23 +111,6 @@ export default function SideMenu({ onClose, onNewTracker, onManageTracker }) {
           <Icon name="chevron" size={16} className="sm-chev" />
         </button>
       )}
-
-      {/* Where to go */}
-      <div className="sm-section"><span>Menu</span></div>
-      <nav className="sm-nav" aria-label="Main">
-        {LINKS.map((l) => (
-          <NavLink key={l.to} to={l.to} end={l.end} onClick={onClose} className={({ isActive }) => 'sm-link' + (isActive ? ' active' : '')}>
-            <Icon name={l.icon} size={19} />
-            <span>{l.to === '/pricing' && isPro ? 'Your plan' : l.label}</span>
-            {l.proTag && !isPro && <span className="pro-pill">Pro</span>}
-          </NavLink>
-        ))}
-        {user?.isAdmin && (
-          <NavLink to="/admin" onClick={onClose} className={({ isActive }) => 'sm-link' + (isActive ? ' active' : '')}>
-            <Icon name="pulse" size={19} /> <span>Insights</span>
-          </NavLink>
-        )}
-      </nav>
 
       {/* Quick preferences */}
       <div className="sm-prefs">
