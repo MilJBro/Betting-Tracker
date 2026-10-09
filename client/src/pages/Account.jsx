@@ -178,6 +178,28 @@ export default function Account() {
     setParams(params, { replace: true });
   }, [params, setParams, refreshPlan]);
 
+  // Back from Stripe (checkout or the portal): pull the latest subscription so
+  // the Plan card shows the right dates straight away, and again whenever Pro
+  // has no dates yet (an account that subscribed before we stored them).
+  const subKnown = !!ent?.subscription;
+  const planLoaded = !!ent;
+  useEffect(() => {
+    const back = params.get('billing') === 'updated';
+    if (back) { params.delete('billing'); setParams(params, { replace: true }); }
+    if (!planLoaded || !isPro || !billing?.enabled) return;
+    if (back || !subKnown) api.post('/billing/sync').then(() => refreshPlan()).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planLoaded, isPro, billing?.enabled]);
+  // Coming back to the tab after managing the subscription in the portal tab.
+  useEffect(() => {
+    if (!isPro || !billing?.enabled) return;
+    const onVis = () => {
+      if (document.visibilityState === 'visible') api.post('/billing/sync').then(() => refreshPlan()).catch(() => {});
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [isPro, billing?.enabled, refreshPlan]);
+
   useEffect(() => {
     api.get('/auth/me').then((d) => { setInfo(d.user); setCached('accountInfo', d.user); }).catch(() => {});
   }, []);
@@ -211,6 +233,18 @@ export default function Account() {
       setPlanMsg(err.message || 'Could not open the billing portal.');
     } finally { setPlanBusy(false); }
   }
+  const sub = ent?.subscription;
+  const subDate = sub?.endsAt
+    ? new Date(sub.endsAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '';
+  // One plain sentence about where the subscription stands.
+  const subLine = !sub || !subDate ? '' : sub.cancelling
+    ? `Cancelled. You keep Pro until ${subDate}, then you’ll move to Free. You won’t be charged again.`
+    : sub.trialing
+      ? `Free trial ends ${subDate}${billing?.priceLabel ? `, then ${billing.priceLabel}` : ''}. Cancel any time before then and you won’t be charged.`
+      : sub.status === 'past_due'
+        ? `Your last payment didn’t go through. Update your card before ${subDate} to keep Pro.`
+        : `Renews ${subDate}.`;
   const doUpgrade = () => (billing?.enabled ? startCheckout() : setPlanDev('pro'));
 
   // ---- Edit display name ---------------------------------------------------
@@ -493,7 +527,7 @@ export default function Account() {
       {/* Plan & billing — kept a clear, standard route so cancelling stays
           easy to find (as the law and Stripe require), just not the most
           prominent thing on the page. */}
-      <SetCard icon="trophy" title="Plan &amp; billing" desc={isPro ? 'Manage or cancel your subscription.' : 'Upgrade to unlock everything.'} badge={<span className={`badge ${isPro ? 'won' : ''}`} style={{ textTransform: 'none' }}>{isPro ? 'Pro' : 'Free'}</span>} open={isOpen('plan')} onToggle={() => toggleSet('plan')}>
+      <SetCard icon="trophy" title="Plan &amp; billing" desc={isPro ? (sub?.cancelling && subDate ? `Pro until ${subDate}` : 'Manage or cancel your subscription.') : 'Upgrade to unlock everything.'} badge={<span className={`badge ${isPro ? 'won' : ''}`} style={{ textTransform: 'none' }}>{isPro ? 'Pro' : 'Free'}</span>} open={isOpen('plan')} onToggle={() => toggleSet('plan')}>
         {planMsg && <div className="muted" style={{ fontSize: 13, margin: '4px 2px 8px' }}>{planMsg}</div>}
         {!isPro ? (
           <div style={{ padding: '4px 2px 2px' }}>
@@ -511,8 +545,9 @@ export default function Account() {
           </div>
         ) : (
           <div style={{ padding: '2px 2px' }}>
+            {subLine && <div className="muted" style={{ fontSize: 13, lineHeight: 1.5, margin: '0 0 10px' }}>{subLine}</div>}
             {billing?.enabled ? (
-              <button className="btn-ghost btn-sm" onClick={openPortal} disabled={planBusy}>{planBusy ? 'Working…' : 'Manage or cancel'}</button>
+              <button className="btn-ghost btn-sm" onClick={openPortal} disabled={planBusy}>{planBusy ? 'Working…' : sub?.cancelling ? 'Resume or manage' : 'Manage or cancel'}</button>
             ) : (
               <button className="btn-ghost btn-sm" onClick={() => setPlanDev('free')} disabled={planBusy}>Switch back to Free</button>
             )}

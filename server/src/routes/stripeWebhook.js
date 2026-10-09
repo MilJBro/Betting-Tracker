@@ -38,7 +38,7 @@ export async function stripeWebhook(req, res) {
         const sub = event.data.object;
         // A deleted/canceled subscription reports a terminal status here.
         const status = event.type === 'customer.subscription.deleted' ? 'canceled' : sub.status;
-        applySubscriptionState(sub.customer, status);
+        applySubscriptionState(sub.customer, status, sub);
         break;
       }
       default:

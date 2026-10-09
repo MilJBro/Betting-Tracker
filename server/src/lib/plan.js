@@ -27,7 +27,7 @@ function monthKey(d = new Date()) {
 
 function getUserRow(userId) {
   return db
-    .prepare('SELECT id, plan, scan_month, scan_count FROM users WHERE id = ?')
+    .prepare('SELECT id, plan, scan_month, scan_count, sub_status, sub_ends_at, sub_cancelling FROM users WHERE id = ?')
     .get(userId);
 }
 
@@ -57,6 +57,15 @@ export function entitlements(userId) {
     plan,
     pro,
     features: pro ? PRO_FEATURES : [],
+    // Where the Stripe subscription stands (null until Stripe has told us).
+    subscription: pro && row?.sub_status
+      ? {
+          status: row.sub_status,
+          trialing: row.sub_status === 'trialing',
+          cancelling: !!row.sub_cancelling,
+          endsAt: row.sub_ends_at ? row.sub_ends_at * 1000 : null,
+        }
+      : null,
     // Whether AI-powered bet-slip scanning is configured on the server.
     ai: { enabled: !!config.anthropic.apiKey },
     scans: {

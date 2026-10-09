@@ -86,3 +86,12 @@ test('deleting an account cancels every live Stripe subscription, and surfaces f
   const failing = { subscriptions: { list: () => (async function* () { yield { id: 'sub_x', status: 'active' }; })(), cancel: async () => { throw new Error('stripe down'); } } };
   await assert.rejects(() => cancelAllSubscriptions('cus_1', failing), /stripe down/);
 });
+
+test('subscription dates: trial end, cancel at period end, newer item-level period end', async () => {
+  const { describeSubscription } = await import('../src/lib/stripe.js');
+  assert.deepEqual(describeSubscription({ status: 'trialing', trial_end: 1800000000, current_period_end: 1800000000 }), { endsAt: 1800000000, cancelling: false });
+  assert.deepEqual(describeSubscription({ status: 'trialing', trial_end: 1800000000, cancel_at_period_end: true, cancel_at: 1800000000 }), { endsAt: 1800000000, cancelling: true });
+  assert.deepEqual(describeSubscription({ status: 'active', cancel_at_period_end: true, items: { data: [{ current_period_end: 1810000000 }] } }), { endsAt: 1810000000, cancelling: true });
+  assert.deepEqual(describeSubscription({ status: 'active', current_period_end: 1820000000 }), { endsAt: 1820000000, cancelling: false });
+  assert.deepEqual(describeSubscription(null), { endsAt: null, cancelling: false });
+});
