@@ -9,7 +9,6 @@ import { usePlan } from '../usePlan.js';
 import { amountParts } from '../format.js';
 import Icon from './Icon.jsx';
 import Logo from './Logo.jsx';
-import InstallStatus from './InstallStatus.jsx';
 
 // 'MilesBrown' / 'Miles Brown' -> 'MB', otherwise the first two letters.
 function initialsOf(name) {
@@ -23,14 +22,13 @@ function initialsOf(name) {
 // those sheets.
 export default function SideMenu({ onClose, onNewTracker, onManageTracker }) {
   const { user, logout } = useAuth();
-  const { settings, update } = useSettings();
+  const { settings } = useSettings();
   const { trackers, activeId, pro, switchTo } = useTracker();
   const { ent } = usePlan();
   const navigate = useNavigate();
   const isPro = ent ? !!ent.pro : !!pro;
   const currency = settings?.currency || 'GBP';
   const staking = settings?.staking;
-  const dark = settings?.theme?.mode !== 'light';
 
   // A quick read on the tracker you're in. Shown instantly from cache, then refreshed.
   const [stats, setStats] = useState(() => getCached('menuStats:' + activeId) ?? null);
@@ -46,7 +44,6 @@ export default function SideMenu({ onClose, onNewTracker, onManageTracker }) {
 
   const go = (path) => () => { onClose(); navigate(path); };
   const signOut = () => { onClose(); logout(); navigate('/'); };
-  const setMode = (mode) => { if (settings && (settings.theme?.mode || 'dark') !== mode) update({ theme: { ...settings.theme, mode } }); };
 
   const net = stats ? amountParts(stats.netProfit, currency, staking, { signed: true, units: stats.netProfitU }).main : null;
   const netCls = stats && stats.netProfit > 0 ? 'pos' : stats && stats.netProfit < 0 ? 'neg' : '';
@@ -111,21 +108,6 @@ export default function SideMenu({ onClose, onNewTracker, onManageTracker }) {
           <Icon name="chevron" size={16} className="sm-chev" />
         </button>
       )}
-
-      {/* Quick preferences */}
-      <div className="sm-prefs">
-        <div className="sm-pref">
-          <span className="sm-pref-label">Appearance</span>
-          <div className="sm-seg" role="group" aria-label="Appearance">
-            <button type="button" className={dark ? 'on' : ''} onClick={() => setMode('dark')} aria-pressed={dark}><Icon name="moon" size={15} /> Dark</button>
-            <button type="button" className={!dark ? 'on' : ''} onClick={() => setMode('light')} aria-pressed={!dark}><Icon name="sun" size={15} /> Light</button>
-          </div>
-        </div>
-        <div className="sm-pref">
-          <span className="sm-pref-label">App</span>
-          <InstallStatus />
-        </div>
-      </div>
 
       {/* Footer */}
       <div className="drawer-foot">
