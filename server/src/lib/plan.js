@@ -27,7 +27,7 @@ function monthKey(d = new Date()) {
 
 function getUserRow(userId) {
   return db
-    .prepare('SELECT id, plan, scan_month, scan_count, sub_status, sub_ends_at, sub_cancelling FROM users WHERE id = ?')
+    .prepare('SELECT id, plan, scan_month, scan_count, sub_status, sub_ends_at, sub_cancelling, trial_used FROM users WHERE id = ?')
     .get(userId);
 }
 
@@ -84,7 +84,9 @@ export function entitlements(userId) {
       // Public key so the client can load Stripe.js for the on-site checkout.
       // Never expose the secret key here.
       publishableKey: config.stripe.publishableKey || '',
-      trialDays: config.stripe.trialDays || 0,
+      // The free trial is once per account, so someone who has already had a
+      // subscription sees no trial offer.
+      trialDays: row?.trial_used ? 0 : config.stripe.trialDays || 0,
     },
   };
 }
