@@ -2,7 +2,7 @@ import LegalLayout from '../components/LegalLayout.jsx';
 
 export default function Privacy() {
   return (
-    <LegalLayout title="Privacy Policy" updated="11 September 2026">
+    <LegalLayout title="Privacy Policy" updated="10 October 2026">
       <p>
         This policy explains what personal information Betbooks (“we”, “us”) collects, why, and
         what rights you have. Betbooks is a personal betting tracker at betbooks.co.uk. We aim to
@@ -44,7 +44,8 @@ export default function Privacy() {
       <p>We share data only with the providers needed to run the service:</p>
       <ul>
         <li><strong>Hosting:</strong> our application and database are hosted on Render, which stores the data on our behalf.</li>
-        <li><strong>Email:</strong> if you request a password reset, the email is sent through our email provider.</li>
+        <li><strong>Email:</strong> if you request a password reset, the email is sent through Resend, our email provider, which receives your email address and the message.</li>
+        <li><strong>Slip scanning:</strong> if you use “Scan a bet”, the photo you upload is sent to Anthropic, the AI provider that reads it, so the bet details can be filled in for you. We don’t keep the image — only the bet details you choose to save.</li>
         <li><strong>Payments:</strong> if you buy a paid plan, payment is handled by a payment processor (such as Stripe); they receive only what’s needed to take the payment.</li>
       </ul>
       <p>These providers process data under their own terms and only as needed to provide their service to us.</p>
