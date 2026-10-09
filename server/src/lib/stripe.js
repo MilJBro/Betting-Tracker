@@ -68,10 +68,10 @@ export function applySubscriptionState(customerId, status, sub = null) {
   if (!row) return;
   const active = ['active', 'trialing', 'past_due'].includes(status);
   if (!sub) { // status only (e.g. checkout just completed): keep the dates we have
-    db.prepare('UPDATE users SET plan = ?, sub_status = ? WHERE id = ?').run(active ? 'pro' : 'free', active ? status : 'canceled', row.id);
+    db.prepare('UPDATE users SET plan = ?, sub_status = ?, trial_used = 1 WHERE id = ?').run(active ? 'pro' : 'free', active ? status : 'canceled', row.id);
     return;
   }
   const { endsAt, cancelling } = active ? describeSubscription(sub) : { endsAt: null, cancelling: false };
-  db.prepare('UPDATE users SET plan = ?, sub_status = ?, sub_ends_at = ?, sub_cancelling = ? WHERE id = ?')
+  db.prepare('UPDATE users SET plan = ?, sub_status = ?, sub_ends_at = ?, sub_cancelling = ?, trial_used = 1 WHERE id = ?')
     .run(active ? 'pro' : 'free', active ? status : 'canceled', endsAt, cancelling ? 1 : 0, row.id);
 }

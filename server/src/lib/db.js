@@ -108,6 +108,9 @@ ensureColumn('users', 'stripe_customer_id', 'TEXT');
 ensureColumn('users', 'sub_status', 'TEXT');
 ensureColumn('users', 'sub_ends_at', 'INTEGER');
 ensureColumn('users', 'sub_cancelling', 'INTEGER NOT NULL DEFAULT 0');
+// The free trial is once per account: set the first time Stripe reports a subscription.
+ensureColumn('users', 'trial_used', 'INTEGER NOT NULL DEFAULT 0');
+db.prepare('UPDATE users SET trial_used = 1 WHERE trial_used = 0 AND sub_status IS NOT NULL').run();
 // Multiple trackers: each bet belongs to a tracker; a share targets one.
 ensureColumn('bets', 'tracker_id', 'TEXT');
 ensureColumn('shares', 'tracker_id', 'TEXT');

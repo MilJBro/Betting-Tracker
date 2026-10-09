@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../lib/auth.js';
 import { config } from '../lib/config.js';
-import { isPro } from '../lib/plan.js';
+import { isPro, entitlements } from '../lib/plan.js';
 import { stripe, billingEnabled, ensureCustomer, applySubscriptionState } from '../lib/stripe.js';
 
 const router = Router();
@@ -27,6 +27,13 @@ router.post('/checkout', async (req, res) => {
   const price = wantAnnual ? config.stripe.priceIdAnnual : config.stripe.priceId;
   try {
     const customer = await ensureCustomer(req.userId);
+    // One free trial per account: skip it if we've seen a subscription before,
+    // or Stripe has any on this customer (covers a missed webhook).
+    let trialDays = entitlements(req.userId).billing.trialDays;
+    if (trialDays > 0) {
+      const prior = await stripe.subscriptions.list({ customer, status: 'all', limit: 1 });
+      if (prior.data.length > 0) trialDays = 0;
+    }
     const session = await stripe.checkout.sessions.create({
       // Embedded Checkout mounts the payment form inside our own page (card
       // details go straight to Stripe in an iframe, never our server), so the
@@ -41,8 +48,8 @@ router.post('/checkout', async (req, res) => {
       allow_promotion_codes: true,
       // Free trial before the first charge (card still collected up front, then
       // billed automatically when the trial ends unless they cancel).
-      ...(config.stripe.trialDays > 0
-        ? { subscription_data: { trial_period_days: config.stripe.trialDays } }
+      ...(trialDays > 0
+        ? { subscription_data: { trial_period_days: trialDays } }
         : {}),
       // After a successful payment Stripe redirects the top window here; the
       // Account page reads ?upgrade=success to confirm and refresh the plan.
