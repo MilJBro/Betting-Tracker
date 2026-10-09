@@ -23,7 +23,8 @@ export async function sendMail({ to, subject, text, html }) {
     return { delivered: false };
   }
   try {
-    await transporter.sendMail({ from: config.smtp.from, to, subject, text, html });
+    // Replies go to the support inbox rather than a dead no-reply address.
+    await transporter.sendMail({ from: config.smtp.from, replyTo: 'support@betbooks.co.uk', to, subject, text, html });
     return { delivered: true };
   } catch (err) {
     console.error('[mailer] Failed to send email:', err.message);
