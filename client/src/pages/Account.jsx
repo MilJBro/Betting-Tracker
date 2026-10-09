@@ -313,7 +313,7 @@ export default function Account() {
         <div className="ah-stats">
           <div><span className="ah-ic"><Icon name="trophy" size={16} /></span><span className="k">Total Profit</span><span className={`v ${profitCls}`}>{stats ? amountParts(stats.netProfit, currency, staking, { signed: true, units: stats.netProfitU }).main : '—'}</span></div>
           <div><span className="ah-ic"><Icon name="target" size={16} /></span><span className="k">Win Rate</span><span className="v">{stats ? `${stats.winRate}%` : '—'}</span></div>
-          <div><span className="ah-ic"><Icon name="coins" size={16} /></span><span className="k">Total Bets</span><span className="v">{stats ? stats.totalBets : '—'}</span></div>
+          <div><span className="ah-ic"><Icon name="ticket" size={16} /></span><span className="k">Total Bets</span><span className="v">{stats ? stats.totalBets : '—'}</span></div>
           <div><span className="ah-ic"><Icon name="calendar" size={16} /></span><span className="k">Joined</span><span className="v sm">{joinedShort}</span></div>
         </div>
       </div>

@@ -114,7 +114,7 @@ export const TILE_CATALOG = [
   { key: 'netProfit', label: 'Net Profit', icon: 'trend' },
   { key: 'roi', label: 'ROI', icon: 'trend' },
   { key: 'winRate', label: 'Win Rate', icon: 'target' },
-  { key: 'totalBets', label: 'Total Bets', icon: 'coins' },
+  { key: 'totalBets', label: 'Total Bets', icon: 'ticket' },
   { key: 'avgStake', label: 'Avg. Stake', icon: 'clock' },
   { key: 'totalStaked', label: 'Total Staked', icon: 'coins' },
   { key: 'biggestWin', label: 'Best Win', icon: 'trophy' },

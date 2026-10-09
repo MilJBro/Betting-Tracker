@@ -147,6 +147,13 @@ const PATHS = {
       <path d="M10 13.6v3.2c0 1.4 2.2 2.6 5 2.6s5-1.2 5-2.6v-3.4" />
     </>
   ),
+  // A bet slip: a ticket with notched sides and a perforated line.
+  ticket: (
+    <>
+      <path d="M3 9V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a3 3 0 0 0 0 6v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a3 3 0 0 0 0-6z" />
+      <path d="M14.5 6.5v2M14.5 11v2M14.5 15.5v2" />
+    </>
+  ),
   monitor: (
     <>
       <rect x="3" y="4" width="18" height="12" rx="2" />
