@@ -1,18 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useTracker } from '../context/TrackerContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
-import { useAuth } from '../context/AuthContext.jsx';
 import { currencySymbol } from '../format.js';
 import Icon from './Icon.jsx';
 import Logo from './Logo.jsx';
+import SideMenu from './SideMenu.jsx';
 
 export default function TrackerBar() {
   const { trackers, active, activeId, pro, switchTo, create, update, remove } = useTracker();
   const { settings } = useSettings();
-  const { logout } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
   const [manage, setManage] = useState(false); // desktop modal
@@ -24,6 +23,25 @@ export default function TrackerBar() {
   const [newBankroll, setNewBankroll] = useState('');
   const [busy, setBusy] = useState(false);
   const [delTarget, setDelTarget] = useState(null); // tracker pending delete confirmation
+
+  const menuBtn = useRef(null);
+  const drawerRef = useRef(null);
+  const wasOpen = useRef(false);
+  const touch = useRef(null);
+
+  // Esc closes the menu; focus moves into it on open and back to the menu
+  // button on close, so keyboard and screen-reader users aren't left stranded.
+  useEffect(() => {
+    if (!drawer) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setDrawer(false); };
+    window.addEventListener('keydown', onKey);
+    drawerRef.current?.focus({ preventScroll: true }); // into the panel, with no ring on any one button
+    return () => window.removeEventListener('keydown', onKey);
+  }, [drawer, view]);
+  useEffect(() => {
+    if (wasOpen.current && !drawer) menuBtn.current?.focus({ preventScroll: true });
+    wasOpen.current = drawer;
+  }, [drawer]);
 
   if (!active) return null;
   const sym = currencySymbol(settings?.currency || 'GBP');
@@ -37,8 +55,6 @@ export default function TrackerBar() {
   function finish() { setManage(false); setView('list'); }
 
   function openDrawer() { setView('list'); setDrawer(true); }
-  function goSettings() { setDrawer(false); navigate('/account'); }
-  function signOut() { setDrawer(false); logout(); navigate('/'); }
 
   async function saveActive() {
     setBusy(true);
@@ -145,7 +161,7 @@ export default function TrackerBar() {
     <>
       <div className="tracker-bar">
         {/* Mobile: hamburger opens the tracker drawer; the logo is centred. */}
-        <button className="tb-menu" onClick={openDrawer} aria-label="Open menu" aria-haspopup="true" aria-expanded={drawer}>
+        <button ref={menuBtn} className="tb-menu" onClick={openDrawer} aria-label="Open menu" aria-haspopup="true" aria-expanded={drawer}>
           <span className="tb-menu-lines"><span /><span /><span /></span>
         </button>
         <Logo />
@@ -168,55 +184,37 @@ export default function TrackerBar() {
 
       {drawer && (
         <div className="drawer-overlay" onMouseDown={() => setDrawer(false)}>
-          <aside className="drawer" onMouseDown={(e) => e.stopPropagation()}>
+          <aside
+            ref={drawerRef}
+            className="drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu"
+            tabIndex={-1}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => { const t = e.touches[0]; touch.current = { x: t.clientX, y: t.clientY }; }}
+            onTouchEnd={(e) => {
+              const t0 = touch.current; touch.current = null;
+              if (!t0) return;
+              const t = e.changedTouches[0];
+              const dx = t.clientX - t0.x, dy = t.clientY - t0.y;
+              // A deliberate leftward swipe (mostly horizontal) pushes the menu away.
+              if (dx < -70 && Math.abs(dx) > Math.abs(dy) * 2) setDrawer(false);
+            }}
+          >
             {view === 'list' ? (
-              <>
-                <div className="drawer-head">
-                  <Logo />
-                  <button className="btn-ghost btn-sm" type="button" onClick={() => setDrawer(false)} aria-label="Close menu">✕</button>
-                </div>
-                <div className="drawer-label">Your trackers</div>
-                <div className="drawer-list">
-                  {trackers.map((t) => (
-                    <button
-                      key={t.id}
-                      className={'drawer-item' + (t.id === activeId ? ' on' : '')}
-                      onClick={() => { switchTo(t.id); setDrawer(false); }}
-                    >
-                      <span className="di-ic"><Icon name="layers" size={18} /></span>
-                      <span className="di-name">{t.name}</span>
-                      {t.id === activeId && <span className="di-check" aria-hidden="true">✓</span>}
-                    </button>
-                  ))}
-                  <button
-                    className="drawer-item drawer-new"
-                    type="button"
-                    onClick={() => { if (!pro) { goPlansForTracker(); return; } prepNew(); setView('new'); }}
-                  >
-                    <span className="di-ic di-ic-add" aria-hidden="true">+</span>
-                    <span className="di-name">New tracker{!pro && <span className="pro-pill" style={{ marginLeft: 8 }}>Pro</span>}</span>
-                  </button>
-                </div>
-
-                <div className="drawer-foot">
-                  <button className="drawer-link" type="button" onClick={() => { prepEdit(); setView('edit'); }}>
-                    <Icon name="edit" size={18} /> Manage tracker
-                  </button>
-                  <button className="drawer-link" type="button" onClick={goSettings}>
-                    <Icon name="sliders" size={18} /> Settings
-                  </button>
-                  <button className="drawer-link" type="button" onClick={signOut}>
-                    <Icon name="logout" size={18} /> Log out
-                  </button>
-                </div>
-              </>
+              <SideMenu
+                onClose={() => setDrawer(false)}
+                onNewTracker={() => { if (!pro) { goPlansForTracker(); return; } prepNew(); setView('new'); }}
+                onManageTracker={() => { prepEdit(); setView('edit'); }}
+              />
             ) : (
               <>
                 <div className="drawer-head">
                   <button className="drawer-back" type="button" onClick={() => setView('list')} aria-label="Back to menu">
                     <span className="drawer-back-chev" aria-hidden="true">‹</span> Back
                   </button>
-                  <button className="btn-ghost btn-sm" type="button" onClick={() => setDrawer(false)} aria-label="Close menu">✕</button>
+                  <button className="sm-close" type="button" onClick={() => setDrawer(false)} aria-label="Close menu">✕</button>
                 </div>
                 <h2 className="drawer-title">{view === 'new' ? 'New tracker' : 'Manage tracker'}</h2>
                 <div className="drawer-form">{view === 'edit' ? editBody : newBody}</div>
