@@ -111,6 +111,9 @@ export function AddBetProvider({ children }) {
     fetch('/api/health').catch(() => {});
     scanInputRef.current?.click();
   };
+  // Open the slip and go straight to picking a photo (the menu's "Scan slip").
+  // Called from a tap, so the browser still treats the file picker as user-initiated.
+  const scanBet = () => { openAddBet(); triggerScan(); };
   async function onScanFile(e) {
     // Several screenshots may be picked for one long slip — they're merged.
     const files = Array.from(e.target.files || []);
@@ -188,7 +191,7 @@ export function AddBetProvider({ children }) {
   }, [settings, bets]);
 
   return (
-    <AddBetContext.Provider value={{ openAddBet }}>
+    <AddBetContext.Provider value={{ openAddBet, scanBet, scanEnabled: aiEnabled }}>
       {children}
       {open && settings && (
         <BetForm
