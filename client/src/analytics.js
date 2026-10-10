@@ -16,12 +16,40 @@ function sessionId() {
   }
 }
 
+// Where this browser first came from: an explicit tag on the link (?ref=x or
+// ?utm_source=…) and/or the referring site. Read once at load — before the app
+// router can rewrite the URL — and remembered, so a signup later still credits
+// the first source. Direct visits are not pinned, so a later referral can still
+// claim the browser. Nothing personal is stored: just a tag and a hostname.
+const OWN = /(^|\.)(betbooks\.co\.uk|stripe\.com|onrender\.com|localhost)$/;
+function readAcquisition() {
+  try {
+    const saved = localStorage.getItem('bt_acq');
+    if (saved) return JSON.parse(saved);
+  } catch { /* ignore */ }
+  try {
+    const q = new URLSearchParams(window.location.search);
+    const ref = (q.get('ref') || q.get('utm_source') || q.get('src') || '').slice(0, 40);
+    let host = '';
+    try { host = document.referrer ? new URL(document.referrer).hostname : ''; } catch { /* ignore */ }
+    if (OWN.test(host)) host = '';
+    if (!ref && !host) return {};
+    const acq = { ref, host: host.slice(0, 80) };
+    try { localStorage.setItem('bt_acq', JSON.stringify(acq)); } catch { /* ignore */ }
+    return acq;
+  } catch {
+    return {};
+  }
+}
+const ACQ = readAcquisition();
+export const acquisition = () => ACQ;
+
 // Fire-and-forget usage beacon. Errors are swallowed — tracking must never
 // affect the app. The auth token (when present) is attached by api, so the
 // server can attribute the event to the signed-in user.
 export function track(path, kind = 'view') {
   try {
-    api.post('/track', { sid: sessionId(), path, kind }).catch(() => {});
+    api.post('/track', { sid: sessionId(), path, kind, ...ACQ }).catch(() => {});
   } catch {
     /* ignore */
   }

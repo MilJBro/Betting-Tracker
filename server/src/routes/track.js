@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db } from '../lib/db.js';
 import { optionalAuth } from '../lib/auth.js';
+import { cleanSource } from '../lib/source.js';
 
 const router = Router();
 
@@ -18,7 +19,7 @@ function cleanPath(p) {
 
 const KINDS = new Set(['view', 'ping']);
 const insert = db.prepare(
-  'INSERT INTO analytics_events (ts, session_id, user_id, path, kind, country) VALUES (?, ?, ?, ?, ?, ?)'
+  'INSERT INTO analytics_events (ts, session_id, user_id, path, kind, country, source) VALUES (?, ?, ?, ?, ?, ?, ?)'
 );
 
 // Cloudflare adds cf-ipcountry (a 2-letter ISO code) to origin requests. Ignore
@@ -33,12 +34,12 @@ function cleanCountry(header) {
 // Fire-and-forget usage beacon. Always responds 200 so a tracking failure never
 // affects the app; attaches the signed-in user when a token is present.
 router.post('/', optionalAuth, (req, res) => {
-  const { sid, path, kind } = req.body || {};
+  const { sid, path, kind, ref, host } = req.body || {};
   if (sid && typeof sid === 'string') {
     const k = KINDS.has(kind) ? kind : 'view';
     const country = cleanCountry(req.headers['cf-ipcountry']);
     try {
-      insert.run(Date.now(), sid.slice(0, 40), req.userId || null, cleanPath(path), k, country);
+      insert.run(Date.now(), sid.slice(0, 40), req.userId || null, cleanPath(path), k, country, cleanSource(ref, host));
     } catch {
       /* ignore — never surface tracking errors */
     }

@@ -125,6 +125,9 @@ ensureColumn('bets', 'ew_places', 'INTEGER');
 ensureColumn('bets', 'boost', 'REAL NOT NULL DEFAULT 0');
 // Analytics: visitor country (2-letter ISO code from Cloudflare's cf-ipcountry).
 ensureColumn('analytics_events', 'country', 'TEXT');
+// Where the visitor / signup came from (e.g. 'X / Twitter'); NULL = direct or unknown.
+ensureColumn('analytics_events', 'source', 'TEXT');
+ensureColumn('users', 'signup_source', 'TEXT');
 
 // Notes were removed as a feature — wipe any stored notes so they're gone from
 // every tracked bet. Idempotent: a no-op once there are none left to clear.

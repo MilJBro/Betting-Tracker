@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { api, setToken, getToken } from '../api.js';
+import { acquisition } from '../analytics.js';
 import { clearCache } from '../dataCache.js';
 
 const AuthContext = createContext(null);
@@ -46,7 +47,7 @@ export function AuthProvider({ children }) {
   }
 
   async function register(email, username, password) {
-    const d = await api.post('/auth/register', { email, username, password });
+    const d = await api.post('/auth/register', { email, username, password, acq: acquisition() });
     setToken(d.token);
     setUser(d.user);
     return d.user;
