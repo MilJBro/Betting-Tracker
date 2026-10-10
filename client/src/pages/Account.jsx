@@ -186,19 +186,19 @@ export default function Account() {
   useEffect(() => {
     const back = params.get('billing') === 'updated';
     if (back) { params.delete('billing'); setParams(params, { replace: true }); }
-    if (!planLoaded || !isPro || !billing?.enabled) return;
+    if (!planLoaded || !isPro || !billing?.enabled || ent?.comped) return;
     if (back || !subKnown) api.post('/billing/sync').then(() => refreshPlan()).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planLoaded, isPro, billing?.enabled]);
   // Coming back to the tab after managing the subscription in the portal tab.
   useEffect(() => {
-    if (!isPro || !billing?.enabled) return;
+    if (!isPro || !billing?.enabled || ent?.comped) return;
     const onVis = () => {
       if (document.visibilityState === 'visible') api.post('/billing/sync').then(() => refreshPlan()).catch(() => {});
     };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
-  }, [isPro, billing?.enabled, refreshPlan]);
+  }, [isPro, billing?.enabled, ent?.comped, refreshPlan]);
 
   useEffect(() => {
     api.get('/auth/me').then((d) => { setInfo(d.user); setCached('accountInfo', d.user); }).catch(() => {});
@@ -527,7 +527,7 @@ export default function Account() {
       {/* Plan & billing — kept a clear, standard route so cancelling stays
           easy to find (as the law and Stripe require), just not the most
           prominent thing on the page. */}
-      <SetCard icon="trophy" title="Plan &amp; billing" desc={isPro ? (sub?.cancelling && subDate ? `Pro until ${subDate}` : 'Manage or cancel your subscription.') : 'Upgrade to unlock everything.'} badge={<span className={`badge ${isPro ? 'won' : ''}`} style={{ textTransform: 'none' }}>{isPro ? 'Pro' : 'Free'}</span>} open={isOpen('plan')} onToggle={() => toggleSet('plan')}>
+      <SetCard icon="trophy" title="Plan &amp; billing" desc={isPro ? (ent?.comped ? 'Pro (owner account)' : sub?.cancelling && subDate ? `Pro until ${subDate}` : 'Manage or cancel your subscription.') : 'Upgrade to unlock everything.'} badge={<span className={`badge ${isPro ? 'won' : ''}`} style={{ textTransform: 'none' }}>{isPro ? 'Pro' : 'Free'}</span>} open={isOpen('plan')} onToggle={() => toggleSet('plan')}>
         {planMsg && <div className="muted" style={{ fontSize: 13, margin: '4px 2px 8px' }}>{planMsg}</div>}
         {!isPro ? (
           <div style={{ padding: '4px 2px 2px' }}>
@@ -545,12 +545,16 @@ export default function Account() {
           </div>
         ) : (
           <div style={{ padding: '2px 2px' }}>
+            {ent?.comped ? (
+              <div className="muted" style={{ fontSize: 13, lineHeight: 1.5 }}>Pro is switched on for your owner account. There’s nothing to manage or pay.</div>
+            ) : (<>
             {subLine && <div className="muted" style={{ fontSize: 13, lineHeight: 1.5, margin: '0 0 10px' }}>{subLine}</div>}
             {billing?.enabled ? (
               <button className="btn-ghost btn-sm" onClick={openPortal} disabled={planBusy}>{planBusy ? 'Working…' : sub?.cancelling ? 'Resume or manage' : 'Manage or cancel'}</button>
             ) : (
               <button className="btn-ghost btn-sm" onClick={() => setPlanDev('free')} disabled={planBusy}>Switch back to Free</button>
             )}
+            </>)}
           </div>
         )}
       </SetCard>

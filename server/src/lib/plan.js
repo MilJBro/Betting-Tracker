@@ -1,5 +1,6 @@
 import { db } from './db.js';
 import { config } from './config.js';
+import { isAdminEmail } from './admin.js';
 
 // --- Plans & entitlements ---------------------------------------------------
 // The single source of truth for the free/Pro boundary. Feature gating must go
@@ -27,13 +28,20 @@ function monthKey(d = new Date()) {
 
 function getUserRow(userId) {
   return db
-    .prepare('SELECT id, plan, scan_month, scan_count, sub_status, sub_ends_at, sub_cancelling, trial_used FROM users WHERE id = ?')
+    .prepare('SELECT id, email, plan, scan_month, scan_count, sub_status, sub_ends_at, sub_cancelling, trial_used FROM users WHERE id = ?')
     .get(userId);
 }
 
+// Owners (ADMIN_EMAILS) always have Pro, whatever Stripe says — so the site's
+// own accounts never lose Pro when a test subscription lapses.
+function effectivePlan(row) {
+  if (!row) return 'free';
+  if (isAdminEmail(row.email)) return 'pro';
+  return PLANS.includes(row.plan) ? row.plan : 'free';
+}
+
 export function getPlan(userId) {
-  const row = getUserRow(userId);
-  return row && PLANS.includes(row.plan) ? row.plan : 'free';
+  return effectivePlan(getUserRow(userId));
 }
 
 export function isPro(userId) {
@@ -50,13 +58,16 @@ function scansUsed(row) {
 // so it can show usage and lock badges (never as the enforcement boundary).
 export function entitlements(userId) {
   const row = getUserRow(userId);
-  const plan = row && PLANS.includes(row.plan) ? row.plan : 'free';
+  const plan = effectivePlan(row);
   const pro = plan === 'pro';
+  const paid = row?.plan === 'pro';
   const used = scansUsed(row);
   return {
     plan,
     pro,
     features: pro ? PRO_FEATURES : [],
+    // True when Pro comes from being an owner rather than from a subscription.
+    comped: pro && !paid && isAdminEmail(row?.email),
     // Where the Stripe subscription stands (null until Stripe has told us).
     subscription: pro && row?.sub_status
       ? {
