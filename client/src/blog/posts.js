@@ -4,6 +4,46 @@
 
 export const POSTS = [
   {
+    slug: 'units-vs-pounds-betting',
+    title: 'Units vs pounds: how to size and track your bets',
+    description:
+      'What a betting unit is, why serious bettors track in units as well as pounds, how to pick a unit size, and how to avoid rewriting your record when your stakes change.',
+    date: '2026-10-10',
+    read: '5 min read',
+    content: [
+      { p: 'Spend any time around serious bettors and you’ll hear results quoted in units: “up 14 units this season”, “1u on the favourite”. It can sound like jargon, but it solves a real problem. Here’s what a unit is, why it’s worth tracking, and how to set one up without fooling yourself.' },
+      { h2: 'What is a unit?' },
+      { p: 'A unit is a fixed amount of money you treat as your standard stake. If your unit is £10, a 1u bet is £10, a 2u bet is £20 and a half-unit bet is £5. Your results are then counted in units rather than pounds: win a £20 bet at 3.0 and you’re up 4u (£40), whatever the pounds happen to be.' },
+      { h2: 'Why bother with units?' },
+      { ul: [
+        'They show how well you’re betting, not how big you’re betting. Winning 5 units is a good month whether your unit is £2 or £50.',
+        'They make you comparable. Two people with different budgets can compare records fairly, which is why tipsters report in units.',
+        'They stop stake changes hiding the truth. If you raise your stakes after a good run, your pound profit swings more, but your unit record still shows whether your selections are any good.',
+        'They encourage consistency. Thinking “1u on this, 0.5u on that” is calmer than picking a random amount each time.',
+      ] },
+      { h2: 'A quick example' },
+      { p: 'Alex stakes £10 units and Sam stakes £50 units. Over a month, both win 6 units. Alex is £60 up and Sam is £300 up. Sam looks five times better, but they’re equally good at picking bets — Sam just stakes more. Units show that. Pounds show what actually landed in your account. You want to see both.' },
+      { h2: 'How to choose your unit size' },
+      { p: 'There’s no single right answer, but a common rule of thumb is to make a unit a small slice of your betting bankroll, often around 1% to 2%. With a £500 bankroll, that’s £5 to £10. The point is that a losing run shouldn’t be able to hurt: even ten losses in a row costs you only 10 units.' },
+      { p: 'Only ever bet money you can afford to lose, and treat your bankroll as separate from your everyday money. A unit is a way of measuring your betting, not a reason to bet more.' },
+      { h2: 'Flat or varied stakes?' },
+      { p: 'Many bettors use flat staking (1u every time) for simplicity. Others vary between, say, 0.5u and 3u based on how confident they are. Either works for tracking, as long as you record the size of each bet in units. If you vary your stakes, review whether your bigger bets actually do better than your smaller ones — many people find they don’t.' },
+      { h2: 'The trap: changing your unit size' },
+      { p: 'Suppose your unit is £10 for six months, then you decide a unit should be £25. If your tracker simply re-labels every old bet using the new unit, your history quietly rewrites itself: an old £10 bet suddenly becomes 0.4u, and your past results shrink on paper.' },
+      { p: 'The honest way is for each bet to keep the unit size it was placed under. That’s how Betbooks works: change your unit size and your past bets keep the size they had at the time, while new bets use the new one. If you ever want everything re-expressed in the new unit, you can choose that deliberately.' },
+      { h2: 'Units and ROI' },
+      { p: 'ROI is profit divided by total staked, times 100. If you stake the same amount every time, it comes out the same in pounds or in units. If your stakes vary, the two can differ, which is useful to see: it tells you whether your sizing is helping or hurting.' },
+      { h2: 'Putting it into practice' },
+      { ul: [
+        'Pick a unit size you’re comfortable with.',
+        'Log every bet in units as well as pounds.',
+        'Review your unit profit and ROI once a week.',
+        'If you change your unit size, make sure your tracker keeps past bets as they were.',
+      ] },
+      { p: 'Betbooks lets you view everything in pounds, in units, or both at once, and keeps each bet’s unit size so your record stays honest. Please gamble responsibly: 18+ only, and visit begambleaware.org if betting stops being fun.' },
+    ],
+  },
+  {
     slug: 'how-to-track-your-bets',
     title: 'How to track your bets (and actually know if you’re winning)',
     description:
