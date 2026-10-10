@@ -36,7 +36,7 @@ export function settleOptions(bet) {
     { status: 'lost', label: 'Lost', cls: 'settle-loss' },
   ];
   const more = [];
-  if (bet.each_way) more.push({ status: 'placed', label: 'Placed', cls: '' });
-  more.push({ status: 'void', label: 'Void', cls: '' });
+  if (bet.each_way) more.push({ status: 'placed', label: 'Placed', cls: 'settle-muted' });
+  more.push({ status: 'void', label: 'Void', cls: 'settle-muted' });
   return { base, more };
 }
