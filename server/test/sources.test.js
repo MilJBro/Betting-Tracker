@@ -66,3 +66,13 @@ test('visitors and signups are counted per source on the Insights page', async (
   assert.match(d.lists[0].rows[0].sub, /1 signup/);
   assert.equal((await call('/api/admin/detail?metric=sources', { token: undefined })).s, 401);
 });
+
+test('the owner\'s own visits are not recorded, and old ones are purged', async () => {
+  const before = (await call('/api/admin/stats?days=7&tz=0', { token: owner })).j.range.visitors;
+  // a signed-in beacon from the owner is dropped
+  await call('/api/track', { method: 'POST', token: owner, body: { sid: 'owner-browser', path: '/admin' } });
+  // a stranger's is kept
+  await call('/api/track', { method: 'POST', body: { sid: 'stranger', path: '/' } });
+  const after = (await call('/api/admin/stats?days=7&tz=0', { token: owner })).j.range.visitors;
+  assert.equal(after - before, 1, 'only the stranger counted');
+});
