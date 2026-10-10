@@ -7,7 +7,7 @@ export default function Terms() {
         These terms govern your use of Betbooks (“Betbooks”, “we”, “us”), a personal betting
         record-keeping and analytics tool available at betbooks.co.uk. By creating an account or
         using the service you agree to these terms. If you do not agree, please don’t use Betbooks.
-        Betbooks is operated by Miles, a sole trader based in the United Kingdom.
+        Betbooks is operated by Miles Brown, a sole trader based in the United Kingdom.
       </p>
 
       <h2>1. What Betbooks is — and isn’t</h2>
