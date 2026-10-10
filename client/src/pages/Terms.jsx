@@ -2,11 +2,12 @@ import LegalLayout from '../components/LegalLayout.jsx';
 
 export default function Terms() {
   return (
-    <LegalLayout title="Terms of Service" updated="11 September 2026">
+    <LegalLayout title="Terms of Service" updated="10 October 2026">
       <p>
         These terms govern your use of Betbooks (“Betbooks”, “we”, “us”), a personal betting
         record-keeping and analytics tool available at betbooks.co.uk. By creating an account or
         using the service you agree to these terms. If you do not agree, please don’t use Betbooks.
+        Betbooks is operated by Miles, a sole trader based in the United Kingdom.
       </p>
 
       <h2>1. What Betbooks is — and isn’t</h2>
