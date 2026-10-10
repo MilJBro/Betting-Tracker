@@ -878,7 +878,7 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 .day-subhead .day-chevron { font-size: 10px; }
 .day-group-row td { font-weight: 700; color: var(--muted); font-size: 12.5px; cursor: pointer; }
 .day-group-row .day-chevron { font-size: 10px; margin-right: 2px; }
-.bet2 { background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--border); border-radius: 12px; overflow: hidden; }
+.bet2 { background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--border); border-radius: 12px; }
 .bet2.sel { border-color: color-mix(in srgb, var(--primary) 55%, var(--border)); }
 .bet2.s-won { border-left-color: var(--primary); }
 .bet2.s-lost { border-left-color: var(--loss); }
