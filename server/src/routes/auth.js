@@ -12,6 +12,7 @@ import { DEFAULT_SETTINGS } from '../lib/defaults.js';
 import { config } from '../lib/config.js';
 import { entitlements } from '../lib/plan.js';
 import { isAdminEmail } from '../lib/admin.js';
+import { cleanSource } from '../lib/source.js';
 import { ensureDefaultTracker } from '../lib/trackers.js';
 import { cancelAllSubscriptions } from '../lib/stripe.js';
 import { sendMail, passwordResetEmail } from '../lib/mailer.js';
@@ -27,7 +28,7 @@ const publicUser = (row) => ({ id: row.id, email: row.email, username: row.usern
 const hashToken = (t) => createHash('sha256').update(t).digest('hex');
 
 router.post('/register', (req, res) => {
-  const { email, username, password } = req.body || {};
+  const { email, username, password, acq } = req.body || {};
   const err =
     validateEmail(email) || validateUsername(username) || validatePassword(password);
   if (err) return res.status(400).json({ error: err });
@@ -40,8 +41,8 @@ router.post('/register', (req, res) => {
   const id = nanoid();
   const now = new Date().toISOString();
   db.prepare(
-    'INSERT INTO users (id, email, username, password, token_version, created_at) VALUES (?, ?, ?, ?, 0, ?)'
-  ).run(id, normEmail, username.trim(), hashPassword(password), now);
+    'INSERT INTO users (id, email, username, password, token_version, created_at, signup_source) VALUES (?, ?, ?, ?, 0, ?, ?)'
+  ).run(id, normEmail, username.trim(), hashPassword(password), now, cleanSource(acq?.ref, acq?.host));
   db.prepare('INSERT INTO settings (user_id, data) VALUES (?, ?)').run(
     id,
     JSON.stringify(DEFAULT_SETTINGS)

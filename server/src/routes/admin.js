@@ -134,6 +134,9 @@ router.get('/stats', (req, res) => {
     since
   );
 
+  // Where visitors and signups came from, within the chosen window.
+  const sources = sourceBreakdown(since, sinceIso);
+
   // Signed-in people active in the app (distinct accounts seen by the beacon).
   const activeUsers = (ms) => one('SELECT COUNT(DISTINCT user_id) n FROM analytics_events WHERE user_id IS NOT NULL AND ts >= ?', ms).n;
   const thisMonth = new Date().toISOString().slice(0, 7);
@@ -181,6 +184,7 @@ router.get('/stats', (req, res) => {
     ).map((s) => ({ ...s, signups: signupByDay[s.d] || 0 })),
     topPages,
     topCountries,
+    sources,
   });
 });
 
@@ -212,7 +216,34 @@ const ago = (ms) => {
 const ago_iso = (iso) => ago(Date.parse(iso));
 const pctStr = (a, b) => (b > 0 ? `${Math.round((a / b) * 100)}%` : '0%');
 
+// Visitors (distinct browsers) and signups per source over a window, busiest first.
+const DIRECT = 'Direct / unknown';
+function sourceBreakdown(since, sinceIso) {
+  const map = new Map();
+  const row = (s) => { if (!map.has(s)) map.set(s, { source: s, visitors: 0, signups: 0 }); return map.get(s); };
+  for (const r of all("SELECT COALESCE(source, ?) s, COUNT(DISTINCT session_id) n FROM analytics_events WHERE ts >= ? GROUP BY s", DIRECT, since)) row(r.s).visitors = r.n;
+  for (const r of all("SELECT COALESCE(signup_source, ?) s, COUNT(*) n FROM users WHERE created_at >= ? GROUP BY s", DIRECT, sinceIso)) row(r.s).signups = r.n;
+  return [...map.values()].sort((a, b) => b.visitors - a.visitors || b.signups - a.signups);
+}
+
 const DETAILS = {
+  sources(win) {
+    const list = sourceBreakdown(win.since, win.sinceIso);
+    const x = list.find((r) => r.source === 'X / Twitter') || { visitors: 0, signups: 0 };
+    const total = list.reduce((n, r) => n + r.visitors, 0);
+    return {
+      title: `Traffic sources · ${win.label}`,
+      summary: [
+        { label: 'From X / Twitter', value: x.visitors },
+        { label: 'X signups', value: x.signups },
+        { label: 'All visitors', value: total },
+      ],
+      lists: [{
+        title: 'Where visitors came from',
+        rows: list.map((r) => ({ label: r.source, value: r.visitors, sub: `${r.signups} signup${r.signups === 1 ? '' : 's'} · ${pctStr(r.visitors, total)} of visitors` })),
+      }],
+    };
+  },
   live() {
     const liveSince = Date.now() - 3 * 60 * 1000;
     const recent = all(

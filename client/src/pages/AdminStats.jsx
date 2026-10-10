@@ -236,6 +236,21 @@ export default function AdminStats() {
         <Kpi icon="coins" label="Total users" value={d.totals?.users ?? 0} sub={`${d.totals?.pro ?? 0} on Pro`} onOpen={() => setOpen('signups')} />
       </div>
 
+      {/* Where they came from */}
+      {(() => {
+        const list = d.sources || [];
+        const x = list.find((r) => r.source === 'X / Twitter') || { visitors: 0, signups: 0 };
+        const other = list.filter((r) => r.source !== 'X / Twitter' && r.source !== 'Direct / unknown');
+        const otherVisitors = other.reduce((n, r) => n + r.visitors, 0);
+        const direct = list.find((r) => r.source === 'Direct / unknown') || { visitors: 0 };
+        return (
+          <div className="kpi-grid">
+            <Kpi icon="globe" label={`From X / Twitter · ${rangeWord(days)}`} value={x.visitors} sub={`${x.signups} signup${x.signups === 1 ? '' : 's'}`} onOpen={() => setOpen('sources')} />
+            <Kpi icon="globe" label={`Other sites · ${rangeWord(days)}`} value={otherVisitors} sub={`${direct.visitors} direct or unknown`} onOpen={() => setOpen('sources')} />
+          </div>
+        );
+      })()}
+
       {/* Who's using it, and are they sticking? */}
       <div className="kpi-grid">
         <Kpi icon="account" label="Active today" value={d.engagement?.dau ?? 0} sub="signed-in users" onOpen={() => setOpen('active')} />
