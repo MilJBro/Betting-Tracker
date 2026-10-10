@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { api, setToken, getToken } from '../api.js';
-import { acquisition } from '../analytics.js';
+import { acquisition, markOwnerDevice } from '../analytics.js';
 import { clearCache } from '../dataCache.js';
 
 const AuthContext = createContext(null);
@@ -38,6 +38,9 @@ export function AuthProvider({ children }) {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // An owner signing in marks this device, so their visits stay out of Insights.
+  useEffect(() => { if (user?.isAdmin) markOwnerDevice(); }, [user]);
 
   async function login(email, password) {
     const d = await api.post('/auth/login', { email, password });

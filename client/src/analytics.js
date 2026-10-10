@@ -41,6 +41,25 @@ function readAcquisition() {
     return {};
   }
 }
+// The site owner's own browsing is left out of the Insights numbers. A device is
+// marked as the owner's automatically when an owner signs in on it, or by hand
+// with /?notrack=1 (undo with /?notrack=0), so even logged-out visits are skipped.
+function ownerDevice() {
+  try {
+    const flag = new URLSearchParams(window.location.search).get('notrack');
+    if (flag === '1') localStorage.setItem('bt_notrack', '1');
+    if (flag === '0') localStorage.removeItem('bt_notrack');
+    return localStorage.getItem('bt_notrack') === '1';
+  } catch {
+    return false;
+  }
+}
+let OWNER = ownerDevice();
+export function markOwnerDevice() {
+  OWNER = true;
+  try { localStorage.setItem('bt_notrack', '1'); } catch { /* ignore */ }
+}
+
 const ACQ = readAcquisition();
 export const acquisition = () => ACQ;
 
@@ -48,6 +67,7 @@ export const acquisition = () => ACQ;
 // affect the app. The auth token (when present) is attached by api, so the
 // server can attribute the event to the signed-in user.
 export function track(path, kind = 'view') {
+  if (OWNER) return;
   try {
     api.post('/track', { sid: sessionId(), path, kind, ...ACQ }).catch(() => {});
   } catch {
