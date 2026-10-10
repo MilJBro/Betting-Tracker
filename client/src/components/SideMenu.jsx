@@ -97,6 +97,17 @@ export default function SideMenu({ onClose, onNewTracker, onManageTracker }) {
         </button>
       </div>
 
+      {/* Owner-only link to the private Insights page */}
+      {user?.isAdmin && (
+        <div className="drawer-list" style={{ marginTop: 10 }}>
+          <button type="button" className="drawer-item" onClick={go('/admin')}>
+            <span className="di-ic"><Icon name="pulse" size={18} /></span>
+            <span className="di-main"><span className="di-name">Insights</span><span className="di-sub">Private stats for the site</span></span>
+            <Icon name="chevron" size={16} className="sm-chev" />
+          </button>
+        </div>
+      )}
+
       {/* Go Pro (free accounts) */}
       {!isPro && (
         <button type="button" className="sm-upgrade" onClick={go('/pricing')}>
