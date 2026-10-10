@@ -6,7 +6,8 @@ export default function Privacy() {
       <p>
         This policy explains what personal information Betbooks (“we”, “us”) collects, why, and
         what rights you have. Betbooks is a personal betting tracker at betbooks.co.uk. We aim to
-        collect as little as possible and never sell your data.
+        collect as little as possible and never sell your data. Betbooks is operated by Miles, who is
+        the data controller for the information described here.
       </p>
 
       <h2>1. What we collect</h2>
