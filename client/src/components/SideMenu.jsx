@@ -54,7 +54,7 @@ export default function SideMenu({ onClose, onNewTracker, onManageTracker }) {
     <>
       <div className="drawer-head">
         <Logo />
-        <button className="sm-close" type="button" onClick={onClose} aria-label="Close menu">✕</button>
+        <button className="sm-close" type="button" onClick={onClose} aria-label="Close menu"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
       </div>
 
       {/* Who you are */}
