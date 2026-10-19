@@ -8,12 +8,24 @@ function ewFraction(frac) {
   return b > 0 ? a / b : 0.2;
 }
 
+// What an each-way bet returns for each outcome. `perPart` is the stake on ONE
+// part (Win or Place), so the total outlay is double. A winnings boost lifts the
+// profit only, never the stake. Returns { win, place, lose, outlay } where win =
+// Win part + Place part, place = Place part only (the horse placed, didn't win).
+export function ewReturns(perPart, odds, fraction, boost = 0) {
+  const total = perPart * 2;
+  const boosted = (ret) => (ret > total ? total + (ret - total) * (1 + (Number(boost) || 0)) : ret);
+  const placeRet = perPart * (1 + (odds - 1) * ewFraction(fraction));
+  const winRet = perPart * odds + placeRet;
+  return { win: round2(boosted(winRet)), place: round2(boosted(placeRet)), lose: 0, outlay: round2(total) };
+}
+
 export function settlePayout(bet, status) {
   const stake = Number(bet.stake) || 0;
   const odds = Number(bet.odds) || 0;
   const boost = Number(bet.boost) || 0; // winnings (profit) boost, e.g. 0.25 = +25%
   // A winnings boost adds to the profit part only — stake back is unchanged.
-  const withBoost = (ret) => stake + Math.max(0, ret - stake) * (1 + boost);
+  const withBoost = (ret) => (ret > stake ? stake + (ret - stake) * (1 + boost) : ret);
   if (status === 'lost') return 0;
   if (status === 'void') return stake; // stake returned in full
   if (bet.each_way) {

@@ -3,20 +3,19 @@ import { createPortal } from 'react-dom';
 import { currencySymbol, money, formatOdds, parseOdds, unitSizeAt } from '../format.js';
 import Icon from './Icon.jsx';
 import { sportLayout } from '../sportLayout.js';
+import { ewReturns } from '../settle.js';
 
-// The status picker: four tappable boxes (Won / Pending / Lost / Cashed out).
+// The status picker: tappable boxes (Won / Pending / Lost / Cashed out, plus
+// Placed for each-way bets).
 const STATUS_BOXES = [
   { key: 'won', letter: 'W', label: 'Won' },
+  { key: 'placed', letter: 'Pl', label: 'Placed', ewOnly: true }, // each-way: placed but didn't win
   { key: 'pending', letter: 'P', label: 'Pending' },
   { key: 'lost', letter: 'L', label: 'Lost' },
   { key: 'cashout', letter: 'C', label: 'Cashed out' },
 ];
 // Each-way place-terms fractions (the place part pays at this fraction of odds).
 const EW_FRACTIONS = ['1/5', '1/4', '1/3', '1/2', '1/6'];
-const fractionValue = (frac) => {
-  const [a, b] = String(frac || '1/5').split('/').map(Number);
-  return b > 0 ? a / b : 0.2;
-};
 // Common unit stakes offered as a quick-pick when the user stakes in units.
 const UNIT_STEPS = [0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 5, 10];
 
@@ -96,9 +95,8 @@ const EDITABLE_FIELDS = [
 function autoReturn({ d, p, status, eachWay, ewFraction, boost }) {
   if (!(d > 0 && p > 0)) return null;
   if (eachWay) {
-    const placeReturn = p * (1 + (d - 1) * fractionValue(ewFraction));
-    const ret = status === 'placed' ? placeReturn : status === 'lost' ? 0 : p * d + placeReturn;
-    return Math.round(ret * 100) / 100;
+    const r = ewReturns(p, d, ewFraction, boost);
+    return status === 'placed' ? r.place : status === 'lost' ? 0 : r.win;
   }
   return Math.round((p + (p * d - p) * (1 + (Number(boost) || 0))) * 100) / 100;
 }
@@ -172,6 +170,16 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
   // Each-way (Win + Place) applies to racing and other field sports (e.g. golf).
   const ewEligible = layout === 'racing' || layout === 'field';
   const eachWay = !!form.each_way && ewEligible;
+  // A brand-new horse-racing bet starts as each-way (Win + Place), since that's
+  // how most racing bets are placed, so the returns are worked out straight
+  // away. Untick it for a win-only bet. Never touches an edited or scanned bet,
+  // nor a choice the user has made themselves.
+  const [ewTouched, setEwTouched] = useState(false);
+  useEffect(() => {
+    if (isEdit || initial || ewTouched) return;
+    const want = layout === 'racing';
+    setForm((f) => (!!f.each_way === want ? f : { ...f, each_way: want }));
+  }, [layout]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sport is a dropdown; "Other…" reveals a free-text box for anything not
   // in the list. Match the saved sport to a list option case-insensitively.
@@ -213,6 +221,41 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
     if (!(p > 0)) return 'Stakes a Win part and a Place part — total outlay is 2× your stake.';
     const perPartMoney = usesUnits ? p * unitSize : p;
     return `Total outlay ${money(perPartMoney * 2, currency)} — ${money(perPartMoney, currency)} win + ${money(perPartMoney, currency)} place. Place pays at ${form.ew_fraction} of the odds.`;
+  };
+
+  // What the bet pays for each result, worked out as you type: wins (Win + Place
+  // parts), places (Place part only) or loses. Shown for each-way bets once there
+  // is a stake and odds. Amounts are in money, with units alongside when staking in units.
+  const ewCard = () => {
+    const p = Number(form.stake);
+    const d = parseOdds(form.odds, oddsFormat);
+    if (!(p > 0 && d > 1)) return null;
+    const k = usesUnits ? unitSize : 1; // stake box -> money
+    const r = ewReturns(p, d, form.ew_fraction, form.boost);
+    const fmt = (v) => money(v * k, currency);
+    const profit = (ret) => ret - r.outlay;
+    const signed = (v) => (v >= 0 ? '+' : '−') + money(Math.abs(v) * k, currency);
+    const rows = [
+      { key: 'win', label: 'Wins', note: 'Win + Place parts', ret: r.win },
+      { key: 'place', label: 'Places, doesn’t win', note: 'Place part only', ret: r.place },
+      { key: 'lose', label: 'Loses', note: 'Nothing back', ret: r.lose },
+    ];
+    return (
+      <div className="ew-card" aria-label="Each-way returns">
+        <div className="ew-card-h">Each-way returns</div>
+        {rows.map((x) => (
+          <div className="ew-card-row" key={x.key}>
+            <span className="ew-card-l">{x.label}<small>{x.note}</small></span>
+            <span className="ew-card-v">
+              {fmt(x.ret)}
+              <small className={profit(x.ret) > 0 ? 'pos' : profit(x.ret) < 0 ? 'neg' : ''}>
+                {profit(x.ret) > 0 ? `${signed(profit(x.ret))} profit` : profit(x.ret) < 0 ? `${signed(profit(x.ret))} loss` : 'break-even'}
+              </small>
+            </span>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   const [tagInput, setTagInput] = useState('');
@@ -571,16 +614,18 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
               </div>
               {ewEligible && (
                 <div className="field">
-                  <label className="row" style={{ gap: 8, alignItems: 'center', cursor: 'pointer', marginBottom: 0 }}>
-                    <input
-                      type="checkbox"
-                      checked={form.each_way}
-                      onChange={(e) => set('each_way', e.target.checked)}
-                      aria-label="Each-way"
-                      style={{ width: 'auto', margin: 0 }}
-                    />
-                    <span>Each-way <span className="muted" style={{ fontWeight: 400 }}>(Win + Place)</span></span>
-                  </label>
+                  <div className="toggle-row" style={{ padding: '2px 0', borderBottom: 0 }}>
+                    <span style={{ fontWeight: 600, fontSize: 14 }}>Each-way <span className="muted" style={{ fontWeight: 400 }}>(Win + Place)</span></span>
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={!!form.each_way}
+                        onChange={(e) => { setEwTouched(true); setForm((f) => ({ ...f, each_way: e.target.checked, status: !e.target.checked && f.status === 'placed' ? 'pending' : f.status })); }}
+                        aria-label="Each-way"
+                      />
+                      <span className="slider" />
+                    </label>
+                  </div>
                   {eachWay && (
                     <>
                       <div className="grid-2" style={{ marginTop: 10 }}>
@@ -596,6 +641,7 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
                         </div>
                       </div>
                       <div className="muted" style={{ fontSize: 11, marginTop: 6 }}>{ewHint()}</div>
+                      {ewCard()}
                     </>
                   )}
                 </div>
@@ -778,8 +824,8 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
                       </span>
                     )}
                   </label>
-                  <div className="status-boxes" role="group" aria-label="Status">
-                    {STATUS_BOXES.map((s) => (
+                  <div className="status-boxes" role="group" aria-label="Status" style={{ gridTemplateColumns: `repeat(${STATUS_BOXES.filter((s) => !s.ewOnly || eachWay || form.status === s.key).length}, minmax(0, 38px))` }}>
+                    {STATUS_BOXES.filter((s) => !s.ewOnly || eachWay || form.status === s.key).map((s) => (
                       <button
                         key={s.key}
                         type="button"

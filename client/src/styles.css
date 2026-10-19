@@ -119,6 +119,7 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6
 .st-box.st-pending { --c: #d97706; }
 .st-box.st-lost { --c: #dc2626; }
 .st-box.st-cashout { --c: #2563eb; }
+.st-box.st-placed { --c: #0ea5e9; font-size: 13px; }
 .st-box.on { background: var(--c); border-color: var(--c); color: #fff; box-shadow: 0 2px 8px color-mix(in srgb, var(--c) 38%, transparent); }
 .st-box:active { transform: translateY(1px); }
 /* Selected status name shown next to the "Status" label, colour-matched. */
@@ -127,6 +128,7 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6
 .status-sel.st-pending { color: #d97706; }
 .status-sel.st-lost { color: #dc2626; }
 .status-sel.st-cashout { color: #2563eb; }
+.status-sel.st-placed { color: #0ea5e9; }
 /* Selection (needs room) paired with the short Odds field. */
 .betform .sel-odds { grid-template-columns: 1.7fr 1fr; gap: 10px; }
 
@@ -1356,3 +1358,14 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 .ds-main .s { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ds-row .tp-bar { flex: 0 0 70px; }
 .ds-row .tp-n { white-space: nowrap; min-width: 0; }
+
+/* Each-way returns card on the bet form: what the bet pays if it wins, places or loses. */
+.ew-card { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+.ew-card-h { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.ew-card-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--border); }
+.ew-card-row:first-of-type { border-top: 0; }
+.ew-card-l, .ew-card-v { display: flex; flex-direction: column; font-size: 14px; font-weight: 700; }
+.ew-card-v { align-items: flex-end; font-variant-numeric: tabular-nums; }
+.ew-card small { font-size: 11px; font-weight: 600; color: var(--muted); }
+.ew-card-v small.pos { color: var(--win); }
+.ew-card-v small.neg { color: var(--loss); }
