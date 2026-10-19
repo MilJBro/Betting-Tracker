@@ -214,7 +214,7 @@ export default function TrackerBar() {
                   <button className="drawer-back" type="button" onClick={() => setView('list')} aria-label="Back to menu">
                     <span className="drawer-back-chev" aria-hidden="true">‹</span> Back
                   </button>
-                  <button className="sm-close" type="button" onClick={() => setDrawer(false)} aria-label="Close menu">✕</button>
+                  <button className="sm-close" type="button" onClick={() => setDrawer(false)} aria-label="Close menu"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
                 </div>
                 <h2 className="drawer-title">{view === 'new' ? 'New tracker' : 'Manage tracker'}</h2>
                 <div className="drawer-form">{view === 'edit' ? editBody : newBody}</div>
