@@ -452,12 +452,9 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
   return createPortal(
     <div className="modal-overlay" ref={overlayRef} onMouseDown={onClose}>
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="row spread" style={{ marginBottom: 10 }}>
-          <h2 style={{ margin: 0, fontSize: 20 }}>{isEdit ? 'Edit bet' : 'Add a bet'}</h2>
-          <button className="btn-ghost btn-sm sm-close-btn" type="button" onClick={onClose} aria-label="Close"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
-        </div>
-        {((!isEdit && onScan) || onToggleField) && (
-          <div className="row slip-tools" style={{ gap: 8, marginBottom: 12 }}>
+        <div className="row spread" style={{ marginBottom: 12, flexWrap: 'nowrap', gap: 8 }}>
+          <h2 style={{ margin: 0, fontSize: 20, whiteSpace: 'nowrap' }}>{isEdit ? 'Edit bet' : 'Add a bet'}</h2>
+          <div className="row slip-tools" style={{ gap: 6, flexWrap: 'nowrap' }}>
             {!isEdit && onScan && (
               <button
                 className="btn-ghost btn-sm scan-icon-btn"
@@ -466,8 +463,8 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
                 aria-label="Scan a bet slip"
                 title="Scan a bet slip"
               >
-                <span className="scan-btn-label">Scan a bet slip</span>
-                <Icon name="camera" size={18} />
+                <span className="scan-btn-label">Scan</span>
+                <Icon name="camera" size={17} />
               </button>
             )}
             {onToggleField && (
@@ -479,8 +476,9 @@ export default function BetForm({ initial, isEdit, onScan, scanQuota, fields, st
                 {fieldsEditing ? 'Done' : 'Edit fields'}
               </button>
             )}
+            <button className="btn-ghost btn-sm sm-close-btn" type="button" onClick={onClose} aria-label="Close"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
           </div>
-        )}
+        </div>
 
         {/* AI scan quota for free accounts (Pro is unlimited, so no line). */}
         {!isEdit && onScan && scanQuota && !scanQuota.unlimited && (
