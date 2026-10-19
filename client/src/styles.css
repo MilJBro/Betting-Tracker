@@ -1332,7 +1332,9 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 .csv-menu .pro-pill { margin-left: auto; }
 
 /* Small camera icon button for scanning a bet slip, in the Add-bet header. */
-.scan-icon-btn { padding: 0; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
+.scan-icon-btn { padding: 0 11px; height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.scan-btn-label { font-size: 13px; font-weight: 700; white-space: nowrap; }
+.sm-close-btn { padding: 0; width: 34px; height: 34px; display: inline-grid; place-items: center; line-height: 0; }
 /* AI scan quota caption under the Add-bet header. */
 .scan-quota { font-size: 12px; font-weight: 600; color: var(--muted); margin: -4px 0 10px; }
 .scan-quota.out { color: var(--loss); }
@@ -1370,3 +1372,5 @@ tr.row-selected > td { background: color-mix(in srgb, var(--primary) 10%, transp
 .ew-card small { font-size: 11px; font-weight: 600; color: var(--muted); }
 .ew-card-v small.pos { color: var(--win); }
 .ew-card-v small.neg { color: var(--loss); }
+/* Add-bet header tools: the scan and edit-fields buttons share one height. */
+.slip-tools .btn-sm { height: 34px; display: inline-flex; align-items: center; justify-content: center; }
